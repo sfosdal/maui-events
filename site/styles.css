@@ -1404,6 +1404,12 @@ html { overflow-anchor: none; }
 .tf-channels { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .25rem 1.1rem; font-family: var(--mono); font-size: .74rem; line-height: 1.5; color: var(--ink-soft); max-height: 1.2rem; overflow: hidden; } /* one line, the groups a little apart (each starts with its bold name, so no more is needed); the rest unfolds behind the chevron (app.js foldWatch sets has-more when there is more) */
 .tf-watch.is-open { height: auto; padding-top: .7rem; padding-bottom: .7rem; }
 .tf-watch.is-open .tf-channels { max-height: none; }
+.tf-sched { position: absolute; left: .45rem; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; gap: .4rem; padding: .32rem .7rem; border: 1px solid var(--line); border-radius: 999px; background: var(--panel, transparent); color: var(--ink); font-family: var(--mono); font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.tf-sched.is-loose { position: static; transform: none; margin: .6rem 0 0; }
+.tf-sched svg { width: 1rem; height: 1rem; }
+.tf-sched:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.tf-watch { padding-left: 11.5rem; } /* the Season Schedule button's room at the strip's left end */
+.tf-watch.is-open .tf-sched { top: .75rem; transform: none; }
 .tf-wmore { display: none; position: absolute; right: .2rem; top: 50%; transform: translateY(-50%); width: 1.5rem; height: 1.5rem; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-soft); cursor: pointer; place-items: center; }
 .tf-wmore svg { width: 1.1rem; height: 1.1rem; transition: transform .2s; }
 .tf-wmore:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 10%, transparent); }
@@ -1537,7 +1543,7 @@ html { overflow-anchor: none; }
 .team-cal .cal-day.is-past:not(.is-blank) { opacity: .5; }
 .team-cal .cal-day.is-past .num { color: inherit; }
 /* the PDF and list ⇄ calendar chips: only while the Teams view is open, just left of Home Teams */
-html:not(.teams-open) #teamPdfBtn { display: none; }
+#teamPdfBtn { display: none; } /* 2026-10-26: the season calendar moved into the game block's footer strip (.tf-sched); the chip stays for scripts that address it */
 #teamPdfBtn:disabled { opacity: .35; cursor: default; } /* every club's list (teams-all) has no calendar or poster: the chips stay put, dimmed, so the bar never shifts */
 #teamPdfBtn { order: 2; }
 #teamPdfBtn { padding: .5em .7em; } /* icon only (the label stays for screen readers): the strip needs the room for its names */
@@ -1969,6 +1975,22 @@ html.map-open .agenda, html.map-open .cal-toggle, html.map-open #calToday, html.
 .lm-zoom button { width: 2rem; height: 2rem; padding: 0; display: grid; place-items: center; font: 600 1rem/1 var(--body); color: var(--ink); background: var(--sky); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
 .lm-zoom button:hover { border-color: var(--ink-soft); }
 .lm-zoom button svg { width: 1rem; height: 1rem; }
+.lm-zoom button[data-z="me"] { margin-top: .3rem; } /* the crosshair: the visitor's own spot, a little apart from the zoom */
+.lm-zoom button.is-busy { opacity: .5; cursor: progress; }
+.lm-zoom button[aria-pressed="true"] { color: #2f7fd6; border-color: #2f7fd6; }
+.lm-city { cursor: pointer; }
+.lm-city-dot { fill: #1f8a4c; stroke: #fff; stroke-width: calc(var(--u, 1) * 1.5); }
+.lm-sign-board { fill: #0f7a45; stroke: #fff; stroke-width: calc(var(--u, 1) * 1); } /* one thin white line as the board's edge (Steve, 2026-10-26: 'the white border should actually be the border') */
+.lm-sign-hit { fill: #fff; opacity: 0; }
+.lm-city:hover .lm-sign-hit, .lm-city:focus-visible .lm-sign-hit { opacity: .14; }
+.lm-sign-name, .lm-sign-mi { font-family: var(--body); font-weight: 700; letter-spacing: .01em; fill: #fff; pointer-events: none; }
+.lm-sign-name { letter-spacing: .03em; }
+.lm-me-dot { fill: #2f7fd6; stroke: var(--mist); stroke-width: calc(var(--u, 1) * 2); }
+.lm-me-acc { fill: #2f7fd6; fill-opacity: .14; stroke: #2f7fd6; stroke-opacity: .45; stroke-width: calc(var(--u, 1) * .8); animation: lm-pulse 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes lm-pulse { 0% { fill-opacity: .22; } 100% { fill-opacity: .08; } }
+.lm-pin.is-city circle { opacity: .78; } /* the rest of the city on a neighbourhood map: a shade quieter than the neighbourhood's own rooms */
+.lm-pin.is-city .lm-name { font-weight: 500; fill: var(--ink-soft); }
+.lm-caption .lm-note { color: var(--ink); text-transform: none; letter-spacing: 0; font-family: var(--body); font-size: .8rem; }
 .lm-caption { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin: .55rem auto 0; width: 100%; min-height: 1.6em; font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
 /* the pin's card: the month view's day card (.mb-pop), with the room's own site at its foot */
 .lm-pop .lm-site { display: inline-flex; align-items: center; gap: .35rem; margin-top: .35rem; font: 500 .78rem/1 var(--body); color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: .1rem; }

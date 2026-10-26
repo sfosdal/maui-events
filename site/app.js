@@ -223,7 +223,7 @@
         Object.keys(state.venueMode).forEach(function (v) {
           if (state.venues.indexOf(v) === -1) delete state.venueMode[v];
         });
-        renderFilters(); renderCal(); renderAgenda(); renderBoard(); updateSubscribe();
+        renderFilters(); renderCal(); renderAgenda(); renderBoard(); updateSubscribe(); if (window.LQAMap) LQAMap.render(); // a cold ?view=map load drew the map before the feed: again, with the counts (Steve, 2026-10-26: '0 upcoming at 0 of 22 places')
         if (!$('teamsView').hidden && teamView.slug !== undefined) renderTeams(teamView.slug); // a ?team= open drew the season before the feed arrived: again, with ticket links and counts
       })
       .catch(function (err) {
@@ -1910,7 +1910,7 @@
     var side = next ? buildFormSide(form, lead.childNodes.length ? lead : null) : null;
     if (side) box.appendChild(side);
     var strip = next ? buildWatchStrip(next.watch ? next.watch.tv || [] : [], next.watch ? next.watch.radio : null, '', team) : null; // the strip while a game is ahead; with the season played out it goes, and its room goes to the column's wrap (Steve, 2026-10-05: "removing the how to watch/listen section")
-    if (strip) box.appendChild(strip); else box.classList.add('no-watch');
+    if (strip) box.appendChild(strip); else { box.classList.add('no-watch'); var sb = buildSchedButton(); sb.classList.add('is-loose'); box.appendChild(sb); } // the season played out: no strip, the button alone at the block's foot
     inner.appendChild(buildBrief(lead, strip)); // the pinned bar's run
     return box;
   }
@@ -2123,6 +2123,7 @@
     radio = (radio || []).slice();
     (club.radio || []).forEach(function (r) { if (radio.indexOf(r) < 0) radio.push(r); });
     var wl = document.createElement('div'); wl.className = 'tf-watch';
+    wl.appendChild(buildSchedButton());
     if (label) { var lb = document.createElement('b'); lb.className = 'tf-watch-label'; lb.textContent = label; wl.appendChild(lb); }
     var parts = splitWatch(names);
     var sections = [
@@ -3317,7 +3318,7 @@
   }
   // one club picked: its poster. Several: a chooser under the chip — one of
   // them, or All, which prints them one after another (Steve, 2026-09-15)
-  $('teamPdfBtn').addEventListener('click', function () {
+  function openSeasonCalendar(anchor) { // the bar's Season Calendar chip, and the Season Schedule button in every game block's footer strip (Steve, 2026-10-26)
     var sel = selectedTeams();
     if (!sel.length) return;
     if (sel.length === 1) { printTeams(sel); return; }
@@ -3330,14 +3331,21 @@
       b.addEventListener('click', function () { pick.remove(); printTeams([t]); });
       pick.appendChild(b);
     });
-    var r = $('teamPdfBtn').getBoundingClientRect(); // its left edge on the chip's
+    var r = (anchor || $('teamPdfBtn')).getBoundingClientRect(); // its left edge on the chip's
     pick.style.top = (r.bottom + 6) + 'px'; pick.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 8 - 12 * 16)) + 'px';
     document.body.appendChild(pick);
     setTimeout(function () { // outside tap or Esc closes it
       var off = function (e) { if (e.type === 'keydown' && e.key !== 'Escape') return; if (e.type === 'click' && e.target.closest('.pdf-pick')) return; pick.remove(); document.removeEventListener('click', off, true); document.removeEventListener('keydown', off); };
       document.addEventListener('click', off, true); document.addEventListener('keydown', off);
     }, 0);
-  });
+  }
+  $('teamPdfBtn').addEventListener('click', function () { openSeasonCalendar($('teamPdfBtn')); });
+  function buildSchedButton() { // "Season Schedule", the calendar icon and the words, at the strip's left end
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'tf-sched'; b.title = 'Season schedule — the whole season as a calendar';
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h3M13 13h3M8 17h3M13 17h3"/></svg><span>Season Schedule</span>';
+    b.addEventListener('click', function (e) { e.stopPropagation(); openSeasonCalendar(b); });
+    return b;
+  }
   function printTeams(list) { // a print dialog per club, each with its own calendar drawn for the sheet
     var i = 0;
     (function next() {

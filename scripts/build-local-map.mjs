@@ -6,7 +6,8 @@
 //     Earth 1:10m admin-0 countries (public domain), picked by a seed point
 //     inside each ring; the frame is the island with a margin. Kona.
 //   kind: 'urban'  — a city or a neighbourhood: the shoreline, the named
-//     lakes and rivers and the main roads inside `bbox` from OpenStreetMap
+//     lakes and rivers and the main roads inside `bbox` (widened to `aspect`,
+//     1.6:1, when it is taller than that) from OpenStreetMap
 //     (© OpenStreetMap contributors, ODbL — the page credits them), read once
 //     from the Overpass API; the frame is the bbox. lqa, Seattle.
 //   kind: 'world'  — the countries from Natural Earth 1:50m, the great lakes
@@ -76,8 +77,13 @@ if (M.kind === 'island') {
     credit: 'Map outline from Natural Earth, 1:10m, public domain.' };
   console.log(`island: ${land.length} land ring(s), ${far.length} neighbour(s)`);
 } else if (M.kind === 'urban') {
-  const [S, Wl, N, E] = M.bbox;
-  const cx = (Wl + E) / 2, cy = (S + N) / 2, k = Math.cos(cy * Math.PI / 180);
+  let [S, Wl, N, E] = M.bbox;
+  const cy = (S + N) / 2, k = Math.cos(cy * Math.PI / 180);
+  // the ground is at least `aspect` wide for its height (1.6 unless the block says otherwise): a desktop frame zoomed right out then shows
+  // most of its width, and the view never has to leave the data to fill the frame (local-map.js keeps a city ground covered — Steve, 2026-10-25)
+  const aspect = M.aspect ?? 1.6, need = (N - S) * aspect / k;
+  if (E - Wl < need) { const mid = (Wl + E) / 2; Wl = +(mid - need / 2).toFixed(4); E = +(mid + need / 2).toFixed(4); console.log(`bbox widened to ${aspect}:1 → west ${Wl}, east ${E}`); }
+  const cx = (Wl + E) / 2;
   const s = W / ((E - Wl) * k), H = Math.round((N - S) * s);
   proj = { cx, cy, k, s, w: W, h: H };
   const px = ([lon, lat]) => [(lon - cx) * k * s + W / 2, (cy - lat) * s + H / 2];
@@ -87,12 +93,22 @@ if (M.kind === 'island') {
   const q = `[out:json][timeout:180];(way[natural=coastline](${bbox});way[natural=water][name](${bbox});relation[natural=water][name](${bbox});way[highway~"${roadsRe}"](${bbox}););out geom;`;
   const osm = await cached('osm-' + createHash('sha1').update(q).digest('hex').slice(0, 10) + '.json', async () => {
     console.log('reading OpenStreetMap through Overpass…');
-    const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) });
-    if (!r.ok) throw new Error(`Overpass failed: HTTP ${r.status} ${(await r.text()).slice(0, 200)}`);
-    return r.json();
+    // the public servers turn requests away when every worker is busy (502/504 "at capacity", 429): try each mirror in turn, then wait and go round again
+    const MIRRORS = ['https://overpass-api.de/api/interpreter', 'https://overpass.openstreetmap.fr/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter']; // the French community's planet mirror answered when the main one and the two others sat at capacity for an hour (2026-10-26)
+    let last = '';
+    for (let round = 0; round < 4; round++) {
+      for (const url of MIRRORS) {
+        const r = await fetch(url, { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) }).catch(e => ({ ok: false, status: e.message, text: async () => '' }));
+        if (r.ok) { try { return await r.json(); } catch (e) { last = `${url}: ${e.message}`; continue; } }
+        last = `${url}: HTTP ${r.status} ${(await r.text()).slice(0, 120).replace(/\s+/g, ' ')}`;
+        console.log(`  ${last}`);
+      }
+      const wait = 20 * 2 ** round; console.log(`  every Overpass mirror busy — retrying in ${wait} s`); await new Promise(res => setTimeout(res, wait * 1000));
+    }
+    throw new Error(`Overpass failed after every mirror and retry: ${last}`);
   });
   const tol = M.tolerance ?? 0.6, minArea = M.minArea ?? 6;
-  const wayOf = w => ({ nodes: w.nodes || w.geometry.map((g, i) => `${w.ref || w.id}:${i}`), pts: w.geometry.map(g => px([g.lon, g.lat])) });
+  const wayOf = w => ({ nodes: w.nodes || w.geometry.filter(Boolean).map((g, i) => `${w.ref || w.id}:${i}`), pts: w.geometry.filter(Boolean).map(g => px([g.lon, g.lat])) });
   const els = osm.elements;
   const coast = stitch(els.filter(e => e.type === 'way' && e.tags?.natural === 'coastline').map(wayOf)).map(c => ({ ...c, pts: simplify(c.pts, tol) }));
   const sea = seaRings(coast, rect);
@@ -100,7 +116,7 @@ if (M.kind === 'island') {
   const waters = [];
   for (const e of els.filter(e => e.tags?.natural === 'water')) {
     if (e.type === 'way') { if (e.nodes[0] === e.nodes[e.nodes.length - 1]) waters.push(wayOf(e).pts); }
-    else if (e.type === 'relation') memberRings(e.members.filter(m => m.type === 'way' && m.geometry).map(m => ({ role: m.role, nodes: m.geometry.map(g => g.lat + ',' + g.lon), pts: m.geometry.map(g => px([g.lon, g.lat])) }))).forEach(r => waters.push(r));
+    else if (e.type === 'relation') memberRings(e.members.filter(m => m.type === 'way' && m.geometry).map(m => ({ role: m.role, nodes: m.geometry.filter(Boolean).map(g => g.lat + ',' + g.lon), pts: m.geometry.filter(Boolean).map(g => px([g.lon, g.lat])) }))).forEach(r => waters.push(r));
   }
   const waterRings = waters.map(r => simplify(r, tol)).filter(r => r.length > 3 && Math.abs(signedArea(r)) >= minArea && r.some(p => p[0] > wide.x0 && p[0] < wide.x1 && p[1] > wide.y0 && p[1] < wide.y1));
   const roads = {};
