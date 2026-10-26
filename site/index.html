@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- browser chrome matches the page; app.js repoints both when a theme is
+     chosen by hand -->
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#edf1f4" data-light="#edf1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141a20" data-dark="#141a20">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Maui Events">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+  // Before the first paint: the theme (light, dark, or system — nothing set,
+  // prefers-color-scheme decides); app.js applyTheme keeps the pill in sync.
+  try {
+    var t = localStorage.getItem('lqa-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch (e) { /* no storage — system it is */ }
+</script>
+<!-- Google tag (gtag.js) — the here.events GA4 property, one stream for the map and every city; reports split by hostname -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BTQFXS68HN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BTQFXS68HN');
+</script>
+<title>Maui Events — the MACC, the ʻĪao Theater, Da Playground &amp; the island’s calendars</title>
+<meta name="description" content="What&#39;s on across Maui — the Maui Arts &amp; Cultural Center, the ʻĪao Theater, ProArts, Da Playground, Mulligans, the Lahaina Civic Center, Haleakalā and Lānaʻi, with the Rainbow Warriors. Refreshed daily, with a calendar feed.">
+<!-- the site's own address and what a shared link shows: name, line, and the share card (share.png, 1200×630, scripts/share-card.mjs) -->
+<link rel="canonical" href="https://maui.here.events/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Maui Events">
+<meta property="og:title" content="Maui Events">
+<meta property="og:description" content="What&#39;s on across Maui — the Maui Arts &amp; Cultural Center, the ʻĪao Theater, ProArts, Da Playground, Mulligans, the Lahaina Civic Center, Haleakalā and Lānaʻi, with the Rainbow Warriors. Refreshed daily, with a calendar feed.">
+<meta property="og:url" content="https://maui.here.events/">
+<meta property="og:image" content="https://maui.here.events/share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:opsz,wght@10..72,500;10..72,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+<link rel="alternate" type="text/calendar" href="events.ics" title="Maui Events">
+</head>
+<body>
+
+<!-- the Ghostwood Labs mark, drawn once; the masthead and the footer <use> it -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="gw-mark" viewBox="0 0 576 576">
+    <g fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M300.19 51.03A26 26 0 0 1 275.81 51.03L235.63 29.71A26 26 0 0 0 210.57 30.08L103.63 91.02A26 26 0 0 0 90.5 113.61L90.5 161.4A26 26 0 0 1 77.38 183.98L39.62 205.52A26 26 0 0 0 26.5 228.1L26.5 347.9A26 26 0 0 0 39.62 370.48L77.38 392.02A26 26 0 0 1 90.5 414.6L90.5 462.39A26 26 0 0 0 103.63 484.98L210.57 545.92A26 26 0 0 0 235.63 546.29L275.81 524.97A26 26 0 0 1 300.19 524.97L340.37 546.29A26 26 0 0 0 365.43 545.92L472.37 484.98A26 26 0 0 0 485.5 462.39L485.5 414.6A26 26 0 0 1 498.62 392.02L536.38 370.48A26 26 0 0 0 549.5 347.9L549.5 228.1A26 26 0 0 0 536.38 205.52L498.62 183.98A26 26 0 0 1 485.5 161.4L485.5 113.61A26 26 0 0 0 472.37 91.02L365.43 30.08A26 26 0 0 0 340.37 29.71L300.19 51.03Z"/>
+      <path d="M288 57.5L288 177.5"/>
+      <path d="M288 518.5L288 403.5"/>
+      <path d="M90.5 176.5L144.63 204.58A26 26 0 0 0 169.19 204.26L209.58 181.92A26 26 0 0 0 223 159.17L223 101.5L158.5 137.5"/>
+      <path d="M485.5 176.5L431.37 204.58A26 26 0 0 1 406.81 204.26L366.42 181.92A26 26 0 0 1 353 159.17L353 101.5L417.5 137.5"/>
+      <path d="M157 211L157 287.5"/>
+      <path d="M419 211L419 287.5"/>
+      <path d="M90.5 399.5L144.63 371.42A26 26 0 0 1 169.19 371.74L209.58 394.08A26 26 0 0 1 223 416.83L223 474.5L158.5 438.5"/>
+      <path d="M485.5 399.5L431.37 371.42A26 26 0 0 0 406.81 371.74L366.42 394.08A26 26 0 0 0 353 416.83L353 474.5L417.5 438.5"/>
+      <path d="M26.5 288L92 325.5L92 250.5"/>
+      <path d="M549.5 288L484 325.5L484 250.5"/>
+    </g>
+  </symbol>
+</svg>
+
+<header class="masthead">
+  <!-- no picture behind the name (Steve, 2026-10-14: no masthead drawings on any city site) -->
+  <div class="masthead-text">
+    <p class="eyebrow" data-teams="Maui">Hawaii</p> <!-- no neighbourhood here, so the state stands over the city (the Everett pattern, Steve 2026-10-11) -->
+    <h1>Maui</h1> <!-- one line on any screen -->
+  </div>
+  <!-- the masthead's tools: the theme pill alone (Steve, 2026-09-16 — the
+       season calendar and Add To My Calendar chips moved down into the bar) -->
+  <div class="masthead-tools">
+  <!-- the home teams' seasons, home and away (the Teams view below the bar) -->
+  <!-- the theme pill: light, dark, system (Steve, 2026-09-15; app.js applyTheme) -->
+  <div id="themeToggle" class="theme-toggle" role="radiogroup" aria-label="Color theme" data-active="system">
+    <button type="button" role="radio" aria-checked="true" data-theme="light" title="Light">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+    <button type="button" role="radio" aria-checked="false" data-theme="dark" title="Dark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <button type="button" role="radio" aria-checked="false" data-theme="system" title="System">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+    </button>
+    <span class="theme-knob" aria-hidden="true"></span>
+  </div>
+  </div>
+</header>
+
+<!-- one row of matching chips: filters, reset, share link, subscribe, theme.
+     The subscribe pop hangs below the bar (the bar is its positioning box). -->
+<!-- the bar, and the panel that floats open beneath it (over the content,
+     which stays put) -->
+<div class="filter-area">
+<!-- one slim line standing in for the masthead once it has scrolled off
+     (app.js shows it, with the Top button, and raises --barh to match) -->
+<!-- the masthead, folded into one line once it has scrolled off: eyebrow, title, stamp -->
+<div class="bar-title" hidden><span class="bar-eyebrow" data-teams="Maui">Hawaii</span><span class="bar-name">Maui</span><span class="bar-eyebrow" id="barUpdated"></span></div>
+<nav class="filterbar" aria-label="Filters">
+  <label class="search-wrap">
+    <input id="searchBox" type="search" placeholder="Search…" aria-label="Search events by venue, team, or type" autocomplete="off">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+  </label>
+  <!-- the view switch: the events list | the home teams' seasons, a two-stop pill like the theme's -->
+  <div id="viewToggle" class="theme-toggle view-toggle" role="radiogroup" aria-label="View" data-active="events"><!-- List · Month · Teams · Map (Steve, 2026-09-14; the words and the Map stop 2026-10-24): Month is the list with the month calendar, Map the venues on the ground (local-map.js); app.js remembers the choice -->
+    <button id="eventsBtn" type="button" role="radio" aria-checked="true" data-view="events" title="Events">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="vt-label">List</span>
+    </button>
+    <button id="monthBtn" type="button" role="radio" aria-checked="false" data-view="month" aria-controls="calBox" title="Month — the month's events on a calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span class="vt-label">Month</span>
+    </button>
+    <button id="teamsBtn" type="button" role="radio" aria-checked="false" data-view="teams" aria-controls="teamsView" title="Home Teams — season schedules, every game, home and away">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3.6 9.5c3 1 5.4 3.6 6.3 7.3M20.4 9.5c-3 1-5.4 3.6-6.3 7.3M12 3v18M3 12h18"/></svg><span class="vt-label">Teams</span>
+    </button>
+    <button id="mapBtn" type="button" role="radio" aria-checked="false" data-view="map" aria-controls="mapView" title="Map — the venues on the island">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span class="vt-label">Map</span>
+    </button>
+    <button id="filterToggle" class="vt-filter" type="button" aria-expanded="false" aria-controls="filterPanel" title="Filters">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
+      <span class="vt-label">Filter</span>
+    </button>
+    <span class="theme-knob" aria-hidden="true"></span>
+  </div>
+  <div id="subscribePop" class="pop" hidden>
+      <label class="pop-filter" id="subFilterRow" hidden>
+        <input type="checkbox" id="subUseFilter" checked> Include my filter choices
+      </label>
+      <!-- one row of three: the calendar you'd add to, each with its own
+           icon and name -->
+      <div class="pop-tiles">
+        <!-- the webcal: link — Apple Calendar on a Mac, iPhone or iPad (and any
+             other desktop calendar app that claims webcal) -->
+        <a id="webcalLink" class="tile" href="#" title="macOS / iOS Calendar (or whichever calendar app handles webcal links)">
+          <img class="tile-logo" src="https://www.google.com/s2/favicons?domain=www.apple.com&amp;sz=128" alt="" width="64" height="64">
+          <span>Apple</span>
+        </a>
+        <!-- Google Calendar's own icon (its favicon is a small upscaled one); Outlook's favicon, as for the venue marks -->
+        <a id="gcalLink" class="tile" href="#" target="_blank" rel="noopener" title="Google Calendar">
+          <img class="tile-logo" src="https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png" alt="" width="64" height="64">
+          <span>Google</span>
+        </a>
+        <a id="outlookLink" class="tile" href="#" target="_blank" rel="noopener" title="Outlook">
+          <img class="tile-logo" src="https://www.google.com/s2/favicons?domain=outlook.live.com&amp;sz=128" alt="" width="64" height="64">
+          <span>Outlook</span>
+        </a>
+      </div>
+      <!-- the other ways in, as chips under the row -->
+      <div class="pop-tools">
+        <a id="qrBtn" class="chip" href="#" aria-expanded="false" title="QR code for your phone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/>
+            <rect x="4" y="14" width="6" height="6"/>
+            <path d="M14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5zM14 20h1M20 14v1"/>
+          </svg>
+          <span>QR Code</span>
+        </a>
+        <a id="copyIcs" class="chip" href="#" title="Copy the feed link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span>Copy Link</span>
+        </a>
+      </div>
+      <div id="qrPanel" class="qr-panel" hidden>
+        <div id="qrImg" role="img" aria-label="QR code for the calendar feed"></div>
+        <p class="pop-note">Scan with your phone to subscribe there.</p>
+      </div>
+      <p class="pop-note">Refreshed every few hours. Your calendar picks up changes on its own schedule.</p>
+  </div>
+  <!-- the home teams, one pill per club, in the bar itself while the Teams
+       view is open (crests only when the names won't fit; app.js sets is-crests) -->
+  <div class="team-strip" id="teamStrip" aria-label="Teams"></div>
+  <!-- narrow layouts only (app.js hides it when the calendar is docked):
+       floats the calendar over the list. Chevron left = opens, right = folds. -->
+  <button id="calToggle" class="chip cal-toggle" type="button" aria-expanded="false" aria-controls="calBox" title="Show calendar" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    <span>Hide calendar</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </button>
+  <!-- the right end of the bar (Steve, 2026-09-16): the season calendar chip (Teams view only), then Add To My Calendar; flex order places them after the clubs -->
+  <button id="teamPdfBtn" class="chip" type="button" title="Season calendar — download it as a PDF">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h3M13 13h3M8 17h3M13 17h3"/></svg>
+    <span>Season Calendar</span> <!-- Steve, 2026-09-16: named for what it is, not the file type -->
+  </button>
+  <button id="subscribeBtn" class="chip" type="button" aria-expanded="false" aria-controls="subscribePop" title="Subscribe in your calendar app">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg>
+    <span>Add To My Calendar</span>
+  </button>
+</nav>
+<!-- the funnel in the bar drops this open below it -->
+<div id="filterPanel" class="filter-panel fp-tree" hidden>
+  <!-- top row: presets (chips injected by app.js; the one matching the
+       current state is lit), the Only Sold Out switch and the Include Holidays
+       switch (off by default; US, WA and Seattle holidays from app.js) -->
+  <div class="fp-top">
+    <div class="fp-presets" id="fpPresets"></div>
+    <!-- Only Sold Out: only the events the checker (or a source) marks
+         sold out, or within 5% of the house — LQAFilter.ticketState -->
+    <!-- these two are switches, not allow boxes like the rows below: Sold Out
+         narrows the list to those, Holidays adds days — so they wear a
+         different face (.sw) -->
+    <label class="fp-switch fp-soldout">
+      <input type="checkbox" role="switch" id="soldOnlyToggle" autocomplete="off">
+      <span class="sw"></span>
+      <span class="fp-name">Only Sold Out</span> <!-- the words Steve set 2026-10-05 ("only sold"), in the panel's Title Case; was "Sold Out (or Nearly)" -->
+    </label>
+    <label class="fp-switch fp-holidays">
+      <input type="checkbox" role="switch" id="holidaysToggle" autocomplete="off">
+      <span class="sw"></span>
+      <span class="fp-name">Include Holidays</span> <!-- "include holidays", Steve 2026-10-05; was "Holidays" -->
+    </label>
+  </div>
+  <!-- Four groups — Venues (two lists), Event Type under the second, Teams
+       (capacity bands keep state + share-code slots but no rows since
+       2026-09-22), every row three-state (Steve, 2026-09-22: "check,
+       unchecked or X for exclude, same for every filter option, don't auto
+       check or uncheck any filters"), worn as a Show | Hide word pair at
+       the row's end (third pass the same day, after a three-face box and
+       then a tick box + x):
+       · Show lit = show these. Shows among venues and
+         teams add up (any of them); shown event types then narrow to
+         those kinds.
+       · Hide lit = never these (the name struck).
+       · neither  = no preference.
+       One tap sets a word, a second tap on it clears it — no cycling. No
+       row ever changes another: no dashes, no greying, no bulk switches
+       apart from a group's own Show All / Hide All. The rule is
+       LQAFilter.matchesFilter; the pair is a role="group" of two
+       aria-pressed buttons (app.js filterRow). No counts on the rows
+       (Steve, 2026-09-22). The everyday way to hide things is on
+       the event sheet (Hide chips + Undo), with the view note above the list
+       saying what is hidden. -->
+  <div class="fp-cols">
+    <div class="fp-group">
+      <h3>Kahului &amp; Wailuku<span class="fp-allnone"><button type="button" class="fp-set" data-scope="campus" data-on="1">Show All</button><i>·</i><button type="button" class="fp-set" data-scope="campus" data-on="0">Hide All</button></span></h3>
+      <div id="panelVenues" class="fp-list"><!-- the venue rows, injected by app.js --></div>
+    </div>
+    <div class="fp-group">
+      <h3>South, West, Upcountry &amp; Lānaʻi<span class="fp-allnone"><button type="button" class="fp-set" data-scope="town" data-on="1">Show All</button><i>·</i><button type="button" class="fp-set" data-scope="town" data-on="0">Hide All</button></span></h3>
+      <div id="panelVenuesTown" class="fp-list"><!-- rooms city.js marks area: 'town' — Kīhei, Wailea and Māʻalaea, Lahaina, Makawao, Haleakalā and Lānaʻi City --></div>
+      <h3>Event Type<span class="fp-allnone"><button type="button" class="fp-set" data-scope="type" data-on="1">Show All</button><i>·</i><button type="button" class="fp-set" data-scope="type" data-on="0">Hide All</button></span></h3>
+      <div id="panelBadges" class="fp-list"><!-- the five kinds (city.js TYPES), injected by app.js --></div>
+    </div>
+    <div class="fp-group">
+      <h3>Home Teams<span class="fp-allnone"><button type="button" class="fp-set" data-scope="team" data-on="1">Show All</button><i>·</i><button type="button" class="fp-set" data-scope="team" data-on="0">Hide All</button></span></h3>
+      <div id="panelTeams" class="fp-list"><!-- team rows injected by app.js: the Rainbow Warriors and Wahine --></div>
+      <h3>Festivals<span class="fp-allnone"><button type="button" class="fp-set" data-scope="fest" data-on="1">Show All</button><i>·</i><button type="button" class="fp-set" data-scope="fest" data-on="0">Hide All</button></span></h3>
+      <div id="panelFestivals" class="fp-list"><!-- festival venues (city.js festival: true) — none on Maui yet, so app.js hides the heading --></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<section class="agenda" aria-label="Upcoming events">
+  <!-- the view note: one plain line, only while the view is not the usual one,
+       saying what is hidden or added compared with it, with a way back
+       (app.js renderViewNote) -->
+  <div id="viewNote" class="view-note" hidden><span id="viewNoteText"></span><button id="viewNoteReset" type="button" class="chip">Usual View</button></div>
+  <div class="agenda-layout">
+    <ol id="agenda"><li class="empty">Loading events…</li></ol>
+    <aside class="cal-side" aria-label="Month calendar">
+      <!-- on narrow layouts this floats over the list (opened from the
+           calendar chip at the right end of the filter bar); on the wide
+           layout it's docked here -->
+      <div class="cal" id="calBox">
+        <!-- the card's header: ‹ month name › (Today is a floater at the lower right, shown when the list has left today) -->
+        <div class="cal-head" id="calHead" aria-label="Change months">
+          <button id="calPrev" type="button" aria-label="Previous month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <button class="cal-cur" id="calCur" type="button" aria-live="polite" title="Pick a month and year"></button> <!-- opens the month/year picker (app.js openMonthPick; Steve, 2026-09-15) -->
+          <button id="calNext" type="button" aria-label="Next month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <div id="calGrid" class="cal-months"><!-- one .cal-month card per month, from app.js --></div>
+        <!-- TODAY: a tab out of the card's foot, the odds tab's cut (Steve, 2026-09-15); app.js placeTodayTab moves it under the month board in the month view -->
+        <button id="calToday" type="button" class="cal-today-tab" title="Back to today: the current month, past days put away" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/></svg>
+      <span>Today</span>
+    </button>
+      </div>
+    </aside>
+  </div>
+  <!-- the month view (the calendar stop of the view pill): one continuous
+       grid of weeks from this month on, square days carrying their events'
+       names, a sticky ‹ MONTH › header naming the month at the top of the
+       window (its name opens the month / year picker), and more months
+       appended as you scroll — no end (app.js renderBoard). A tapped day
+       opens a card listing everything on it (openDayPop). -->
+  <section id="monthBoard" class="month-board" aria-label="Month calendar" hidden>
+    <div id="mbSticky" class="mb-sticky">
+      <div class="cal-head mb-head" aria-label="Change months">
+        <button id="mbPrev" type="button" aria-label="Previous month">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <button class="cal-cur" id="mbCur" type="button" aria-live="polite" title="Pick a month and year"></button>
+        <button id="mbNext" type="button" aria-label="Next month">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mbGrid" class="mb-months"></div> <!-- one .mb-month block per month, appended by app.js appendMonth -->
+    <div id="mbSentinel" class="mb-sentinel" aria-hidden="true"></div>
+  </section>
+</section>
+
+<!-- the Map view (Steve, 2026-10-24): the island with a pin on every room,
+     sized by its upcoming events under the filters in force; a tapped pin opens
+     its card. Drawn by local-map.js from local-map.json (Natural Earth outline,
+     built by scripts/build-local-map.mjs) — no tiles, nothing fetched off-site -->
+<section id="mapView" class="local-map" hidden aria-label="Map of the venues">
+  <div class="lm-frame">
+    <svg id="lmSvg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Maui, Lānaʻi and Molokaʻi with the venues marked"></svg>
+    <div class="lm-zoom" aria-label="Zoom">
+      <button type="button" data-z="in" title="Zoom in" aria-label="Zoom in">+</button>
+      <button type="button" data-z="out" title="Zoom out" aria-label="Zoom out">−</button>
+      <button type="button" data-z="fit" title="The whole island" aria-label="The whole island"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg></button>
+    </div>
+  </div>
+  <p class="lm-caption" id="lmCaption"><span></span></p>
+</section>
+
+<!-- the Teams view: in place of the agenda while the Teams chip is on. A
+     strip of the home teams, a bar naming a picked opponent, then the season
+     in the agenda's own day/card markup (app.js renderTeams) -->
+<section class="teams" id="teamsView" aria-label="Team schedules" hidden>
+  <div class="teams-layout">
+    <!-- the club's form block — record, standing, news, or the game in
+         progress — above the list and the calendar alike (app.js renderTeamForm) -->
+    <div id="teamHeadTop"></div> <!-- the block's spot in the flow: once it scrolls under the bar the block pins and goes compact (app.js markStuck) -->
+    <div id="teamHead"></div>
+    <!-- the printed poster's banner and legend (the PDF chip; print only) -->
+    <div id="printHead" class="print-head" aria-hidden="true"></div>
+    <div class="team-main">
+      <div class="team-focus" id="teamFocus" hidden></div>
+      <ol id="teamSched" class="team-sched"></ol>
+    </div>
+    <!-- the season at a glance, poster-style, in place of the list while the
+         bar's Calendar chip is on: every month as a card, home games solid,
+         away games pale, each cell the opponent and the time (app.js renderTeamCal) -->
+    <div class="team-cal" id="teamCal" aria-label="Season calendar" hidden></div>
+    <div id="printFoot" class="print-foot" aria-hidden="true"></div>
+  </div>
+</section>
+
+<!-- a word after hiding something from the sheet, with Undo (app.js toast) -->
+<div id="toast" class="toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="toastUndo" type="button">Undo</button></div>
+
+<!-- pinned to the bottom edge; Sources (the info mark) and Embed open upward from it,
+     floating over the list -->
+<footer>
+  <!-- Two floaters centred just above this pinned footer, styled like the
+       bar's chips. Today: back to now (the current month, past days put
+       away, the list at its nearest day), shown only while the list has
+       left today. Top: shown once the masthead has scrolled off. app.js
+       toggles hidden on both; on narrow screens they drop their labels. -->
+  <div class="floaters">
+    <button id="toTop" type="button" class="chip" title="Back to top" aria-label="Back to top" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      <span>Top</span>
+    </button>
+  </div>
+  <div class="foot-inner">
+  <a class="gw" href="https://ghostwoodlabs.com/" target="_blank" rel="noopener" title="Ghostwood Labs"> <!-- the mark and the name are one link, opening a new tab (Steve, 2026-10-05: "any click on the gwl branding should open a new tab"); linked to the company site 2026-10-04, the day ghostwoodlabs.com went live -->
+  <svg class="gw-logo" aria-hidden="true"><use href="#gw-mark"/></svg>
+  <p class="gw-credit"><strong>Ghostwood Sites</strong></p>
+  </a>
+  <div class="foot-links"> <!-- Advertise, Embed, Sources as one thing at the row's right end, the credit at its left (the "Updated" stamp between them was removed 2026-10-05, Steve) -->
+  <!-- advertising: a megaphone, to the placeholder sales page (Steve, 2026-09-15) -->
+  <a class="foot-link" id="advertise" href="advertise.html" title="Advertise on this calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9.5a3.5 3.5 0 0 1 0 5"/><path d="M17.5 7a7 7 0 0 1 0 10"/></svg>
+    <span>Advertise</span>
+  </a>
+  <!-- the sources, behind an info mark that opens upward like Embed -->
+  <details class="share info" id="sources">
+    <summary title="Where the listings come from">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+      <span>Sources</span>
+    </summary>
+    <div class="share-body info-body">
+      <div class="share-cols">
+        <div>
+          <h3>Ticketing feeds</h3>
+          <p>Ticketmaster, room by room — the Lahaina Civic Center, and the Maui Arts &amp; Cultural Center and the ʻĪao Theater for what their own calendars lack (it lists almost nothing on Maui). Season bundles, parking, suites and tours are left out.</p>
+        </div>
+        <div>
+          <h3>Venue calendars</h3>
+          <p>The rooms' own calendars, read daily: the MACC's events listing, Maui OnStage's show cards for the ʻĪao Theater, Hale Hōʻikeʻike's public calendar, ProArts', Mulligans' and the Lahaina Cannery Mall's Events Calendars, Da Playground's ticket shop, the Pacific Whale Foundation's listing, the Maui Invitational's schedule, Hui Noʻeau's exhibitions, the National Park Service's events for Haleakalā and the Lānaʻi Culture &amp; Heritage Center's calendar.</p>
+        </div>
+        <div>
+          <h3>Game dates</h3>
+          <p>ESPN for the University of Hawaiʻi Rainbow Warriors — football and basketball — and Rainbow Wahine volleyball, in the Teams view.</p>
+        </div>
+        <div>
+          <h3>The map</h3>
+          <p>The islands' outlines are <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> (public domain), drawn here as one file — no map tiles, nothing fetched from anywhere else. Venues are placed from their street addresses.</p>
+        </div>
+        <div>
+          <h3>The final word</h3>
+          <p>Refreshed once a day. Every listing links to the venue or ticket page — check there before you go.</p>
+        </div>
+      </div>
+    </div>
+  </details>
+  <details class="share" id="embed">
+    <summary>
+      <svg class="plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0V7zM12 17v5"/></svg>
+      <span>Embed</span>
+    </summary>
+    <div class="share-body">
+      <div class="share-cols">
+        <div>
+          <h3>Events widget</h3>
+          <p>Drop these two lines into any page and the next events render in place.
+            Style it with the <code>evt-ev-</code> CSS classes.</p>
+<pre><code>&lt;div id="maui-events"&gt;&lt;/div&gt;
+&lt;script src="https://maui.here.events/embed.js" data-max="8" defer&gt;&lt;/script&gt;</code></pre>
+        </div>
+        <div>
+          <h3>Data feeds</h3>
+          <p>The raw data behind this page, fetchable from anywhere (CORS is open):</p>
+          <ul class="feed-list">
+            <li><code>events.json</code> — <a href="events.json">JSON feed</a></li>
+            <li><code>events.ics</code> — <a href="events.ics">iCalendar feed</a></li>
+          </ul>
+          <p>Google and Outlook don't have feed formats of their own — they subscribe
+            to the iCalendar feed. The <em>Add To My Calendar</em> button up top has
+            one-click links for both.</p>
+        </div>
+        <div>
+          <h3>Filter links</h3>
+          <p>A link that opens this page with the filters you have set right now
+            (<code>?f=…</code>) — for a widget's "see all" link, or to share one view.</p>
+          <button id="copyFilterLink" class="chip" type="button" title="Copy a link that opens with this exact filter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            <span id="copyFilterLabel">Copy Filter Link</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </details>
+  </div> <!-- /.foot-links -->
+  </div>
+</footer>
+
+<script src="qrcode.js?v=__V__" defer></script>
+<!-- phones: tapping a listing opens this sheet instead of following the
+     title link, so every detail and link gets a full-size tap target -->
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-back" id="sheetBack"></div>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1">
+    <p class="sheet-venue" id="sheetVenue"></p>
+    <h2 class="sheet-title" id="sheetTitle"></h2>
+    <p class="sheet-when" id="sheetWhen"></p>
+    <p class="sheet-tix" id="sheetTix" hidden><!-- Ticketmaster inventory: "272 of 18,100 tickets left · 614 resale · from $25 · checked Sep 15" (app.js) --></p>
+    <p class="sheet-watch" id="sheetWatch" hidden><!-- a home game's TV / radio, from the league (app.js) --></p>
+    <div class="sheet-sets-wrap" id="sheetSets" hidden><!-- a festival day's set times, stage by stage (app.js setTimesBlock) --></div>
+    <div class="sheet-actions">
+      <!-- order: the short chips first so they share a line, the long venue link after (Steve, 2026-09-15) -->
+      <a id="sheetTickets" class="btn-cal" href="#" target="_blank" rel="noopener">Tickets</a>
+      <button id="sheetOnlyVenue" class="chip" type="button" title="Show only this venue's events"></button>
+      <!-- the plain way to hide things (2026-09-20): this venue, or this club's home games; an Undo toast follows -->
+      <button id="sheetHideVenue" class="chip" type="button" title="Hide this venue's events"></button>
+      <button id="sheetHideTeam" class="chip" type="button" title="Hide this club's home games" hidden></button>
+      <button id="sheetTeam" class="chip" type="button" title="This club's whole season in the Teams view" hidden></button>
+      <a id="sheetVenueLink" class="chip" href="#" target="_blank" rel="noopener"></a>
+      <button id="sheetClose" class="chip" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="city.js?v=__V__" defer></script> <!-- the teams, the venues, the words for the place -->
+<script src="cities.js?v=__V__" defer></script> <!-- every city on here.events, for the Other Places sheet (generated in lqa, synced) -->
+<script src="filter.js?v=__V__" defer></script>
+<script src="app.js?v=__V__" defer></script>
+<script src="local-map.js?v=__V__" defer></script> <!-- the Map view (after app.js, which lends it LQAHooks) -->
+</body>
+</html>

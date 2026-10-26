@@ -1,0 +1,64 @@
+{
+ "_": "Each program's postseason for the season in hand — the rounds, their dates and the final's site — shown in the Teams view as 'if they qualify' until the real games arrive (the schedules flag those playoff: true, and a round with a real game in its window gives way to it). Hand-kept: update each season from the conferences' and the NCAA's announcements. tbd: true marks a round whose dates are the usual calendar, not yet confirmed. Drafted 2026-10-11 from the 2026-27 calendars.",
+ "football": {
+  "season": "2026",
+  "rounds": [
+   {
+    "name": "Mountain West Championship Game",
+    "start": "2026-12-05",
+    "end": "2026-12-05",
+    "tbd": true
+   },
+   {
+    "name": "Bowl game",
+    "start": "2026-12-13",
+    "end": "2027-01-05",
+    "tbd": true,
+    "final": true
+   }
+  ]
+ },
+ "basketball": {
+  "season": "2026–27",
+  "rounds": [
+   {
+    "name": "Big West Tournament",
+    "start": "2027-03-09",
+    "end": "2027-03-13",
+    "site": "Lee's Family Forum, Henderson",
+    "tbd": true
+   },
+   {
+    "name": "NCAA Tournament",
+    "start": "2027-03-16",
+    "end": "2027-04-05",
+    "tbd": true,
+    "final": true
+   }
+  ]
+ },
+ "volleyball": {
+  "season": "2026",
+  "rounds": [
+   {
+    "name": "NCAA Tournament, first and second rounds",
+    "start": "2026-12-03",
+    "end": "2026-12-06",
+    "tbd": true
+   },
+   {
+    "name": "Regionals",
+    "start": "2026-12-10",
+    "end": "2026-12-13",
+    "tbd": true
+   },
+   {
+    "name": "NCAA Championship",
+    "start": "2026-12-17",
+    "end": "2026-12-19",
+    "tbd": true,
+    "final": true
+   }
+  ]
+ }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Maui Events",
+  "short_name": "Maui Events",
+  "description": "What's on across Maui — the Maui Arts & Cultural Center, the ʻĪao Theater, ProArts, Da Playground, Mulligans, the Lahaina Civic Center, Haleakalā and Lānaʻi, with the Rainbow Warriors.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#141a20",
+  "theme_color": "#141a20",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

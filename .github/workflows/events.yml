@@ -1,0 +1,79 @@
+name: build & publish events
+
+on:
+  schedule:
+    - cron: '17 22 * * *'   # once a day at noon Hawaii time (22:00 UTC; Hawaii keeps no daylight time; GitHub cron is UTC, best-effort), off the sister sites' minutes — Steve, 2026-10-11
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to push the archive record to the `archive` branch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test
+        run: node --test scripts/*.test.mjs
+      - name: Fetch & aggregate events
+        env:
+          TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
+          ALLOW_NO_ARCHIVE: ${{ vars.ALLOW_NO_ARCHIVE }}   # set to 1 for the very first build only (no live feed, no archive branch yet), then delete the variable
+        run: node scripts/fetch-events.mjs
+      - name: Sitemap, robots.txt and event structured data
+        run: node scripts/seo.mjs
+      - name: Keep the archive branch (every past event ever published)
+        # The build read both copies of the archive (live feed + this branch)
+        # and wrote their union to events-archive.json; commit it here when it
+        # changed. Pushes to `archive` don't trigger this workflow (main only).
+        env:
+          REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+        run: |
+          set -e
+          dir=$(mktemp -d)
+          if ! git clone -q --depth 1 --branch archive "$REMOTE" "$dir" 2>/dev/null; then
+            echo "no archive branch yet — creating it"
+            git init -q -b archive "$dir"
+            git -C "$dir" remote add origin "$REMOTE"
+          fi
+          cp events-archive.json "$dir/"
+          cd "$dir"
+          git add events-archive.json
+          if git diff --cached --quiet; then echo "archive unchanged"; exit 0; fi
+          n=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("events-archive.json")).events.length)')
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Archive record: $n past events"
+          git push -q origin archive
+          echo "archive branch updated: $n past events"
+      - name: Stamp asset versions (cache busting)
+        run: sed -i "s/__V__/${GITHUB_SHA::12}/g" site/index.html site/advertise.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: IndexNow ping (Bing, DuckDuckGo, Yandex read it; Google does not)
+        # the key is public by design: it is served as site/<key>.txt, which is how IndexNow checks the sender owns the host
+        continue-on-error: true
+        run: |
+          site="${{ steps.deployment.outputs.page_url }}"; host="${site#https://}"; host="${host%/}"
+          curl -sS -X POST https://api.indexnow.org/indexnow -H 'Content-Type: application/json; charset=utf-8' \
+            -d "{\"host\":\"$host\",\"key\":\"fe2ea473c89f46282202fd67297ff630\",\"urlList\":[\"$site\"]}" -o /dev/null -w "indexnow $host: HTTP %{http_code}\n"

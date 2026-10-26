@@ -1,0 +1,1976 @@
+/* Lower Queen Anne Events — overcast-sky palette, marquee display type. */
+
+:root {
+  --sky: #e4e9ed;        /* overcast paper (a step down from #edf1f4, Steve 2026-10-12: "a little less glaring") */
+  --mist: #f7f9fb;       /* card surface (was pure white) */
+  --ink: #1b2733;        /* Puget ink */
+  --ink-soft: #55636f;
+  --ink-bright: #1b2733; /* the logo: pure white in the dark palette, ink here */
+  --line: #c3ccd4;
+  --gold: #e8791d;       /* Space Needle "Galaxy Gold" */
+  --gold-soft: #fbe9d8;
+  /* Color coding is muted (a step back from the pure primaries) and each
+     group keeps to its own family so a dot or stripe reads as what it is:
+     venues are cool (blue → violet → teal), event types are warm (yellow →
+     orange → red → pink). */
+  /* venue hues (chips, grid ticks, agenda tags): a sweep from teal through
+     blue and violet to magenta, neighbors alternating light and dark */
+  /* all three families sit a step back from the pure primaries: the same
+     hues, less glare, so the stripes and ticks read after the titles */
+  --v-macc: #9e2e2e; --v-iao: #9e6f2e; --v-bailey: #959e2e; --v-proarts: #669e2e; --v-mulligans: #2e9e2e; --v-playground: #2e9e8f; --v-pwf: #2e6f9e; --v-civic: #2e509e; --v-cannery: #532e9e; --v-hui: #882e9e; --v-haleakala: #9e2e8b; --v-lanai: #9e2e4a; /* the rooms, one hue each (city.js cssVar), spread round the wheel */
+  --venue-text: 72%;     /* how much of the venue hue the card's venue label keeps (light mode) */
+  --tint: 26%;           /* the venue wash behind a series card (light mode; 13% in the dark palette) */
+  --row-a: #f3f6f8; --row-b: #d6dde3; /* the list's rows alternate light and dark grey; only a series keeps its venue's hue (Steve, 2026-10-20) */
+  /* event-type hues (calendar ticks, agenda right edge): concerts salmon and
+     arts crimson keep clear of the brand orange; movies slate = "quiet" */
+  --t-concert: #d9664f;
+  --t-sports: #d4b106;
+  --t-arts: #b8303f;
+  --t-movie: #7a8a99;
+  --t-community: #d63f9c;
+  --t-expo: #2a9d8f;      /* conventions & expos: turquoise, the one hue the types didn't use */
+  --t-bar: #c28a12;       /* bar nights: amber, an ale between the sports yellow and concert salmon */
+  --alert: #e02b26;       /* cancelled / postponed notes: plain bright red */
+  --barh-base: 3.4rem;   /* the pinned filter bar's height (chips 2.25rem + padding) */
+  --titleh: 1.7rem;      /* the bar's title line (1.2rem + .5rem gap), added while scrolled */
+  --barh: var(--barh-base); /* what the sticky things below the bar offset by */
+  --rule: color-mix(in srgb, var(--line), var(--ink-soft)); /* list dividers: a step brighter than --line */
+  /* the scorebug (the live game block, .tf-bug): a light panel in this theme, the broadcast's charcoal in the dark one (Steve, 2026-10-12: the charcoal panel on the light card looked bad) */
+  --bug-bg: #f9fafb; --bug-frame: #c9d2da; --bug-ink: #1b2733; --bug-soft: #55636f; --bug-dim: #7c8894; --bug-rowline: #d5dce3; --bug-off: #b3bcc5; --bug-muted: #6b7784; --bug-score-bg: #ffffff; --bug-shadow: rgba(15, 25, 35, .10); --bug-redzone: #c8261f;
+  --bug-bw: 1px; --frame: var(--line); --frame-w: 1px; /* the game block's frame and the bug's rules: hairlines in the card's line colour here, the 2px broadcast frame in the dark theme (Steve, 2026-10-12: "soften … the borders in general") */
+  --cell-mix: 22%; --cell-ink: var(--ink); --cell-bar: 4px; --cell-shadow: none; /* the bug's team cells: a wash of the club colour with a bar of it at the left and ink type, instead of the solid cell ("soften the colors here") */
+  --tick-mix: var(--ink); --tick-pct: 65%; /* the refresh countdown ring: the club's colour mixed toward ink here, toward white on the dark ground (the mix itself is written in the .tf-refresh rule: a token holding var(--team-2) would resolve here on :root, where no club colour exists, and come out empty) */
+  --dot: color-mix(in srgb, var(--ink-soft) 40%, transparent); /* the dotted underline under the watch strip's links */
+  --display: "Big Shoulders", "Arial Narrow", sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+/* Dark palette. Applies when the system prefers dark and the visitor hasn't
+   picked Light, or whenever they've picked Dark (the toggle sets
+   data-theme on <html>; "system" leaves it unset). The two blocks must
+   stay identical — CSS has no way to give one ruleset two unrelated
+   conditions. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --sky: #141a20; --mist: #1d252e; --ink: #e8edf1; --ink-soft: #9aa7b2; --ink-bright: #ffffff;
+    --line: #333f4a; --gold: #f08a33; --gold-soft: #3a2a1a;
+    --v-macc: #ea8686; --v-iao: #eac086; --v-bailey: #e1ea86; --v-proarts: #b8ea86; --v-mulligans: #86ea86; --v-playground: #86eadc; --v-pwf: #86c0ea; --v-civic: #86a4ea; --v-cannery: #a786ea; --v-hui: #d686ea; --v-haleakala: #ea86d9; --v-lanai: #ea869f;
+    --venue-text: 100%; --tint: 13%;
+    --row-a: #1e252c; --row-b: #2c343c;
+    --t-concert: #f0806a; --t-sports: #f2d21b; --t-arts: #d63a4f;
+    --t-movie: #8b9db0; --t-community: #e660a8; --t-expo: #4fd1c5; --t-bar: #e3ad3c; --alert: #ff4b3e;
+    --bug-bg: #2b2d30; --bug-frame: #c9cdd2; --bug-ink: #f4f4f4; --bug-soft: #d5d8dc; --bug-dim: #b9bec4; --bug-rowline: #5c6167; --bug-off: #6a6d72; --bug-muted: #4a4f56; --bug-score-bg: #fafafa; --bug-shadow: rgba(0, 0, 0, .35); --bug-redzone: #ff7b7b;
+  --bug-bw: 2px; --frame: var(--ink-soft); --frame-w: 2px; --cell-mix: 100%; --cell-ink: #fff; --cell-bar: 0px; --cell-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+    --bug-bw: 2px; --frame: var(--ink-soft); --frame-w: 2px; --cell-mix: 100%; --cell-ink: #fff; --cell-bar: 0px; --cell-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+    --tick-mix: white; --tick-pct: 45%;
+    --dot: color-mix(in srgb, var(--ink-soft) 60%, transparent);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --sky: #141a20; --mist: #1d252e; --ink: #e8edf1; --ink-soft: #9aa7b2; --ink-bright: #ffffff;
+  --line: #333f4a; --gold: #f08a33; --gold-soft: #3a2a1a;
+  --v-macc: #ea8686; --v-iao: #eac086; --v-bailey: #e1ea86; --v-proarts: #b8ea86; --v-mulligans: #86ea86; --v-playground: #86eadc; --v-pwf: #86c0ea; --v-civic: #86a4ea; --v-cannery: #a786ea; --v-hui: #d686ea; --v-haleakala: #ea86d9; --v-lanai: #ea869f;
+  --venue-text: 100%; --tint: 13%;
+  --row-a: #1e252c; --row-b: #2c343c;
+  --t-concert: #f0806a; --t-sports: #f2d21b; --t-arts: #d63a4f;
+  --t-movie: #8b9db0; --t-community: #e660a8; --t-expo: #4fd1c5; --t-bar: #e3ad3c; --alert: #ff4b3e;
+  --bug-bg: #2b2d30; --bug-frame: #c9cdd2; --bug-ink: #f4f4f4; --bug-soft: #d5d8dc; --bug-dim: #b9bec4; --bug-rowline: #5c6167; --bug-off: #6a6d72; --bug-muted: #4a4f56; --bug-score-bg: #fafafa; --bug-shadow: rgba(0, 0, 0, .35); --bug-redzone: #ff7b7b;
+  --tick-mix: white; --tick-pct: 45%;
+  --dot: color-mix(in srgb, var(--ink-soft) 60%, transparent);
+}
+:root[data-theme="light"] { color-scheme: light; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: clip; } /* clip: the footer bleeds to the viewport edges */
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* the page is 62rem wide, and steps wider on big screens so event names
+   get a single line: the calendar column is fixed, so all of the extra
+   width goes to the cards (the footer line follows) */
+:root { --pagew: 62rem; }
+@media (min-width: 1180px) { :root { --pagew: 72rem; } }
+@media (min-width: 1360px) { :root { --pagew: 80rem; } }
+body {
+  /* no bottom padding: the sticky footer is the page's last thing, and any
+     padding here would show as a blank band under it once the list is short.
+     A column flex at least a viewport tall, so a short page (the Teams view
+     with one team) still puts the footer at the bottom edge */
+  display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
+  margin: 0 auto; padding: 0 1.25rem; max-width: var(--pagew);
+  background: var(--sky); color: var(--ink);
+  font: 16px/1.55 var(--body);
+}
+/* flex items refuse to shrink below their content's minimum width, so one
+   unwrappable line (a TV listing, the compact bar's title) would push a whole
+   section past a phone's edge; let them shrink like blocks */
+body > * { min-width: 0; }
+a { color: inherit; text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
+
+/* ---- masthead ---- */
+.masthead {
+  display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end;
+  justify-content: space-between; padding: 2.5rem 0 1rem;
+}
+.eyebrow {
+  font-family: var(--mono); font-size: .8rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--gold); margin: 0 0 .3rem;
+}
+h1 {
+  font-family: var(--display); font-weight: 700; font-size: clamp(2.6rem, 7vw, 4.2rem);
+  line-height: .92; text-transform: uppercase; letter-spacing: .01em; margin: 0;
+}
+.masthead-text { min-width: 0; max-width: 100%; } /* a flex item would grow to its widest line and push past a phone's edge */
+/* "More Cities" (See All until 2026-10-13, Other Places until 2026-10-18): the pill before the theme pill, to the same map (Steve, 2026-10-12); in the pinned bar the chip's text folds away and the map glyph stays */
+.masthead-tools .see-all { order: 4; display: inline-flex; align-items: center; gap: .45rem; min-height: calc(1.7rem + 8px); padding: 0 .95em; text-decoration: none; }
+.masthead-tools .see-all svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.masthead-tools .see-all:hover { border-color: var(--ink-soft); }
+.bar-title .masthead-tools .see-all { min-height: 1.7rem; padding: 0 .5em; }
+/* the mark and the name as one thing: the mark stretches to the text's
+   height (eyebrow + title) and keeps square, in the footer mark's white */
+.masthead { --mast-title: clamp(2.6rem, 7vw, 4.2rem); } /* the title's size; the eyebrow and the mark are cut from it */
+.masthead h1 { font-size: var(--mast-title); }
+/* the picture (Steve, 2026-09-21: line art, the Needle's crown the focus):
+   the top of the Space Needle from the Highsmith aerial, traced to single
+   smooth lines at build (a gradient-magnitude pass over the photo, see the
+   memory note), a 4.5:1 window from the spire tip to the Queen Anne treeline
+   with the Needle centred and the Cascades ridge behind
+   (design/lqa-masthead-lines-gen.py). The
+   drawing is a luminance mask (masthead-lines.png, white = line) over a box
+   of ink, so the lines are the palette's own ink in either theme. A band
+   behind the masthead, the Needle toward the right, dissolving into the page
+   on every side — no hard edge where the art stops (Steve, 2026-09-21) */
+.masthead { min-height: 11rem; overflow: hidden; isolation: isolate; } /* a slim band (Steve, 2026-09-20: minimal) */
+.masthead-photo { /* the drawing fills the gap between the name and the theme pill (Steve, 2026-10-05: "in all the modes try to make it fill this space"): a flex item between them, as tall as the band (the negative margins reach over the band's padding) */
+  order: 1; flex: 1 1 0; align-self: stretch; min-width: 0; z-index: -1;
+  margin: -2.5rem 0 -1rem; pointer-events: none;
+  background: #fff; opacity: .9; /* white lines on the dark palette, black on the light one (Steve: "white and black with antialiasing") */
+  -webkit-mask-image: url(masthead-lines.png), linear-gradient(to right, transparent 0%, #000 10%, #000 92%, transparent 100%), linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
+  mask-image: url(masthead-lines.png), linear-gradient(to right, transparent 0%, #000 10%, #000 92%, transparent 100%), linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
+  -webkit-mask-size: auto 100%, 100% 100%, 100% 100%; mask-size: auto 100%, 100% 100%, 100% 100%; /* the drawing at the band's height, however wide the gap: the Needle stays whole, the ridge beside it shows as far as the gap allows */
+  -webkit-mask-position: 50% 0%, 0 0, 0 0; mask-position: 50% 0%, 0 0, 0 0; /* the Needle is at the drawing's centre, so its spire is the centre of the gap at every width (Steve, 2026-10-05: "make the center the top of the needle") */
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  mask-mode: luminance, alpha, alpha;
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+}
+.masthead-tools { order: 2; }
+:root[data-theme="light"] .masthead-photo { background: #000; opacity: .7; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .masthead-photo { background: #000; opacity: .7; } }
+.masthead-text { position: relative; }
+.masthead .eyebrow { font-size: calc(var(--mast-title) * .5); font-weight: 500; letter-spacing: .14em; margin-bottom: .1rem; line-height: 1; } /* "Seattle": half the title's size (Steve, 2026-09-16: twice the quarter it was), a shade bolder */
+/* the masthead's tools (Steve, 2026-09-14): the poster chip (Teams view
+   only, see #teamPdfBtn), Add To Calendar and the theme pill at the
+   masthead's right end, bottom-aligned with the stamp line — the bar below
+   keeps its room for the switch, filters, search and the clubs */
+.masthead { position: relative; }
+.masthead-tools { display: flex; align-items: center; gap: .6rem; flex: none; margin-left: auto; }
+.sub { color: var(--ink-soft); max-width: 34rem; margin: .8rem 0 0; }
+
+.updated { /* the "Updated …" stamp: an eyebrow line under the title, spaced like the one above it */
+  margin: .3rem 0 0; min-height: 1em;
+}
+/* Solid-ink pill with the page background as its text — a dark pill in
+   light mode, a light one in dark — softened on hover (the event sheet's
+   Tickets button). */
+.btn-cal {
+  display: inline-flex; align-items: center; gap: .55em; margin: auto 0;
+  font: 600 1rem/1 var(--body); color: var(--sky); background: var(--ink);
+  border: 0; border-radius: 999px; padding: .85em 1.4em .85em 1.15em; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.btn-cal svg { width: 1.15em; height: 1.15em; flex: none; }
+.btn-cal:hover { background: var(--ink-soft); color: var(--sky); }
+/* the subscribe pop hangs from the bar's right end, the mini calendar's
+   width, its right edge on the calendar's; its top lines up with the filter
+   panel's (that one hangs .5rem under the .filter-area, whose bottom padding
+   is .6rem) */
+.pop {
+  position: absolute; right: 0; top: calc(100% + 1.1rem); z-index: 10;
+  width: min(18rem, 100%); background: var(--mist); border: 1px solid var(--line);
+  border-radius: 8px; padding: 1rem 1.1rem; box-shadow: 0 8px 28px rgba(15, 25, 35, .18);
+  font-size: .92rem;
+}
+.pop p { margin: 0 0 .6rem; }
+.pop > :last-child { margin-bottom: 0; }
+/* everything in the pop sits on one centre line: the checkbox row, the
+   three named calendar tiles, the QR / Copy Link chips, then the note */
+.pop-tiles { display: grid; grid-template-columns: repeat(3, 4.6rem); justify-content: center; gap: .6rem; margin: 0 0 .7rem; }
+.pop-tools { display: flex; justify-content: center; gap: .5rem; margin: 0 0 .9rem; }
+.pop-tools .chip { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; padding: .45em .85em; }
+.pop-tools .chip svg { width: 1rem; height: 1rem; flex: none; color: var(--gold); }
+.pop-tools .chip:hover { border-color: var(--ink-soft); }
+/* Copy Link: a check replaces the icon for a moment after copying */
+.pop-tools .chip.is-done svg { display: none; }
+.pop-tools .chip.is-done::before { content: "✓"; font-weight: 700; line-height: 1; }
+.qr-panel { text-align: center; margin-bottom: .6rem; }
+#qrImg {
+  display: inline-block; width: 170px; height: 170px;
+  background: #fff; padding: 6px; border-radius: 8px;
+}
+#qrImg svg { display: block; width: 100%; height: 100%; }
+/* a tile: the service's icon over its name */
+.tile {
+  display: grid; justify-items: center; gap: .4rem;
+  padding: .6rem .3rem .5rem; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--sky); text-decoration: none; color: var(--ink-soft);
+}
+.tile-logo { width: 2.4rem; height: 2.4rem; border-radius: 8px; object-fit: contain; }
+.tile span { font-family: var(--mono); font-size: .62rem; text-transform: uppercase; letter-spacing: .08em; line-height: 1; }
+.tile:hover { border-color: var(--ink-soft); color: var(--ink); }
+/* ---- filter bar: one row of matching chips ---- */
+/* Funnel (filters), Reset, Copy link, Add To Calendar, then the theme toggle
+   at the right end. position: relative makes the bar the box the subscribe
+   pop hangs from. */
+.filterbar {
+  display: flex; flex-wrap: nowrap; gap: .6rem; align-items: center;
+  margin: .75rem 0 0; position: relative;
+}
+.filterbar > * { flex-shrink: 0; }
+.filterbar .chip {
+  display: inline-flex; align-items: center; gap: .45rem; min-height: 2.25rem;
+  position: relative; /* for the visually-hidden labels in .is-tight */
+}
+.filterbar .chip svg { width: 1rem; height: 1rem; flex: none; }
+.filterbar .chip:not(:disabled):hover { border-color: var(--ink-soft); }
+/* the funnel's chevron is the panel's open/closed indicator. Its outline is
+   deliberately the same whether or not a filter is active — Reset lighting
+   up is the "something's filtered" signal. */
+/* The bar can't wrap. When its content wouldn't fit — app.js measures and
+   sets .is-tight — the labeled chips keep just their icons; the labels stay
+   for screen readers. */
+.filterbar.is-tight #subscribeBtn span {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.filterbar.is-tight #subscribeBtn { padding: .5em .7em; }
+.filterbar.is-tight #subscribeBtn svg { width: 1.1rem; height: 1.1rem; }
+/* the Teams chip is a switch: solid while its view is on show */
+/* the view switch: list | month | home teams, a three-stop pill like the theme's (same rules, .view-toggle) */
+.view-toggle[data-active="month"] .theme-knob { left: calc(3px + var(--tt)); }
+.view-toggle[data-active="teams"] .theme-knob { left: calc(3px + 2 * var(--tt)); }
+.view-toggle button[aria-checked="true"] { color: var(--sky); }
+/* while the Teams view is up the agenda's own controls step aside — the
+   filters, search, the Today floater, Add To Calendar and the phone's calendar chip */
+html.teams-open .search-wrap,
+html.teams-open .cal-toggle { display: none; } /* Add To Calendar stays: in Teams mode it offers the club's season feed */
+html.teams-open #calToday { display: none; }
+.cal-side:not(.is-float) .cal { margin-bottom: 1.6rem; } /* room for the TODAY tab below the docked card */
+/* the search box: a chip that takes typing, a magnifier at its right end and
+   no placeholder; it gives up width first when the row gets tight */
+.filterbar .search-wrap { position: relative; display: flex; flex: 1 1 10rem; min-width: 10rem; max-width: none; } /* the whole of the row's slack (Steve, 2026-10-24, "span the full width"; capped at 28rem from 2026-09-15 until then) */ /* takes whatever room the row has left, never less than a word's worth: the chips drop their labels first (is-tight) */
+#searchBox {
+  width: 100%; font: 500 .85rem/1 var(--body); color: var(--ink); background: var(--mist);
+  border: 1px solid var(--line); border-radius: 999px; padding: .5em 2.4em .5em .95em; min-height: 2.25rem;
+  -webkit-appearance: none; appearance: none;
+}
+#searchBox::-webkit-search-cancel-button { margin-right: .2em; }
+/* hover and focus both just brighten the edge — no orange ring on a text box */
+#searchBox:hover { border-color: var(--ink-soft); }
+#searchBox:focus, #searchBox:focus-visible { outline: none; border-color: var(--ink); }
+.search-wrap svg {
+  position: absolute; right: .85rem; top: 50%; width: 1rem; height: 1rem;
+  transform: translateY(-50%); color: var(--ink-soft); pointer-events: none;
+}
+/* Right end of the bar, left to right: Add To Calendar, the calendar chip
+   (narrow layouts only), Home Teams, then the theme pill always last (DOM
+   order keeps the chips together; flex order places them); the search box
+   grows to fill the gap before them */
+#subscribeBtn { order: 3; } /* the bar's last chip in either mode; the small icon chips (the phone's mini calendar, the season calendar) sit before it (back in the bar 2026-09-16) */
+#calToggle { order: 2; }
+#viewToggle { order: -1; } /* the view switch leads the bar in either mode (Steve, 2026-09-14) */
+/* light / dark: a two-stop pill at the bar's right end, the ink knob
+   sliding under the stop in effect (the system's side until a click) */
+.theme-toggle {
+  position: relative; display: inline-flex; order: 5;
+  padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--mist);
+}
+.theme-toggle { --tt: 2rem; cursor: pointer; } /* stop width — wider on phones for the tap target; the rim and the knob are click targets too (a press anywhere steps the pill) */
+.theme-toggle button {
+  position: relative; z-index: 1; width: var(--tt); height: 1.7rem; cursor: pointer;
+  background: none; border: 0; padding: 0; color: var(--ink-soft); border-radius: 999px;
+  display: grid; place-items: center;
+}
+.theme-toggle button svg { width: 1rem; height: 1rem; }
+.theme-toggle button[aria-checked="true"] { color: var(--sky); } /* still a click target: any stop flips */
+.theme-toggle button:not([aria-checked="true"]):hover { color: var(--ink); }
+.theme-knob {
+  position: absolute; top: 3px; left: 3px; width: var(--tt); height: calc(100% - 6px);
+  border-radius: 999px; background: var(--ink); transition: left .18s; /* ink knob, page-colored icon — like a checked box */
+}
+.theme-toggle[data-active="dark"] .theme-knob { left: calc(3px + var(--tt)); }
+.theme-toggle[data-active="system"] .theme-knob { left: calc(3px + 2 * var(--tt)); }
+@media (prefers-reduced-motion: reduce) { .theme-knob { transition: none; } }
+/* the view stops carry their words — List · Month · Teams — while the bar has room (Steve, 2026-10-24,
+   "span the full width … display text for the icons if there is space"; Kona first, every city the same day):
+   is-tight (app.js fitFilterBar / fitTeamStrip) drops them back to icons, and the ink knob is measured under
+   the lit stop by app.js placeKnob (--knob-x/--knob-w), whatever its width. After the .theme-toggle rules so
+   width: auto wins. */
+.view-toggle button { width: auto; min-width: var(--tt); padding: 0 .7rem 0 .55rem; gap: .4rem; display: inline-flex; align-items: center; justify-content: center; }
+.view-toggle .vt-label { font: 500 .8rem/1 var(--body); letter-spacing: .01em; white-space: nowrap; }
+.filterbar.is-tight .view-toggle button { padding: 0; width: var(--tt); }
+.filterbar.is-tight .vt-label { display: none; }
+.view-toggle[data-active] .theme-knob { left: var(--knob-x, 3px); width: var(--knob-w, var(--tt)); transition: left .18s, width .18s; }
+@media (prefers-reduced-motion: reduce) { .view-toggle[data-active] .theme-knob { transition: none; } }
+/* the Filter button rides at the end of the view pill, past a hairline, in every mode (Steve, 2026-10-24,
+   "for all sites, and modes combine these"): icon + word like the stops, the word going with is-tight; while
+   the panel is open it wears the ink like a knob of its own. It is not a stop: the knob never moves to it. */
+.view-toggle .vt-filter { width: auto; min-width: var(--tt); padding: 0 .7rem 0 .55rem; } /* a stop like the others — no divider (Steve, 2026-10-24: "vert lines should be consistent") */
+.filterbar.is-tight .view-toggle .vt-filter { width: auto; padding: 0 .35rem 0 .4rem; }
+.view-toggle .vt-filter[aria-expanded="true"], .view-toggle .vt-filter[aria-expanded="true"]:hover { background: var(--ink); color: var(--sky); border-radius: 999px; }
+/* the bar stays pinned at the top while the list scrolls (--barh is its
+   height — the month dividers and the calendar strip stick just below it);
+   the panel floats open under it, over the content, which stays put */
+.filter-area {
+  position: sticky; top: 0; z-index: 30; background: var(--sky);
+  padding: .55rem 0 .6rem; margin-top: .2rem;
+}
+.filter-area .filterbar { margin: 0; }
+/* the pinned bar's title: one slim line above the chips in the masthead's
+   face, shown once the masthead itself has scrolled off; --titleh is what
+   it adds to the bar, and html.is-scrolled adds that to --barh */
+.bar-title { /* one size for all three parts */
+  display: flex; align-items: baseline; gap: .9rem; white-space: nowrap;
+  font-family: var(--display); font-weight: 700; font-size: 1.1rem; line-height: 1.2rem;
+  text-transform: uppercase; letter-spacing: .02em; margin: 0 0 .5rem;
+}
+.bar-title[hidden] { display: none; } /* an author display beats the UA [hidden] rule */
+.eyebrow[hidden], .bar-eyebrow[hidden] { display: none; } /* an empty eyebrow (a city with no neighbourhood) takes no room */
+.bar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* the title gives way first */
+.bar-eyebrow { /* "Seattle" and "Updated …" in the masthead's eyebrow face */
+  flex: none; font-family: var(--mono); font-weight: 400; letter-spacing: .08em; color: var(--gold);
+}
+#barUpdated { display: none; } /* the stamp is the footer's alone (Steve, 2026-09-16) */
+html.is-scrolled { --titleh: 2.2rem; --barh: calc(var(--barh-base) + var(--titleh)); } /* the title line carries the masthead's tools while scrolled (app.js markStuck moves them): 1.7rem chips + the .5rem gap */
+/* the tools in the title line: icon-only chips a size down, the theme pill scaled to match, at the line's right end (the pop still hangs from the bar below) */
+.bar-title .masthead-tools { align-self: center; margin-left: auto; gap: .4rem; }
+.bar-title .masthead-tools .chip { min-height: 1.7rem; padding: .2em .5em; }
+.bar-title .masthead-tools .chip span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bar-title .masthead-tools .chip svg { width: 1rem; height: 1rem; }
+.bar-title .theme-toggle { zoom: .8; }
+.filter-panel {
+  position: absolute; left: 0; right: 0; top: calc(100% + .5rem); z-index: 20;
+  background: var(--mist); border: 1px solid var(--line);
+  border-radius: 10px; padding: 1rem 1.1rem;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .3);
+  max-height: calc(100vh - 8rem); max-height: calc(100dvh - 8rem); overflow-y: auto;
+}
+/* Kayak-style panel: columns of checkbox rows, Select all | Clear all links
+   per group, an "only" link on hover, and an event count on the right. */
+/* the groups sit in columns with a rule between them (a rule above, on
+   phones, where they stack) */
+.fp-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1.25rem 0; } /* wide enough that no name wraps; tablets get two columns */
+.fp-group { padding: 0 1.25rem; min-width: 0; } /* columns share the width evenly; a long name clips with an ellipsis rather than pushing the next column out of the panel (2026-10-18, the neighbourhood rows) */
+.fp-group:first-child { padding-left: 0; }
+.fp-group:last-child { padding-right: 0; }
+.fp-group + .fp-group { border-left: 1px solid var(--line); }
+@media (max-width: 640px) {
+  .fp-group { padding: 0; }
+  .fp-group + .fp-group { border-left: 0; border-top: 1px solid var(--line); padding-top: 1.1rem; }
+}
+/* top row: preset chips (the lit one matches the current state) with the
+   Sold Out and Holidays switches pushed to the right. They are switches, not
+   allow boxes like the rows below (one narrows the list, one adds days), so
+   they wear a pill-and-knob face instead of the tick box */
+.fp-switch { position: relative; display: flex; align-items: center; gap: .5rem; cursor: pointer; }
+.fp-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.sw {
+  flex: none; width: 2rem; height: 1.15rem; position: relative;
+  border: 1.5px solid var(--ink-soft); border-radius: 1rem; background: var(--mist);
+  transition: background .15s, border-color .15s;
+}
+.sw::after {
+  content: ""; position: absolute; top: .1rem; left: .1rem; width: .75rem; height: .75rem;
+  border-radius: 50%; background: var(--ink-soft); transition: transform .15s, background .15s;
+}
+.fp-switch input:checked + .sw { background: var(--ink); border-color: var(--ink); }
+.fp-switch input:checked + .sw::after { transform: translateX(.85rem); background: var(--mist); }
+.fp-switch:hover .sw { border-color: var(--ink); }
+.fp-switch input:focus-visible + .sw { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
+.fp-top { display: flex; align-items: center; gap: 1rem; padding: 0 1.25rem; margin: 0 0 1.1rem; }
+/* one row that scrolls sideways at every width, never wraps (Steve,
+   2026-09-22); a right-edge fade (.is-more-right, app.js presetEdge) says
+   more chips sit beyond the edge and lifts once scrolled to the end */
+.fp-presets { display: flex; flex-wrap: nowrap; align-items: center; gap: .4rem; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 2px 0; scroll-padding: 0 1rem; }
+.fp-presets::-webkit-scrollbar { display: none; }
+.fp-presets.is-more-right { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.6rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 2.6rem), transparent); }
+.fp-preset { flex: none; }
+.fp-soldout { margin-left: auto; white-space: nowrap; flex: none; }
+.fp-holidays { white-space: nowrap; flex: none; }
+.fp-preset { font-size: .8rem; padding: .4em .85em; min-height: 2rem; }
+.fp-preset:hover { border-color: var(--ink-soft); }
+.fp-preset.is-on { background: var(--ink); color: var(--sky); border-color: var(--ink); }
+.fp-group h3 {
+  white-space: nowrap; /* never wraps (Steve, 2026-09-22) */
+  font-family: var(--mono); font-size: .68rem; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--ink); margin: 0 0 .35rem; font-weight: 700; /* bold, ink (Steve, 2026-09-22) */
+  display: flex; align-items: baseline; gap: .6rem;
+}
+/* All · None at the heading's right end: plain words in the heading's own face, not chips */
+.fp-allnone { margin-left: auto; display: inline-flex; align-items: baseline; gap: .35rem; font-weight: 500; color: var(--ink-soft); } /* the links stay quiet next to the bold title */
+.fp-allnone i { font-style: normal; opacity: .6; }
+.fp-set { font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--ink-soft); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink-soft) 50%, transparent); text-underline-offset: 2px; }
+.fp-set:hover { color: var(--ink); text-decoration-color: currentColor; }
+.fp-list { display: flex; flex-direction: column; }
+.fp-list + h3 { margin-top: 1rem; } /* a second group stacked in the same column */
+.fp-list[hidden] + h3 { margin-top: 0; } /* a group folded away leaves the next heading level with the other columns' */
+.fp-row { display: flex; align-items: center; gap: .5rem; padding: .3rem .35rem; border-radius: 6px; }
+.fp-row:hover { background: var(--sky); }
+.fp-check { position: relative; display: flex; align-items: center; gap: .6rem; cursor: pointer; min-width: 0; }
+/* the Show | Hide pair at the row's end (Steve, 2026-09-22, third pass):
+   two small words joined into one pill. Neither lit = no preference; the
+   lit one is ink. Hide lit strikes the row's name */
+.fp-seg { flex: none; display: inline-flex; margin-left: auto; border: 1.5px solid var(--line); border-radius: 999px; background: var(--mist); overflow: hidden; }
+.fp-seg-b {
+  font: inherit; font-size: .68rem; line-height: 1; letter-spacing: .02em; color: var(--ink-soft);
+  background: none; border: 0; padding: .28rem .55rem; margin: 0; cursor: pointer;
+}
+.fp-seg-b + .fp-seg-b { border-left: 1.5px solid var(--line); }
+.fp-seg-b:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.fp-seg-b[aria-pressed="true"] { color: var(--mist); background: var(--ink); }
+.fp-seg-b:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
+.fp-check:hover .fp-name { color: var(--ink); }
+.fp-name { font-size: .88rem; display: flex; align-items: center; gap: .45rem; white-space: nowrap; min-width: 0; }
+.fp-name > * { overflow: hidden; text-overflow: ellipsis; } /* never wraps; a too-narrow column clips with an ellipsis */
+.fp-name a { text-decoration-color: var(--line); }
+.fp-name a:hover { text-decoration-color: var(--ink-soft); }
+.fp-row:has(.fp-seg[data-mode="ex"]) .fp-name { opacity: .55; } /* a hidden row reads dimmed — the colour change alone, no strike-through (Steve, 2026-10-05) */
+/* a city-wide site folds its column by neighbourhood (seattle-events, 2026-10-18): the neighbourhood's row carries a chevron that
+   opens the rooms under it, indented behind a hairline; its Show | Hide pair works every room at once */
+.fp-hood .fp-name { font-weight: 600; }
+.fp-fold { flex: none; width: 1.15rem; height: 1.15rem; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 4px; background: none; padding: 0; margin: 0 -.1rem 0 -.2rem; color: var(--ink-soft); cursor: pointer; }
+.fp-fold:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.fp-fold svg { width: .72rem; height: .72rem; transition: transform .15s; }
+.fp-fold[aria-expanded="true"] svg { transform: rotate(90deg); }
+.fp-sub { display: flex; flex-direction: column; margin: 0 0 .25rem 1rem; padding-left: .3rem; border-left: 1px solid var(--line); }
+.fp-sub[hidden] { display: none; }
+.fp-tail .fp-name { color: var(--ink-soft); font-style: italic; } /* the "More rooms" row at a group's foot: the rooms the usual view hides, folded (2026-10-18) */
+.fp-tail:has(.fp-seg[data-mode="ex"]) .fp-name { opacity: 1; } /* it is usually all-Hide; dimming it too would make it vanish */
+/* three groups — the two venue lists (Lower Queen Anne the wider), Teams
+   (Steve, 2026-09-20; Capacity rows dropped 2026-09-22) */
+@media (min-width: 641px) and (max-width: 899px) { .fp-tree .fp-cols { grid-template-columns: 1.1fr 1fr; } .fp-tree .fp-group:nth-child(3) { grid-column: 1; border-left: 0; padding-left: 0; padding-right: 1.25rem; border-top: 1px solid var(--line); padding-top: 1rem; margin-top: -.25rem; } } /* tablets: two columns, Teams under Lower Queen Anne (three squeezed the headings into wraps) */
+@media (min-width: 900px) { .fp-tree .fp-cols { grid-template-columns: 1.15fr 1fr 1fr; } .fp-tree { right: auto; width: min(100%, 58rem); } } /* three columns of about twelve rows each (Festivals under Home Teams, 2026-10-05); the panel no wider than they need — it used to run the toolbar's width and stretch the rows across it (Steve: "feel free to shrink the width of the filter pop up") */
+.fp-note { font-family: var(--mono); font-size: .66rem; color: var(--ink-soft); letter-spacing: .04em; margin-left: .35rem; } /* a band's seat range after its name */
+.chip {
+  font: 500 .85rem/1 var(--body); cursor: pointer; border-radius: 999px;
+  padding: .5em .95em; background: var(--mist); color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+/* ---- agenda layout: list + docked mini calendar ---- */
+.agenda { margin-top: 1.6rem; }
+/* the view note: one plain line above the list while the view is not the
+   usual one, the way back at its right (app.js renderViewNote) */
+.view-note { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin: 0 0 1.1rem; padding: .55rem .9rem; border: 1px solid var(--line); border-radius: 10px; background: var(--mist); font-size: .88rem; }
+.fp-group h3[hidden], .fp-list[hidden] { display: none; } /* a group with no rows in this city folds away with its heading (the flex displays above would otherwise beat [hidden]; Steve, 2026-10-11) */
+.view-note[hidden] { display: none; }
+.view-note .chip { margin-left: auto; font-size: .78rem; padding: .3em .75em; min-height: 1.9rem; }
+/* the toast: a word above the footer after hiding something from the sheet, with Undo */
+.toast { position: fixed; left: 50%; bottom: calc(3.6rem + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 1rem; padding: .6rem .6rem .6rem 1rem; border-radius: 999px; background: var(--ink); color: var(--sky); font-size: .88rem; box-shadow: 0 12px 36px rgba(0, 0, 0, .35); max-width: calc(100vw - 2rem); }
+.toast[hidden] { display: none; }
+.toast button { font: 700 .82rem/1 var(--body); color: var(--gold); background: none; border: 1px solid color-mix(in srgb, var(--sky) 35%, transparent); border-radius: 999px; padding: .45em .9em; cursor: pointer; }
+.toast button:hover { border-color: var(--sky); }
+.agenda, .teams { margin-bottom: 1.5rem; } /* the gap above the footer (its own top margin is auto) */
+.agenda-layout {
+  display: grid; grid-template-columns: minmax(0, 1fr) 18rem;
+  gap: 0 2.5rem; align-items: start;
+}
+.agenda-layout > ol { grid-column: 1; }
+.cal-side { position: sticky; top: calc(var(--barh) + .5rem); grid-column: 2; grid-row: 1; } /* same offset under the bar as the pops */
+/* the Add To Calendar pop hangs over the docked calendar (same width, same right edge)
+   and is shorter, so the calendar steps out while the pop is open */
+.cal-side:not(.is-float) .cal { transition: opacity .15s; }
+html.pop-open .cal-side:not(.is-float) .cal { opacity: 0; pointer-events: none; }
+/* Below the page's full width (62rem + padding) the calendar never docks —
+   beside the list it would squeeze the cards to a sliver — so from here
+   down it floats over the list instead. */
+@media (max-width: 1023px) {
+  .agenda-layout { display: flex; flex-direction: column; }
+  /* the grid's align-items: start carries over; the strip must span the
+     column or it shrinks to its content (it has none, so its right edge —
+     where the handle hangs — would be the left edge of the page) */
+  .cal-side { align-self: stretch; width: 100%; }
+  /* a zero-height sticky strip, first in the column, carrying the handle
+     (hanging off its right end) and the floating calendar; both ride along
+     as the list scrolls */
+  .cal-side { order: -1; height: 0; top: calc(var(--barh) + .5rem); z-index: 15; }
+  .cal-side.is-float .cal {
+    position: absolute; z-index: 14; right: 0; top: 0; /* right under the pinned bar */
+    width: min(22rem, 100%);
+    max-height: calc(100vh - 5rem); max-height: calc(100dvh - 5rem); overflow-y: auto;
+  }
+  .cal-side.is-float .cal-month { box-shadow: 0 12px 36px rgba(0, 0, 0, .3); }
+}
+
+/* ---- the Month view: the month's events, as the filters leave them, on one calendar ---- */
+html.month-open .agenda-layout, html.month-open .cal-toggle { display: none; } /* the list and its mini calendar step aside; the board is the month */
+/* ---- the month view: one continuous grid of weeks, square days (Steve, 2026-09-15) ----
+   The grid runs from this month on with no end (app.js appends months as
+   the sentinel nears the window), sized to the window: seven squares across,
+   the page scrolling down them under the pinned filter bar; the ‹ MONTH ›
+   header and the weekday row stick under the bar and name the month at the
+   top (the sticky footer stays pinned at the bottom as everywhere). A day
+   carries its events' names only, as many as fit, the rest folded into
+   "+N more" (fitBoardCells); a tap on the day opens the card listing them all. */
+.month-board[hidden] { display: none; }
+.month-board { margin: 0 auto; max-width: 100%; position: relative; } /* app.js sizeBoard sets its width: seven squares that show the whole month in the window at the top of the page, centred when that is narrower than the page */
+.mb-sticky { position: sticky; top: var(--barh); z-index: 6; background: var(--sky); padding-top: 1.9rem; } /* the room is the TODAY tab's, which rises from the header (Steve: an up tab) */
+.mb-head { position: relative; } /* the tab and, on a centred board, the vertical month name hang off it */
+/* TODAY over the month view's header: the same tab, upside down — rising from the header's top edge */
+.cal-head button.cal-today-tab { width: auto; height: auto; min-width: 0; min-height: 0; display: inline-flex; border-radius: 6px 6px 0 0; } /* not the header's arrow-button size, nor the phones' 2.75rem touch minimum */
+.cal-head button.cal-today-tab svg { width: .85rem; height: .85rem; }
+.cal-head button.cal-today-tab[hidden] { display: none; } /* the override above would otherwise beat [hidden] */
+.mb-head .cal-today-tab { top: auto; bottom: 100%; border-top: 2px solid var(--ink-soft); border-bottom: 0; border-radius: 6px 6px 0 0; padding: .24rem .7rem .3rem; box-shadow: 0 -3px 8px rgba(0, 0, 0, .25); }
+/* the board centred narrower than the page (sizeBoard's is-narrow): the months' names stand beside their blocks, so the header keeps only ‹ › */
+/* …and on a centred board the header goes altogether (Steve, 2026-09-16: "useless" — the names beside the blocks say the month and open the picker; scrolling moves the months); what stays is the sticky anchor, a hair tall, and TODAY as a chip under the filter bar while another month is at the top */
+.month-board.is-narrow .mb-head { display: none; }
+.month-board.is-narrow .mb-sticky { padding-top: 0; height: .4rem; }
+.month-board.is-narrow .mb-sticky > .cal-today-tab { top: .4rem; bottom: auto; border: 2px solid var(--ink-soft); border-radius: 6px; box-shadow: 0 3px 8px rgba(0, 0, 0, .25); } /* painted: the days scroll under it, not through the gap to the bar; the TODAY tab hangs from its foot */
+.mb-sticky .mb-head { border-bottom: 2px solid var(--ink-soft); border-radius: 10px; padding-bottom: .3rem; } /* the header on its own: the weekday row went with each month */
+.mb-wdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--mist); border: 2px solid var(--ink-soft); border-bottom: 0; border-radius: 10px 10px 0 0; font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.mb-wdays span { padding: .1rem .35rem .3rem; text-align: center; } /* centred over the column (Steve, 2026-09-16) */
+/* every month its own block (Steve, 2026-09-15): a framed grid padded to whole weeks with blank slots, a gap between months, its name standing beside it on a centred board */
+.mb-month { position: relative; margin-top: .8rem; }
+.mb-days { border: 2px solid var(--ink-soft); border-radius: 0 0 10px 10px; overflow: hidden; grid-auto-rows: auto; }
+/* the month's name: standing beside its block on a centred board; on a full-width board the pinned ‹ MONTH › bar names the month, so no heading over the block as well (it read twice — Steve's review, 2026-09-16) */
+.mb-mname { display: none; font: 700 .95rem/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--ink); background: none; border: 0; padding: .15rem .1rem .35rem; margin: 0; cursor: pointer; text-align: left; border-radius: 6px; }
+.mb-mname:hover { color: var(--ink-soft); }
+.month-board.is-narrow .mb-mname { display: block; position: absolute; right: calc(100% + .9rem); top: 50%; translate: 0 -50%; /* centred on its block (Steve, 2026-09-15) */ writing-mode: vertical-rl; transform: rotate(180deg); transform-origin: center; font: 700 var(--mname, 3rem)/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); background: none; border: 0; padding: 0; margin: 0; cursor: pointer; white-space: nowrap; border-radius: 6px; }
+.month-board.is-narrow .mb-mname:hover { color: var(--ink-soft); }
+.month-board.is-narrow .mb-mname:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.month-board.is-short .mb-days > .cal-day { aspect-ratio: auto; height: var(--cellh); } /* a full-width board that would run past the window: the days give up a little height (never under 60% of their width) so the month fits (app.js sizeBoard) */
+.mb-days > .cal-day { aspect-ratio: 1; height: auto; display: flex; flex-direction: column; align-items: stretch; gap: .15rem; padding: .3rem .3rem .35rem; cursor: pointer; }
+.mb-days > .cal-day:hover { background: color-mix(in srgb, var(--ink) 6%, var(--mist)); }
+.mb-days > .cal-day.is-today:hover { background: color-mix(in srgb, var(--ink) 26%, var(--mist)); }
+.mb-days > .cal-day.is-blank { aspect-ratio: 1; margin: 0; width: auto; cursor: default; background: color-mix(in srgb, var(--line) 35%, var(--mist)); } /* a padding slot is a cell like the rest, a shade darker */
+.mb-days > .cal-day.is-blank:hover { background: color-mix(in srgb, var(--line) 35%, var(--mist)); }
+.mb-days .num { font-size: clamp(.72rem, 1.3vw, 1rem); line-height: 1; margin-bottom: .1rem; }
+.mb-days .hol { font-size: .58rem; line-height: 1.2; color: var(--gold); letter-spacing: .06em; text-transform: uppercase; }
+.mb-days .ticks { display: none; } /* phones only (below) */
+/* an event on a day: its name only (Steve, 2026-09-15 — no times), one line in its venue's colour */
+/* no venue colours on the names (Steve, 2026-09-15, late): plain ink, a neutral wash on hover and in the day's card */
+.mb-ev { display: block; flex: none; width: 100%; text-align: left; font-family: var(--body); font-size: .7rem; line-height: 1.25; color: var(--ink); background: none; border: 0; border-radius: 4px; padding: .12rem .2rem; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.mb-ev:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.mb-ev[hidden] { display: none; }
+.mb-ev.is-off { text-decoration: line-through; opacity: .7; }
+.mb-more { flex: none; align-self: flex-start; font: inherit; font-family: var(--mono); font-size: .62rem; color: var(--ink-soft); background: none; border: 0; padding: .1rem .2rem; cursor: pointer; }
+.mb-more[hidden] { display: none; }
+.mb-more:hover { color: var(--ink); }
+.mb-days .cal-day.is-past .mb-ev { opacity: .55; }
+.mb-sentinel { height: 1px; }
+/* the day's card: opens over the tapped day (the day, grown) and lists everything on it */
+.mb-pop { position: fixed; z-index: 31; background: var(--mist); border: 2px solid var(--ink-soft); border-radius: 10px; box-shadow: 0 14px 40px rgba(0, 0, 0, .35); padding: .6rem .7rem .7rem; max-height: min(70vh, 32rem); overflow-y: auto; transform-origin: top left; animation: mb-pop-in .16s ease-out; }
+@keyframes mb-pop-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mb-pop { animation: none; } }
+@media (max-width: 640px) { .mb-pop { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 70vh; border-radius: 12px 12px 0 0; border-bottom: 0; padding-bottom: calc(.7rem + env(safe-area-inset-bottom, 0px)); transform-origin: bottom center; } } /* a sheet from the foot, like the event's (app.js openDayPop leaves the position to this) */
+.mb-pop h3 { font-family: var(--display); font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .5rem; display: flex; align-items: baseline; gap: .6rem; }
+.mb-pop h3 .mb-pop-n { font-family: var(--mono); font-weight: 400; font-size: .68rem; letter-spacing: .1em; color: var(--ink-soft); }
+.mb-pop .mb-ev { font-size: .85rem; padding: .4rem .6rem; margin-bottom: .35rem; white-space: normal; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.mb-pop .mb-ev:hover { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.mb-pop .mb-ev .mb-sub { display: block; font-family: var(--mono); font-weight: 400; font-size: .68rem; letter-spacing: .04em; color: var(--ink-soft); margin-top: .1rem; }
+.mb-pop .mb-none { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); margin: 0; }
+@media (max-width: 640px) { /* phones: the days are too small for names — they carry the venue ticks; the tap opens the same card */
+  .mb-days > .cal-day { padding: .2rem .25rem; gap: .1rem; }
+  .mb-days .hol, .mb-days .mb-ev, .mb-days .mb-more { display: none; }
+  .mb-days .ticks { display: flex; }
+}
+
+/* ---- mini month calendar: a nav bar, then one framed card per month ---- */
+.cal { display: grid; gap: 0; position: relative; } /* the header bar and the card are one piece; the TODAY tab hangs from its foot */
+/* TODAY: a tab out of the calendar's foot, the odds tab's cut (Steve, 2026-09-15) — shown only while the list has left today (app.js syncTodayFloat) */
+.cal-today-tab {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%); z-index: 4; display: inline-flex; align-items: center; gap: .35rem;
+  font: 700 .62rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: #f4f4f4; background: #2b2d30;
+  border: 2px solid var(--ink-soft); border-top: 0; border-radius: 0 0 6px 6px; padding: .28rem .7rem .24rem; cursor: pointer; zoom: 1.15; /* the frame's own colour (Steve, 2026-09-15: the borders should match) */
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .25);
+}
+.cal-today-tab svg { width: .85rem; height: .85rem; }
+.cal-today-tab:hover { background: #3a3d41; }
+.cal-today-tab[hidden] { display: none; }
+.cal[hidden] { display: none; } /* an author display beats the UA [hidden] rule */
+.cal-months { display: grid; gap: 1.1rem; grid-auto-rows: max-content; } /* rows stay card-sized even while the reel pins the box's height */
+/* when the month changes the cards move like a reel (app.js swapCal):
+   forward, the top card scrolls up and out while the new one rises in from
+   below; backward is the mirror. The box is clipped for the run. */
+.cal-month { background: var(--mist); border: 2px solid var(--ink-soft); border-radius: 10px; overflow: hidden; }
+/* ‹ MONTH › as the card's header: ‹ flush left, › flush right, the name
+   dead center, joined to the card below (Today is a floater at the lower right) */
+.cal-head {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  padding: .3rem .3rem .1rem; background: var(--mist);
+  border: 2px solid var(--ink-soft); border-bottom: 0; border-radius: 10px 10px 0 0; /* the month card's frame */
+}
+.cal-head #calNext, .cal-head #mbNext { justify-self: end; } /* ‹ flush left, › flush right on both calendars */
+.cal-head button.cal-cur { /* the month's name: a button that opens the month / year picker (outranks the bar's control rule below) */
+  font-family: var(--display); font-weight: 700; font-size: 1rem;
+  text-transform: uppercase; letter-spacing: .12em; text-align: center;
+  display: inline-block; background: none; border: 0; color: var(--ink); cursor: pointer; padding: .1rem .5rem; border-radius: 6px; width: auto; min-width: 0; height: auto; min-height: 0;
+}
+.cal-head button.cal-cur:hover { background: color-mix(in srgb, var(--ink) 10%, var(--mist)); }
+/* the month / year picker under a calendar's header (app.js openMonthPick) */
+.cal-pick { position: fixed; z-index: 30; width: 15rem; padding: .6rem; background: var(--mist); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, .3); }
+.cp-head { display: grid; grid-template-columns: 2rem 1fr 2rem; align-items: center; margin-bottom: .45rem; }
+.cp-head button { background: none; border: 0; color: var(--ink); font-size: 1.3rem; line-height: 1; cursor: pointer; border-radius: 6px; height: 1.75rem; }
+.cp-head button:disabled { opacity: .3; cursor: default; }
+.cp-head button:not(:disabled):hover { background: color-mix(in srgb, var(--ink) 10%, var(--mist)); }
+.cp-year { font-family: var(--display); font-weight: 700; font-size: 1.05rem; letter-spacing: .1em; text-align: center; }
+.cp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; }
+.cp-grid button { font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; padding: .45rem 0; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); cursor: pointer; }
+.cp-grid button:disabled { opacity: .3; cursor: default; }
+.cp-grid button:not(:disabled):hover { border-color: var(--ink-soft); }
+.cp-grid button.is-on { background: var(--ink); color: var(--sky); border-color: var(--ink); }
+.cal-head button { /* flat controls inside the bar */
+  display: inline-grid; place-items: center; width: 2rem; height: 1.75rem; cursor: pointer;
+  background: none; color: var(--ink); border: 0; border-radius: 6px;
+  transition: background .15s, transform .1s;
+}
+.cal-head button svg { width: 1rem; height: 1rem; }
+.cal-head button:disabled { opacity: .3; cursor: default; }
+.cal-head button:not(:disabled):hover { background: color-mix(in srgb, var(--ink) 10%, var(--mist)); }
+.cal-head button:not(:disabled):active { transform: translateY(1px); }
+.cal-month { border-radius: 0 0 10px 10px; }
+.cal-mname { display: none; } /* the header carries the name */
+/* floating over the list on a small screen the pair's outline is a touch
+   brighter than the docked hairline, being over content */
+.cal-side.is-float .cal-head, .cal-side.is-float .cal-month { border-color: color-mix(in srgb, var(--ink) 40%, var(--ink-soft)); }
+/* each card: its name across the top in the display face, over a hairline
+   where the weekday row used to be, then only its own days (the grid is
+   padded to whole weeks with blank cells, never with the neighbor months'
+   dates; the columns run Sunday to Saturday)  */
+.cal-mname { padding: .45rem .6rem .3rem; border-bottom: 1px solid var(--line); font-size: .95rem; letter-spacing: .12em; }
+.cal-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); } /* minmax(0, …): a day's row of ticks can't widen its column, so the seven fit a 320px phone (the ticks wrap under) */
+.cal-days > * {
+  aspect-ratio: 1; padding: .2rem .25rem; /* square cells */
+  font-family: var(--mono); font-size: .68rem; text-align: left; vertical-align: top;
+}
+/* The hairlines are the 1px gaps of the grid showing the container's line
+   color through — so every horizontal and vertical line is one continuous
+   stroke on the same pixel row/column. Each real day is an opaque cell, so
+   it comes out boxed on all four sides. The padding slots before the 1st
+   and after the last day are opaque too and stretch one pixel into the gap
+   beside them (leading ones to the left, trailing ones to the right and
+   down) so no lines are drawn between padding slots — only where they meet
+   a day, plus the rule under the month's name, which runs the full width. */
+/* a day: the number top-left (a button centres its content otherwise, so a
+   day with two rows of ticks lifted its number), the ticks under it as a
+   centred block of at most four a row (Steve, 2026-09-15) */
+.cal-day { background: var(--mist); border: 0; color: var(--ink); display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; width: 100%; min-width: 0; overflow: hidden; }
+.cal-day.is-blank { width: auto; aspect-ratio: auto; margin: 0 0 0 -1px; } /* stretches with its margins; the row's height comes from its days */
+.cal-day:not(.is-blank) ~ .cal-day.is-blank { margin: 0 -1px -1px 0; }
+button.cal-day { cursor: pointer; }
+/* inset ring rather than a border so the cell doesn't shift; the fill is a
+   touch of ink over the card (lighter in dark mode, darker in light), so
+   it reads in both themes */
+button.cal-day:hover { background: color-mix(in srgb, var(--ink) 10%, var(--mist)); box-shadow: inset 0 0 0 1px var(--ink-soft); }
+.cal-day .num { display: block; font-size: .88rem; line-height: 1; text-align: left; }
+/* today: the hover treatment, a touch brighter, held */
+.cal-day.is-today { background: color-mix(in srgb, var(--ink) 20%, var(--mist)); box-shadow: inset 0 0 0 1px var(--ink); }
+.cal-day.is-today .num { font-weight: 700; }
+/* three round dots at most, centred, then a "+" for the rest — the row sits at the cell's foot, the + the dots' own height and on their line (Steve, 2026-09-15 / 16) */
+.ticks { display: flex; justify-content: center; align-items: center; gap: 2px; margin: auto auto 0; padding-top: .3rem; height: .32rem; box-sizing: content-box; }
+.ticks i { width: .32rem; height: .32rem; border-radius: 50%; background: var(--dot, var(--ink-soft)); flex: none; }
+.ticks .tick-more { display: block; width: .32rem; height: .32rem; margin-left: 1px; flex: none; color: var(--ink-soft); background: linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat, linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat; font-size: 0; }
+/* past days go grey: the number in the soft ink, the venue ticks washed
+   out — still tinted enough to tell venues apart, just clearly behind us */
+.cal-day.is-past { color: var(--ink-soft); }
+.cal-day.is-past .ticks i { filter: saturate(.4); opacity: .6; }
+
+/* ---- agenda ---- */
+.agenda ol { list-style: none; margin: 0; padding: 0; }
+.agenda .empty { color: var(--ink-soft); }
+/* dividers: a name centered between two rules, in the masthead's stamp type
+   (see .updated) a size down. The month one is stuck to the top of the
+   viewport while its month scrolls by (the next month's slides over it);
+   holiday ones just scroll past. */
+/* the name sits on a rule that fades out toward both edges (the rule is the
+   row's background; the name's own background knocks it out behind the text) */
+.month-row, .holiday-row {
+  position: relative; display: flex; justify-content: center; align-items: center; gap: .6rem; flex-wrap: wrap;
+  padding: .6rem 0 .45rem;
+  font-family: var(--display); font-weight: 700; font-size: 1.2rem; line-height: 1;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--ink);
+  /* opaque above the rule, fading out below it: while stuck, the rows
+     scroll on under the lower half and dissolve as they near the line, so
+     they never run into the oval that hangs below it */
+  background: linear-gradient(var(--sky) 50%, transparent);
+}
+/* the rule itself: a 1px layer at the row's center, above the shadow. A
+   month's warms to the brand orange at the middle like the footer's edge;
+   a holiday's stays the plain list rule */
+.month-row::before, .holiday-row::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--rule) 15%, var(--rule) 85%, transparent);
+}
+.month-row::before { background: linear-gradient(90deg, transparent, var(--line) 15%, var(--gold) 50%, var(--line) 85%, transparent); }
+.month-row > span, .holiday-row > span { position: relative; z-index: 1; background: var(--sky); padding: 0 .9rem; }
+/* the label sits in an oval the rule runs into: the same 1px line as the
+   rule, bent around the name (months and holidays alike) */
+.month-row > span, .holiday-row > span {
+  border: 1px solid var(--rule); border-radius: 999px; padding: .4em 1.1em .3em;
+  background: color-mix(in srgb, var(--rule) 15%, var(--sky)); /* a whisper above the page, well clear of the outline */
+}
+.month-row > span:not(.hol-pill) { border-color: var(--gold); } /* the month oval takes the orange its rule arrives in */
+.holiday-row > span, .month-row > .hol-pill { display: inline-flex; align-items: center; gap: .5rem; }
+/* a holiday is a flag, not another divider: a solid orange pill, ink type,
+   on the same orange-centred rule as a month's */
+.holiday-row::before { background: linear-gradient(90deg, transparent, var(--line) 15%, var(--gold) 50%, var(--line) 85%, transparent); }
+.holiday-row > span, .month-row > .hol-pill { background: var(--gold); border-color: var(--gold); color: #1b2733; }
+/* a holiday sharing the month's row: its own pill beside the month's, a
+   size down like a holiday row, gone while the month is stuck up top */
+.month-row > .hol-pill { font-size: 1.05rem; }
+.month-row.is-stuck > .hol-pill { display: none; }
+/* a month with only holidays: the month oval ends on the page's centre line,
+   every month's the same, and its holidays stack to the right of it — so the
+   months line up down the page instead of drifting with the pills beside them */
+.month-row.has-hol:not(.is-stuck) { display: grid; grid-template-columns: 11.5rem minmax(0, 1fr); gap: .4rem .6rem; align-items: center; } /* a fixed month column from the left: the ovals line up on its edge and the pills get the rest of the row, no empty half on the left */
+@media (max-width: 640px) { .month-row.has-hol:not(.is-stuck) { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); } }
+.month-row.has-hol:not(.is-stuck) > span:not(.hol-pill) { grid-column: 1; grid-row: 1 / span var(--hols, 1); justify-self: end; align-self: center; } /* centred on the pills' rows: no more rows than pills, or the gaps of empty rows would pull it down */
+.month-row.has-hol:not(.is-stuck) > .hol-pill { grid-column: 2; justify-self: start; }
+.month-row { position: sticky; top: var(--barh); z-index: 5; }
+.month-group { display: block; } /* one per month: the sticky divider's bounds, so the next month pushes it out */
+.holiday-row { font-size: 1.05rem; }
+.month-row + .day-row, .holiday-row + .day-row { background: none; }
+/* the rule between days fades out toward both edges */
+.day-row {
+  display: grid; grid-template-columns: 5.2rem 1fr; gap: 1rem;
+  padding: 1rem 0;
+  scroll-margin-top: calc(var(--barh) + .5rem); /* a jumped-to day lands under the pinned bar, not behind it */
+  background: linear-gradient(90deg, transparent, var(--rule) 15%, var(--rule) 85%, transparent) top / 100% 1px no-repeat;
+}
+.day-row.is-past { opacity: .5; }
+/* ---- series: "n of N" under the time, and a git-style graph in a gutter
+   right of the cards (one lane per concurrent series, --gutter set by
+   app.js) whose lines, in the mini calendar's border colour, curve into
+   each card's right edge ---- */
+.agenda-layout.has-series .day-row { grid-template-columns: 5.2rem 1fr var(--gutter); }
+/* clip: a series line continuing from the previous page starts at the very
+   top edge, and its round cap would otherwise poke out above the list */
+#agenda { position: relative; overflow: clip; }
+.series-graph { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+/* a hairline in the calendar's border colour; at each join a faint
+   mirrored pair carries the curves on into the card */
+.sg-line { fill: none; stroke-width: 1.5; stroke-opacity: .85; stroke-linecap: round; pointer-events: stroke; }
+.sg-trunk { stroke: var(--ink-soft); pointer-events: none; } /* a merged lane's shared line */
+.series-n { position: absolute; right: .55em; bottom: .45em; font: .68rem/1 var(--mono); color: var(--ink-soft); letter-spacing: .04em; white-space: nowrap; } /* "1 of 2" at the card's lower right (Steve, 2026-09-22) */
+.ev:has(.team-mark) .series-n { right: calc(2.9rem + .75rem + .6rem); } /* clear of the crest */
+.ev:has(.series-n) { padding-bottom: 1.15em; } /* room under the last line for the marker */
+@media (max-width: 640px) { .series-graph { display: none; } }
+/* the day's number and weekday sit centred on the day's FIRST event (Steve,
+   2026-09-15): app.js alignRails gives the rail that row's height, and the
+   rail centres its two lines in it */
+.date-rail { text-align: center; align-self: start; display: flex; flex-direction: column; justify-content: center; gap: .1rem; } /* the same line metrics as the clock (.t-clock), so the two centre on one midpoint */
+.date-rail .dnum {
+  font-family: var(--display); font-weight: 700; font-size: 2.6rem; line-height: 1; display: block;
+}
+.date-rail .dmeta {
+  font-family: var(--mono); font-size: .7rem; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--ink-soft); line-height: 1; /* "WEDNESDAY" fits the rail; line-height 1 like the clock's PM */
+}
+.day-events { display: grid; gap: .6rem; align-content: start; }
+.agenda .day-events > .ev { background: var(--row-a); } /* the list only: the Teams schedule keeps its home-game wash */
+.agenda .day-events > .ev:nth-child(even) { background: var(--row-b); }
+/* a series row carries a whisper of its venue's color (set inline by app.js); the rest are the greys above */
+.ev { display: flex; gap: .8rem; align-items: flex-start; padding: .45em .55em; border-radius: 6px; position: relative; overflow: hidden; }
+.ev-body { display: flex; flex-direction: column; align-items: flex-start; gap: .18rem; min-width: 0; }
+.ev-title { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+/* home games carry the team crest as a monochrome watermark at the row's
+   right — grayscale in light mode, inverted to white-on-dark in dark mode */
+/* a row with a mark keeps its text clear of it — the title wraps rather than
+   running underneath (mark width + its inset + a little breathing room) */
+.ev:has(.team-mark) { padding-right: calc(2.9rem + .75rem + .6rem); }
+.team-mark {
+  position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
+  width: 2.9rem; height: 2.9rem; object-fit: contain;
+  opacity: .7; pointer-events: none;
+  filter: grayscale(1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .team-mark { filter: grayscale(1) invert(1) brightness(1.35); }
+}
+:root[data-theme="dark"] .team-mark { filter: grayscale(1) invert(1) brightness(1.35); }
+/* a bar's supplied logo (site/marks/) keeps its own look in both themes —
+   no grayscale, no inversion. Full strength: the Goat's is gold line art on
+   a near-black disc, and on a dark card only the lines show, so dark mode
+   also lifts its brightness to keep the gold legible. */
+:root .team-mark.venue-mark { filter: none; opacity: 1; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .team-mark.venue-mark { filter: brightness(1.5) saturate(1.15); }
+}
+:root[data-theme="dark"] .team-mark.venue-mark { filter: brightness(1.5) saturate(1.15); }
+.ev a { font-weight: 600; text-decoration-color: var(--line); }
+.ev a:hover { text-decoration-color: var(--ink-soft); }
+.ev .time { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); min-width: 5.5rem; padding-top: .15em; display: flex; flex-direction: column; gap: .1rem; }
+/* all-day rows lead their day; the clock face reads ALL over DAY (app.js
+   clockCell, Steve 2026-10-14 — the word "all day" in soft ink before) */
+.ev.is-allday .time { color: var(--ink); font-weight: 500; }
+.ev .venue {
+  font-family: var(--mono); font-size: 1rem; font-weight: 700; text-transform: uppercase;
+  /* the venue's hue, pulled toward the ink in light mode so small text on
+     white keeps its contrast (--venue-text is 100% in the dark palette) */
+  letter-spacing: .06em; color: color-mix(in srgb, var(--dot, var(--ink-soft)) var(--venue-text), var(--ink));
+}
+/* the venue link keeps the label's look — .ev a above is for the title */
+.ev .venue a { font-weight: inherit; text-decoration-color: var(--line); }
+.ev .venue a:hover { text-decoration-color: var(--ink-soft); }
+
+/* ---- status badges: "date tbd", "cancelled" / "postponed" ---- */
+.badge {
+  font-family: var(--mono); font-size: .62rem; text-transform: uppercase;
+  letter-spacing: .08em; border-radius: 3px; padding: .18em .5em;
+  border: 1px solid currentColor; align-self: center; white-space: nowrap;
+}
+.b-tbd { color: var(--ink-soft); border-style: dashed; }
+/* a cancelled or postponed show stays in its slot, struck through and dimmed,
+   with a third line: "Cancelled Sep 5" */
+.ev.is-off .ev-title a, .ev.is-off .venue { text-decoration: line-through; color: var(--ink-soft); }
+.ev.is-off .time, .ev.is-off .team-mark { opacity: .55; }
+.ev-note { font-family: var(--mono); font-size: .76rem; letter-spacing: .04em; color: var(--alert); font-weight: 700; }
+/* Ticketmaster inventory: a third line, "272 of 18,100 tickets left · 614
+   resale · from $25". A sold-out or nearly-sold-out card is framed in the
+   alert red (an inset shadow, so nothing shifts) and wears a small tab out
+   of its foot saying which — the ODDS tab's cut (Steve, 2026-09-15); room
+   for it below, and the card lets it show */
+.ev-tix { font-family: var(--mono); font-size: .72rem; letter-spacing: .02em; color: var(--ink-soft); }
+/* the frame is a pseudo-element with a z-index so it paints OVER the series
+   connectors (the .series-graph svg comes after the rows); the ink colour —
+   white on the dark theme, like the odds bug's frame — not the alert red
+   (Steve, 2026-09-15) */
+.ev.is-soldout { overflow: visible; margin-bottom: .95rem; }
+.ev.is-soldout::before { content: ""; position: absolute; inset: 0; border: 1.5px solid var(--ink); border-radius: 6px; pointer-events: none; z-index: 1; }
+.ev.is-soldout::after {
+  content: attr(data-tab); position: absolute; top: 100%; left: 1rem; z-index: 1;
+  font: 700 .6rem/1 var(--mono); letter-spacing: .14em; color: #f4f4f4; background: #2b2d30;
+  border: 1.5px solid #c9cdd2; border-top: 0; border-radius: 0 0 6px 6px; padding: .24rem .6rem .2rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .25); pointer-events: none;
+}
+.sheet-tix { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); margin: -.4rem 0 .6rem; }
+/* a festival day's set times (the Block Party): on the card a mono line per
+   stage, the stage's name in ink, the acts in order with their starts; in
+   the sheet the stage over its sets with start and end, the grid scrolling
+   inside the sheet past a screen's worth */
+.ev-stage { font-family: var(--mono); font-size: .74rem; letter-spacing: .03em; color: var(--ink-soft); } /* a festival set's stage, or the day's count of them */
+.sheet-sets-wrap { max-height: 40vh; max-height: 40dvh; overflow: auto; margin: -.4rem 0 .9rem; padding-right: .3rem; }
+.sheet-sets .ss-stage { margin: .55rem 0 .15rem; font: 700 .72rem/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
+.sheet-sets .ss-stage:first-child { margin-top: 0; }
+.sheet-sets ul { list-style: none; margin: 0; padding: 0; }
+.sheet-sets li { display: flex; gap: .6rem; font-size: .86rem; line-height: 1.45; color: var(--ink); }
+.sheet-sets .ss-time { flex: none; width: 6.2em; font-family: var(--mono); font-size: .74rem; line-height: inherit; color: var(--ink-soft); white-space: nowrap; }
+/* notes in the masthead's stamp type (see .updated), small */
+.pop-note {
+  font-family: var(--display); font-weight: 700; font-size: .76rem; line-height: 1.35;
+  text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--ink) 70%, var(--ink-soft));
+  text-align: center; text-wrap: balance;
+}
+.pop-filter { display: flex; justify-content: center; gap: .5em; align-items: center; cursor: pointer; font-weight: 600; font-size: .88rem; margin: 0 0 .8rem; }
+.pop-filter input { accent-color: var(--ink); }
+.pop-filter[hidden] { display: none; } /* an author display beats the hidden attribute: say it outright (Teams mode has no filter to include) */
+
+/* ---- share / embed: a <details> in the footer that opens UPWARD, its body
+   floating over the list ---- */
+.share summary {
+  list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: .4rem;
+  font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--ink); padding: .2rem 0;
+}
+.share summary::-webkit-details-marker { display: none; }
+.share summary:hover { color: var(--ink-soft); }
+.share summary .chev { width: .85rem; height: .85rem; transition: transform .15s; } /* up = opens upward */
+.share summary .plug { width: 1.05rem; height: 1.05rem; }
+.share[open] summary .chev { transform: rotate(180deg); }
+/* one column, the mini calendar's width, hanging from the right end */
+.share-body {
+  position: absolute; right: 0; bottom: calc(100% + .5rem); z-index: 25;
+  width: min(18rem, 100%);
+  background: var(--mist); border: 1px solid var(--line); border-radius: 10px;
+  padding: 1.1rem 1.25rem; text-align: left; white-space: normal; /* .foot-inner is nowrap */
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, .3);
+  max-height: calc(100vh - 8rem); max-height: calc(100dvh - 8rem); overflow-y: auto;
+}
+.share-body .share-cols { grid-template-columns: 1fr; gap: 1.25rem; }
+.share-body .share-cols > div { min-width: 0; } /* let the long code line scroll instead of widening the column */
+.share .chip { display: inline-flex; align-items: center; gap: .45rem; min-height: 2.25rem; }
+.share .chip svg { width: 1rem; height: 1rem; flex: none; }
+.share .chip:hover { border-color: var(--ink-soft); }
+#copyFilterLabel { transition: opacity .4s; }
+#copyFilterLabel.is-fading { opacity: 0; }
+.share-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1.5rem; }
+.share h3 { font-size: 1.05rem; margin: 0 0 .4rem; }
+.share p { color: var(--ink-soft); margin: 0 0 .7rem; }
+.share pre {
+  background: var(--ink); color: var(--sky); border-radius: 8px;
+  padding: .9rem 1rem; overflow-x: auto; font-family: var(--mono); font-size: .78rem;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .share pre { background: var(--mist); color: var(--ink); border: 1px solid var(--line); } }
+:root[data-theme="dark"] .share pre { background: var(--mist); color: var(--ink); border: 1px solid var(--line); }
+.share code { font-family: var(--mono); }
+.feed-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .4rem; }
+.feed-list code { background: var(--mist); border: 1px solid var(--line); border-radius: 4px; padding: .15em .45em; font-size: .82rem; }
+
+/* pinned to the bottom edge and bleeding to the viewport's sides (negative
+   margins undo the body's column), the list scrolling behind it; the content
+   inside stays in the page column. Row one: credit left, "Put this on your
+   site" right. Row two: the sources, a sentence per line, centered. */
+footer {
+  position: sticky; bottom: 0; z-index: 12; background: var(--sky);
+  margin: auto calc(50% - 50vw) 0; /* auto: pushed to the bottom of a short page (the sections keep the 1.5rem gap) */
+  padding: .6rem 1.25rem calc(.6rem + env(safe-area-inset-bottom));
+}
+/* no fade above the footer (Steve, 2026-09-10: the list and the season
+   calendar show whole right down to the edge); the edge itself is a hairline
+   that warms to the brand orange at the center and cools to --line at the sides */
+footer::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, var(--line), var(--gold) 50%, var(--line));
+}
+/* Two floaters centred just above the pinned footer (its box, so they never
+   cover the credit or Sources), under the footer's own upward pops. They
+   are bar chips: mist, hairline, no shadow. Today shows only while the list
+   has left today (past days open, another month, or scrolled away from the
+   nearest day); Top once the masthead has scrolled off — app.js toggles
+   hidden on both, and a hidden one takes no room so the other stays
+   centred. Narrow screens drop the labels, leaving the icons. */
+.floaters {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + .9rem); z-index: 5;
+  display: flex; justify-content: center; gap: .6rem; pointer-events: none;
+}
+.floaters .chip {
+  pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+  height: 2.25rem; padding: 0 .95em 0 .8em;
+}
+.floaters .chip svg { width: 1rem; height: 1rem; flex: none; }
+.floaters .chip:hover { border-color: var(--ink-soft); }
+.floaters .chip:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 3px; }
+.floaters .chip[hidden] { display: none; } /* the class rule above would otherwise beat the UA's [hidden] */
+@media (max-width: 640px) {
+  .floaters .chip span { display: none; }
+  .floaters .chip { width: 2.25rem; padding: 0; border-radius: 50%; }
+}
+/* one line: Ghostwood Labs at the left, Embed then Sources at the right.
+   app.js sets .is-tight (labels off Embed/Sources) and .is-tighter (credit
+   down to its mark) when the line wouldn't fit. */
+.foot-inner {
+  position: relative; max-width: calc(var(--pagew) - 2.5rem); margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-around; gap: 1.2rem; white-space: nowrap;
+}
+/* two things across, one at each end — the credit and the links (the Updated
+   stamp that sat dead centre between them was removed 2026-10-05, Steve) */
+@media (min-width: 641px) {
+  .foot-inner { display: grid; grid-template-columns: auto auto; justify-content: space-between; }
+}
+footer p { color: var(--ink-soft); font-size: .72rem; margin: 0; }
+.gw { display: flex; align-items: center; gap: .7rem; }
+.gw-logo { width: 32px; height: 32px; color: var(--ink-bright); flex: none; } /* pure white on dark */
+footer .gw-credit { font-size: .9rem; letter-spacing: .1em; line-height: 1; } /* same size as Sources / Embed */
+/* the credit, then the links (space-around on phones; Steve, 2026-09-15) */
+footer .gw { order: 1; }
+footer .foot-links { order: 3; display: flex; align-items: center; gap: 1.2rem; }
+footer .foot-link { order: 1; } /* Advertise, Embed, Sources */
+footer #embed { order: 2; }
+footer .share.info { order: 3; position: relative; }
+/* the Advertise link: dressed as the Sources / Embed labels, after them */
+footer .foot-link { position: relative; top: -.5px; display: inline-flex; align-items: center; gap: .4rem; /* measured half a pixel under its neighbours' labels (Steve, 2026-09-15) */ font-family: var(--mono); font-size: .9rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); text-decoration: none; padding: .2rem 0; white-space: nowrap; }
+footer .foot-link:hover { color: var(--ink-soft); }
+/* Advertise, Embed, Sources: one type, one colour; their icons one size, white on dark (Steve, 2026-09-15) */
+footer .foot-link, footer .share summary { font-family: var(--mono); font-size: .9rem; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+footer .foot-link svg, footer .share summary svg:not(.chev) { width: 1.1rem; height: 1.1rem; color: var(--ink-bright); }
+footer .share summary .chev { color: var(--ink-bright); }
+.foot-inner.is-tight .foot-link span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* the advertising page (advertise.html): a short column of prose under the masthead */
+.ad-page { max-width: 40rem; margin: 0 auto 4rem; padding: 0 1.25rem; }
+.ad-page h2 { font: 700 1.3rem/1.2 var(--body); margin: 1.6rem 0 .5rem; }
+.ad-page p, .ad-page li { color: var(--ink-soft); line-height: 1.55; }
+.ad-page ul { padding-left: 1.2rem; }
+.ad-page .ad-lead { font-size: 1.1rem; color: var(--ink); }
+.ad-page .ad-back { display: inline-block; margin-top: 2rem; font-family: var(--mono); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
+footer .info summary svg { width: 1.1rem; height: 1.1rem; }
+.info-body { width: min(18rem, 90vw); text-align: left; } /* the Embed panel's width; its own details box is only as wide as its label */
+.info-body h3 { font-size: 1.05rem; margin: 0 0 .4rem; }
+.info-body p { color: var(--ink-soft); margin: 0 0 .5rem; }
+footer .share summary { font-size: .9rem; white-space: nowrap; }
+.foot-inner.is-tight .share summary span, .foot-inner.is-tighter .gw-credit {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.gw-credit {
+  font-family: var(--mono); font-size: .9rem; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--ink); white-space: nowrap; margin: 0;
+}
+.gw-credit strong { font-weight: 500; color: var(--gold); }
+a.gw { text-decoration: none; color: inherit; } /* the mark and the credit are one link to ghostwoodlabs.com, in a new tab (2026-10-05); bare like the other footer links */
+a.gw:hover .gw-credit strong { color: var(--ink-bright); }
+
+/* ---- the Teams view: the home teams' seasons, home and away ---- */
+.teams { width: 100%; margin: 1.6rem auto 0; } /* width: as a body flex item, auto margins would shrink it to its content and it would shift per team */
+/* list or calendar, one at a time, each the full width (the bar's
+   Calendar chip switches; app.js sets .is-cal on the section) */
+.teams.is-cal .team-main { display: none; }
+.team-cal[hidden] { display: none; }
+/* the season's months as cards filling the page, poster-style */
+.team-cal { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; align-items: start; } /* two across, always (app.js pads week rows per pair) */
+@media (max-width: 640px) { .team-cal { gap: .7rem; } }
+/* the form block across the top of the calendar: crest, record and standing
+   in the club's colours, then a line or two on where the season stands */
+/* between seasons, in place of the empty list: the season past in numbers and the next one's outlook */
+.season-next { margin: .6rem 0 0; padding: 1rem 1.2rem 1.1rem; border: 1px solid var(--line); border-radius: 10px; background: var(--mist); }
+.season-next .sn-title { margin: 0 0 .5rem; font-family: var(--display); font-size: 1.2rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--team-2); }
+.season-next .sn-blurb { margin: 0 0 .7rem; font-size: .95rem; line-height: 1.5; color: var(--ink); max-width: 70ch; }
+.season-next .sn-facts p { margin: .3rem 0 0; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+.season-next .sn-facts b { font-weight: 700; color: var(--ink); }
+.season-next .sn-soft { color: color-mix(in srgb, var(--ink-soft) 70%, transparent); }
+#teamHead { margin-bottom: 1.1rem; }
+#teamHead.is-multi { display: grid; gap: .7rem; } /* several clubs picked: a block each, stacked */
+#teamHead.is-compact.is-multi .team-form:not(:first-child) { display: none; } /* pinned under the bar there is room for one */
+/* the poster chooser under the PDF chip, with several clubs picked */
+.pdf-pick { position: fixed; z-index: 30; display: flex; flex-direction: column; align-items: stretch; gap: .4rem; width: 12rem; padding: .6rem .7rem; background: var(--mist); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, .3); } /* a column, its left edge on the chip's (Steve, 2026-09-15) */
+.pdf-pick-label { font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); margin-bottom: .1rem; }
+.pdf-pick .chip { display: flex; align-items: center; justify-content: flex-start; gap: .45rem; }
+.pdf-pick .chip img { width: 18px; height: 18px; object-fit: contain; }
+/* Teams mode: the block close under the chips (the masthead's own spacing is the same in both views, so the bar never moves between them) */
+html.teams-open #teamsView { margin-top: .5rem; }
+#teamHead:empty { display: none; }
+.team-form {
+  display: flex; align-items: center; gap: 1.1rem;
+  padding: .85rem 1.1rem; border: var(--frame-w, 2px) solid var(--frame, var(--ink-soft)); border-radius: 10px; background: var(--mist);
+}
+.team-form { --crest: 9.5rem; } /* the crest sets the block's height: nothing beside it may run taller */
+/* pinned under the bar while the season scrolls by — and compact while it
+   is (app.js markStuck sets .is-compact once the page has scrolled past the
+   block's spot, and --head-h so the opponent bar and the month rows pin
+   below it): the crests small, the record or the score on one line, the
+   lines, the watch list and the news folded away */
+#teamHead { position: relative; padding-top: .5rem; background: var(--sky); z-index: 6; will-change: transform; }
+#teamHead.is-compact { position: sticky; top: var(--barh); } /* the whole block scrolls off with the page; the compact bar is what pins (app.js markStuck) */ /* the gap under the bar is the block's own padding, painted, so nothing scrolling under it shows through (seen 2026-09-13: the month pill peeking above the compact bar) */ /* its own layer: the crests' shadows are not repainted as the list scrolls under it */
+#teamHead.is-compact .team-form.is-live { flex-wrap: nowrap; } /* one row, whatever the run between the crests holds */
+/* the block changes height in place — the news unfolds, the pinned block
+   goes compact and back — and the browser's scroll anchoring would answer
+   each change by moving the page to keep whatever it had picked as the
+   anchor still: with the block pinned that lands the list hundreds of
+   pixels down and pins it compact (seen 2026-09-11). Nothing on the page
+   loads late above the fold, so the anchoring is not missed. */
+html { overflow-anchor: none; }
+.team-form.is-wait { min-height: 15.9rem; border-color: transparent; background: transparent; box-shadow: none; } /* the block's frame, empty, while the first scoreboard poll is out (app.js teamBlock): the page keeps its shape instead of drawing the season card, then the news, then the highlights */
+@media (max-width: 640px) { .team-form.is-wait { min-height: 22rem; } }
+#teamHead.is-compact .team-form { box-shadow: 0 8px 28px rgba(15, 25, 35, .18); }
+#teamHead.is-compact .team-form { --crest: 2.6rem; align-items: center; justify-content: center; gap: .7rem; padding: .4rem .9rem; }
+#teamHead.is-compact .tf-wiki, #teamHead.is-compact .tf-refresh-wrap, #teamHead.is-compact .tf-lines > * { display: none; }
+#teamHead.is-compact .is-live .tf-lines > .tf-state, #teamHead.is-compact .team-form.is-pre:not(.is-live) .tf-lines > p:first-child { display: block; margin: 0; } /* one line stays: the first pitch, or the opener */
+#teamHead.is-compact .tf-body, #teamHead.is-compact .tf-inner { display: flex; align-items: center; gap: .8rem; width: auto; min-width: 0; }
+#teamHead.is-compact .tf-head { flex-wrap: nowrap; gap: .3rem .6rem; white-space: nowrap; }
+#teamHead.is-compact .tf-record, #teamHead.is-compact .tf-score { font-size: 1.3rem; }
+#teamHead.is-compact .tf-standing, #teamHead.is-compact .tf-title { font-size: .85rem; }
+#teamHead.is-compact .tf-live { font-size: .65rem; padding: .2em .5em; }
+#teamHead.is-compact .tf-live::before { width: .4rem; height: .4rem; }
+#teamHead.is-compact .team-form.is-live { align-items: center; }
+/* the compact game bar uses the whole width: the crests at the block's ends, the score, the venue and the scorebug spread between them, the refresh control at the right end */
+#teamHead.is-compact .team-form.is-live .tf-body { flex: 1 1 auto; min-width: 0; }
+#teamHead.is-compact .team-form.is-live .tf-inner { width: 100%; justify-content: space-between; gap: 1rem; }
+#teamHead.is-compact .team-form.is-live .tf-refresh-wrap { display: flex; position: static; }
+
+#teamHead.is-compact .team-form.is-live .tf-cluster { display: contents; }
+/* the pinned bar's run: hidden in the full block, a row of short lines in the compact one */
+.tf-brief { display: none; }
+#teamHead.is-compact .team-form.is-live .tf-brief { display: flex; align-items: center; justify-content: center; gap: 1.3rem; flex: 1 1 auto; min-width: 0; font-family: var(--mono); font-size: .74rem; color: var(--ink-soft); } /* centred in the run it has, not on the page */
+#teamHead.is-compact .team-form.is-live .tf-brief p { margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+#teamHead.is-compact .team-form.is-live .tf-brief b { font-weight: 700; color: var(--ink); }
+#teamHead.is-compact .team-form.is-live .tf-info { flex-direction: row; align-items: center; gap: 1.4rem; flex: 1 1 auto; min-width: 0; }
+#teamHead.is-compact .team-form.is-live .tf-info > * { display: none; }
+#teamHead.is-compact .team-form.is-live .tf-info > .tf-series, #teamHead.is-compact .team-form.is-live .tf-info > .tf-next { display: block; margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* the run between the crests: the series, the next game */
+#teamHead.is-compact .team-form:not(.is-live) .tf-body { flex: 0 1 auto; }
+#teamHead.is-compact .tf-head { justify-content: center; }
+.team-focus { top: calc(var(--barh) + .5rem + var(--head-h, 0px)); }
+.team-form img { width: var(--crest); height: var(--crest); object-fit: contain; flex: none; }
+.tf-body { min-width: 0; flex: 1 1 22rem; }
+/* only a game in progress carries the news; the season block, the pregame
+   and the final keep the stats lines (Next, Series, the record, last season)
+   and drop the stories, the "more" button and the season blurb (Steve, 2026-09-15) */
+.team-form.is-season .tf-news, .team-form.is-season .tf-more, .team-form.is-season .tf-wiki > p,
+.team-form.is-pre .tf-news, .team-form.is-pre .tf-more, .team-form.is-pre .tf-wiki > p,
+.team-form.is-final .tf-news, .team-form.is-final .tf-more, .team-form.is-final .tf-wiki > p { display: none; }
+/* with the news gone the rule under the lines went with it (Steve, 2026-09-16: "scraps of left over design") */
+.team-form.is-season .tf-wiki .tf-lead, .team-form.is-pre .tf-wiki .tf-lead, .team-form.is-final .tf-wiki .tf-lead { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+/* the season's Wikipedia lead, at the right; under the rest when the row is narrow */
+.tf-wiki { position: relative; flex: 1 1 24rem; min-width: 0; align-self: stretch; display: flex; flex-direction: column; max-height: var(--crest); overflow: hidden auto; scrollbar-width: thin; padding-left: 1.1rem; border-left: 1px solid var(--line); font-size: .85rem; line-height: 1.45; color: var(--ink); } /* the rule runs the block's height; beside the crests the column scrolls inside it */
+.tf-wiki > .tf-cols, .tf-wiki > p { margin-block: auto; } /* short: centred on the row; tall: scrolls from the top (justify-content: center would clip the top) */
+/* beside the crests every story shows; a fade at the foot says there is more below (app.js foldNews sets is-scroll; is-at-end once scrolled to the end) */
+.tf-wiki.is-scroll:not(.is-at-end) { -webkit-mask-image: linear-gradient(#000 calc(100% - 1.4rem), transparent); mask-image: linear-gradient(#000 calc(100% - 1.4rem), transparent); }
+/* the fold, under the row and on phones: the rest of the stories behind a button that says how many (app.js foldNews) */
+.tf-wiki.is-open { max-height: none; }
+.tf-news li.is-more { display: none; }
+.tf-wiki.is-open .tf-news li.is-more { display: grid; }
+.tf-wiki:not(.has-more) .tf-more { display: none; }
+/* the pregame's starters and the leaders out, at the top of the column */
+.tf-wiki .tf-lead { margin-bottom: .55rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+.tf-wiki .tf-lead p:first-child { margin-top: 0; }
+.tf-lines p[hidden] { display: none; } /* a line fitLead dropped */
+.tf-more { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; margin: .6rem auto 0; flex: none; font-size: .78rem; padding: .45em .9em .45em 1.05em; color: var(--ink-soft); }
+.tf-more svg { width: .9rem; height: .9rem; transition: transform .2s; }
+.tf-more:hover { color: var(--ink); border-color: var(--ink-soft); }
+.tf-wiki.is-open .tf-more svg { transform: rotate(180deg); }
+.tf-wiki > p { margin: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; } /* the Wikipedia fallback: four lines */
+.tf-lines .tf-wikilink { display: inline-block; margin-top: .35rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); text-decoration: none; }
+.tf-lines .tf-wikilink:hover { color: var(--ink); text-decoration: underline; }
+/* the news: headline (a link), date, one line of summary */
+.tf-news { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.tf-news li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: .5rem; align-items: baseline; }
+.tf-news a { font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* one line each, so three fit beside the crest */
+.tf-news a:hover { text-decoration: underline; color: var(--team-2); }
+.tf-news .tf-date { font-family: var(--mono); font-size: .7rem; color: var(--ink-soft); white-space: nowrap; } /* the outlet and the day */
+.tf-news p { grid-column: 1 / -1; margin: .05rem 0 0; font-size: .8rem; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) { .team-form { flex-wrap: wrap; } .tf-wiki { flex-basis: 100%; max-height: none; padding-left: 0; border-left: 0; padding-top: .6rem; border-top: 1px solid var(--line); } }
+.tf-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: .3rem .8rem; font-family: var(--display); text-transform: uppercase; letter-spacing: .08em; }
+.tf-record { font-size: 2rem; font-weight: 700; line-height: 1; color: var(--team-2); }
+.tf-standing { font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+.tf-title { font-size: 1.1rem; font-weight: 700; color: var(--team-2); }
+.tf-lines p { margin: .3rem 0 0; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+.tf-lines b { font-weight: 700; color: var(--ink); }
+.tf-lines .tf-blurb { font-family: var(--body); font-size: .9rem; color: var(--ink); max-width: 60ch; }
+.tf-run { display: inline-flex; gap: .2rem; vertical-align: middle; }
+.tf-run i { font: 700 .66rem/1.5rem var(--mono); font-style: normal; width: 1.5rem; text-align: center; border-radius: 4px; background: var(--line); color: var(--ink-soft); }
+.tf-run i.r-W { background: var(--team-2); color: var(--team-2-on); }
+.tf-run i.r-L { background: color-mix(in srgb, var(--ink-soft) 25%, var(--mist)); }
+@media (max-width: 640px) { .team-form { gap: .8rem; padding: .7rem .8rem; } .team-form { --crest: 4rem; } .tf-record { font-size: 1.6rem; } }
+}
+/* a game in progress: LIVE tag, the score in the club's accent, the state of play */
+.tf-live { display: inline-flex; align-items: center; gap: .4rem; padding: .25em .6em; border-radius: 999px; background: var(--alert); color: #fff; font-size: .8rem; letter-spacing: .12em; }
+.tf-live::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: #fff; animation: tf-pulse 1.2s ease-in-out infinite; }
+.is-final .tf-live { background: var(--ink-soft); }
+.is-final .tf-live::before { animation: none; }
+@keyframes tf-pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .tf-live::before { animation: none; } }
+/* refresh: the arrow spins while a fetch is out; beside it, when the score was last fetched */
+.tf-refresh-wrap { position: absolute; bottom: .5rem; right: .9rem; z-index: 2; display: flex; align-items: center; gap: .4rem; margin: 0; font-family: var(--mono); } /* the block's lower right corner, on the strip's centre line */
+.team-form.is-live { position: relative; align-items: flex-start; } /* the crests sit at the top; the refresh control needs the corner */
+.is-live .tf-wiki { padding-top: .2rem; } /* the refresh control sits at the block's foot now, not above the news */
+/* the top of the cluster — the tag and score, the state, the venue, the series and the predictor — is centred; the starters, the hurt and the watch list are left-aligned under it */
+.is-live .tf-head { justify-content: center; }
+.is-live .tf-lines .tf-state, .is-live .tf-lines .tf-series { text-align: center; }
+/* the left section: the crests' row, then the venue line and the watch strip, centred across it; the news column beside */
+.is-live .tf-main { flex: 2 1 34rem; min-width: 0; display: flex; flex-direction: column; gap: .45rem; } /* the game takes two parts of the row, the news one */
+.is-live .tf-row { display: flex; align-items: flex-start; gap: 1.1rem; height: calc(var(--crest) + 1rem); } /* the crests' height and a little air */
+.is-live .tf-row > img, .is-live .tf-row > img.tf-opp, .is-live .tf-row > .tf-opp-abbr { flex: 0 3 auto; min-width: 5rem; width: var(--crest); height: auto; aspect-ratio: 1; margin-top: var(--crest-top, 0px); } /* level with the bug (app.js alignCrests); when the row is tight both crests give way, alike, before the bug does */
+.tf-row > .is-link { cursor: pointer; } /* a crest opens the club's site */
+.tf-row > .is-link:hover { opacity: .85; }
+.tf-row > .is-link:focus-visible { outline: 2px solid var(--team-2); outline-offset: 3px; border-radius: 50%; }
+.tf-opp-abbr { display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--ink-soft); background: color-mix(in srgb, var(--ink-soft) 18%, transparent); font-family: var(--display); font-size: 1.9rem; font-weight: 700; letter-spacing: .06em; color: var(--ink); } /* a club with no mark on file */
+#teamHead.is-compact .tf-row > .tf-opp-abbr { flex: none; min-width: 0; width: var(--crest); height: var(--crest); margin-top: 0; font-size: .7rem; border-width: 1px; }
+.is-live .tf-row > .tf-body { align-self: center; }
+#teamHead.is-compact .tf-row > img, #teamHead.is-compact .tf-row > img.tf-opp { flex: none; min-width: 0; height: var(--crest); margin-top: 0; }
+#teamHead.is-compact .tf-row { height: auto; }
+/* one height for every block, a game on or not: the crests' (the narrow layout, which stacks, is free of it) */
+@media (min-width: 761px) {
+  .team-form { min-height: var(--crest); }
+  #teamHead.is-compact .team-form { min-height: 0; }
+  .team-form > .tf-body, .team-form > .tf-main, .team-form > .tf-wiki { max-height: calc(var(--crest) + 1rem); }
+  .team-form.no-watch > .tf-body, .team-form.no-watch > .tf-main, .team-form.no-watch > .tf-wiki { max-height: calc(var(--crest) + 3.9rem); } /* the season played out: the strip's two lines go to the column's wrap instead, the block as tall as before */
+  .team-form.has-wrap > .tf-main { max-height: none; } /* the season's wrap under the bug: the block grows to hold it (Steve, 2026-10-05) */
+  .team-form > .tf-body { overflow: hidden; }
+}
+
+.is-live .tf-row .tf-body { flex: 1 1 auto; }
+#teamHead.is-compact .tf-main, #teamHead.is-compact .tf-row { display: contents; } /* compact: the crests and the line back in the block's own row */
+.tf-pred { justify-content: center; }
+.is-live .tf-wiki { flex: 1 1 20rem; }
+.is-live .tf-inner { width: 100%; display: flex; align-items: center; gap: 1.3rem; } /* the score cluster, then the column of the rest — the block stays the crests' height */
+.tf-cluster { flex: 0 1 auto; min-width: 0; max-width: 100%; margin: 0 auto; padding: .35rem 1.2rem .45rem; display: flex; flex-direction: column; align-items: center; } /* centred between the crests, with air around it */
+.tf-info { flex: 1 0 11rem; min-width: 0; display: flex; flex-direction: column; gap: .2rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+.tf-info p { margin: 0; }
+.tf-info b { font-weight: 700; color: var(--ink); }
+.tf-cluster > .tf-where { margin: 0 0 .3rem; text-align: center; font-family: var(--display); font-size: 1.05rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); white-space: nowrap; } /* the venue along the top of the bug */
+.tf-cluster > .tf-where a { color: inherit; text-decoration: none; }
+.tf-cluster > .tf-where a:hover { color: var(--team-2); text-decoration: underline; }
+#teamHead.is-compact .team-form.is-live .tf-cluster > .tf-where { margin: 0; font-size: .9rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; flex: 0 0 auto; max-width: 14rem; } /* the venue keeps its line; the run beside it gives way first */
+#teamHead.is-compact .team-form.is-live .tf-at { display: none; } /* the bar keeps the refresh button, not the stamp */
+.tf-info .tf-blurb { margin: .15rem 0 0; font-family: var(--body); font-size: .85rem; line-height: 1.4; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+/* the season's bug and the pregame's, in the same frame */
+.is-season .tf-head { display: none; } /* the record is in the bug (or, with the odds up, on a line beside); the head serves the compact bar */
+.tf-lead .tf-season .tf-run { margin-left: .15rem; } .tf-lead .tf-season .tf-run i { font-size: .6rem; line-height: 1.25rem; width: 1.25rem; } /* the last five, small, at the end of the season line */
+#teamHead.is-compact .is-season .tf-head { display: flex; }
+.bug-team-soft { --cell: var(--bug-muted); font-size: .8rem; letter-spacing: .1em; }
+.bug-team i { font-style: normal; }
+.bug-team .bug-nick { display: none; }
+#teamHead.is-compact .bug-team .bug-abbr { display: none; }
+#teamHead.is-compact .bug-team .bug-nick { display: inline; padding: 0 .45rem; white-space: nowrap; } /* the compact bar has the room for the name: Seahawks, not SEA */
+.bug-ev .tf-run { vertical-align: middle; }
+.bug-ev .bug-lbl { font-weight: 700; font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: #f4f4f4; margin-right: .55rem; vertical-align: middle; } /* the cell's name in small caps before its figure: LAST 5, LAST GAME */
+.bug-score.bug-odds { font-size: 1.05rem; letter-spacing: .02em; }
+.bug-grid.bug-grid-2.has-ring { grid-template-columns: 6.6rem minmax(3.6rem, max-content) auto; }
+.is-pregame .bug-grid.no-ev > :nth-child(3) { grid-area: 2 / 1; } .is-pregame .bug-grid.no-ev > :nth-child(4) { grid-area: 2 / 2; } /* no odds yet, no ring: four cells, two rows */
+.is-pregame .bug-grid.no-ev > :nth-child(3), .is-pregame .bug-grid.no-ev > :nth-child(4) { border-bottom: 0; }
+.bug-grid.bug-grid-2.has-ring > .bug-ring { grid-area: 1 / 3 / 3 / 4; } /* both rows (outranks the per-cell pinning below, which puts the third cell in row 1) */
+.bug-ring { display: flex; align-items: center; justify-content: center; gap: .55rem; padding: .15rem .8rem; border-left: var(--bug-bw, 2px) solid var(--bug-frame); }
+.bug-ring svg { width: 3.1rem; height: 3.1rem; flex: none; }
+/* squeezed (app.js fitBug: the grid runs wider than the frame): the ring's label goes, then the desktop's zoom */
+.tf-bug.is-tight, .tf-bug.is-tight:not(.is-generic) { zoom: 1; }
+#teamHead.is-compact .bug-ring, #teamHead.is-compact .is-season-bug .bug-ev { display: none; }
+#teamHead.is-compact .bug-grid.bug-grid-2.has-ring { grid-template-columns: minmax(2.7rem, max-content) 2rem; }
+.is-live .tf-wiki { max-height: calc(var(--crest) + 1rem); } /* the news column no taller than the row */
+/* the season's wrap (Steve, 2026-10-05): with the last game played the
+   block drops the watch strip, the next opponent's crest and the news
+   column, and draws the season under the crest and the bug, the block's
+   width, growing to hold it (app.js buildSeasonWrap): one row of six
+   tiles — the months, the record, the scoring, the streaks, the best and
+   worst, the wins on last season */
+.team-form.is-live.has-wrap > .tf-main, .team-form.is-live.has-wrap > .tf-main:not(:has(+ .tf-wiki)) { flex: 1 1 100%; width: 100%; margin-inline: 0; } /* the block's width, not centred at its content's (the rule below centres a main with no column beside it) */
+.team-form.has-wrap .tf-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; max-width: 100%; height: auto; padding: .5rem 0 .9rem; } /* the crest at the block's left edge, the bug at the block's exact centre (the two 1fr columns match whatever the crest's width), both centred on the row — not the crest dropped level with the bug under its venue line, which left all the air above it (Steve, 2026-10-05: "vert centering here is bad"; then "center this … crest should be left justified") */
+.team-form.has-wrap .tf-row > img { grid-column: 1; justify-self: start; margin-top: 0; }
+.team-form.has-wrap .tf-row > .tf-body { grid-column: 2; min-width: 0; max-width: 100%; }
+/* the big moves, at the row's right end, right-justified (Steve, 2026-10-05: "2026 season over is fine. the rest should be right justified"): a line per move in the column's mono */
+.team-form.has-wrap .tf-row > .tf-ahead { grid-column: 3; justify-self: stretch; text-align: right; min-width: 0; padding-left: .75rem; }
+.tf-ahead .tf-move { margin: .4rem 0 0; font-family: var(--mono); font-size: .84rem; line-height: 1.3; color: var(--ink); text-wrap: balance; } /* a short line each, sized to fill the column; a long one wraps in two even halves, never a word alone on the second line */
+.tf-ahead .tf-move:first-child { margin-top: 0; }
+.tf-ahead .tf-move a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); } /* linked to the source: ESPN's transactions page for the club */
+.tf-ahead .tf-move a:hover { color: var(--gold); border-color: var(--gold); }
+.tf-ahead .tf-move-day { font-size: .76rem; color: var(--ink-soft); }
+@media (max-width: 900px) { .team-form.has-wrap .tf-row > .tf-ahead { grid-column: 1 / -1; justify-self: stretch; text-align: left; max-width: none; margin-top: .6rem; } } /* under the row once the three columns can't share the width */
+.tf-wrap { width: 100%; min-width: 0; margin-top: .2rem; padding-top: 1rem; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 2.2rem; font-family: var(--mono); font-size: .86rem; color: var(--ink-soft); } /* six tiles, three across in two rows: room for text that can be read (Steve, 2026-10-05: "text here is too small … take more vert space") */
+.tw { min-width: 0; }
+.tw-l { display: block; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); margin-bottom: .4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tw p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.6; }
+.tw .tw-foot { font-size: .78rem; margin-top: .2rem; }
+.tw-bar { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; line-height: 1.75; white-space: nowrap; max-width: 24rem; }
+.tw-bar > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.tw-bar i { position: relative; display: block; height: .7rem; border-radius: 2px; background: var(--line); overflow: hidden; }
+.tw-bar i b { display: block; height: 100%; border-radius: inherit; background: var(--team-2); }
+.tw-bar i s { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--mist); opacity: .9; z-index: 1; } /* the .500 tick */
+.tw-bar.is-them i b { background: color-mix(in srgb, var(--ink-soft) 55%, var(--mist)); }
+.tw-bar .tw-n { color: var(--ink); font-weight: 700; }
+.tw-bar.is-them .tw-n { color: var(--ink-soft); }
+.tw p.is-them b { color: var(--ink-soft); }
+/* the months: a stacked column each in a short chart; the streaks: a square a game */
+.tw-months { display: flex; align-items: stretch; gap: .35rem; height: 4.2rem; max-width: 24rem; }
+.tw-col { flex: 1 1 0; min-width: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; text-align: center; }
+.tw-stack { display: flex; flex-direction: column; justify-content: flex-end; min-height: 0; }
+.tw-stack i { display: block; width: 100%; flex: none; }
+.tw-stack .tw-w { background: var(--team-2); border-radius: 0 0 2px 2px; }
+.tw-stack .tw-x { background: color-mix(in srgb, var(--ink-soft) 25%, var(--mist)); border-radius: 2px 2px 0 0; }
+.tw-col em { font-style: normal; font-size: .68rem; line-height: 1.7; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; }
+.tw-col.is-best em { color: var(--team-2); font-weight: 700; }
+.tw-col.is-worst em { opacity: .55; }
+.tw-sq { display: inline-flex; gap: .14rem; vertical-align: middle; margin: 0 .45rem 0 .4rem; }
+.tw-sq i { width: .56rem; height: .56rem; border-radius: 2px; background: var(--team-2); }
+.tw-sq.is-L i { background: color-mix(in srgb, var(--ink-soft) 40%, var(--mist)); }
+.tw p b { color: var(--ink); font-weight: 700; }
+/* the leaders: a fourth column the height of both rows, a line a stat — the stat, the player, the figure */
+.tf-wrap.has-leaders { grid-template-columns: 1.15fr 1fr 1fr 1.15fr; }
+.tf-wrap.has-leaders .tw-leaders { grid-column: 4; grid-row: 1 / span 2; }
+.tw-lead { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: .6rem; line-height: 1.75; white-space: nowrap; }
+.tw-lead > span:first-child { color: var(--ink-soft); }
+.tw-lead .tw-who { color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+.tw-lead .tw-n { color: var(--ink); font-weight: 700; }
+@media (max-width: 1100px) { .tf-wrap.has-leaders { grid-template-columns: repeat(3, minmax(0, 1fr)); } .tf-wrap.has-leaders .tw-leaders { grid-column: auto; grid-row: auto; } }
+#teamHead.is-compact .tf-wrap { display: none; }
+@media (max-width: 640px) { .tf-wrap, .tf-wrap.has-leaders { grid-template-columns: 1fr 1fr; gap: .8rem 1.2rem; font-size: .78rem; } .tf-wrap.has-leaders .tw-leaders { grid-column: 1 / -1; } }
+.is-live img.tf-opp { margin-left: .2rem; }
+.tf-refresh { display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; padding: 0; border: 1px solid var(--ink-soft); border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer; } /* the block's own colour inside */
+.tf-refresh:hover { border-color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.tf-refresh svg { width: 1rem; height: 1rem; }
+.tf-at { font-size: .7rem; color: var(--ink-soft); white-space: nowrap; }
+/* the countdown to the next fetch: a ring around the refresh button, filling
+   clockwise from the top over the poll's half-minute (app.js POLL_MS sets
+   --tick-delay so a redraw picks it up mid-way) */
+.tf-watch { position: relative; }
+@property --tick { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.tf-refresh { position: relative; isolation: isolate; }
+.tf-refresh::before { content: ""; position: absolute; inset: -1.5px; border-radius: 50%; z-index: 1; pointer-events: none; background: conic-gradient(color-mix(in srgb, var(--team-2) var(--tick-pct, 45%), var(--tick-mix, white)) var(--tick), transparent 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); } /* a bright 2.5px ring over the button's border, covering it as it goes round */
+.tf-refresh-wrap.is-ticking .tf-refresh::before { animation: tf-tick 30s linear forwards; animation-delay: var(--tick-delay, 0ms); }
+@keyframes tf-tick { from { --tick: 0deg; } to { --tick: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .tf-refresh-wrap.is-ticking .tf-refresh::before { animation: none; --tick: 360deg; opacity: .35; } }
+.tf-watch::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; }
+.tf-watch::before { background: var(--line); }
+/* a fresh score: the block's face lifts toward the club's accent and settles */
+.team-form.is-flash { animation: tf-flash 1.2s ease-out; }
+@keyframes tf-flash { 0% { background: color-mix(in srgb, var(--team-2) 28%, var(--mist)); } 100% { background: var(--mist); } }
+@media (prefers-reduced-motion: reduce) { .team-form.is-flash { animation: none; } }
+.tf-refresh svg { width: .9rem; height: .9rem; }
+.tf-refresh.is-busy svg { animation: tf-spin .8s linear infinite; }
+@keyframes tf-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .tf-refresh.is-busy svg { animation: none; opacity: .5; } }
+.is-live .tf-head { align-items: center; } /* the LIVE tag and refresh sit on the score's centre line, not its baseline */
+.tf-score { font-size: 2rem; font-weight: 700; line-height: 1; color: var(--ink); letter-spacing: .04em; }
+.tf-score b { color: var(--team-2); }
+.tf-score .tf-dash { margin: 0 .3em; color: var(--ink-soft); font-weight: 400; }
+.is-pre .tf-score .tf-dash { font-size: .55em; text-transform: uppercase; letter-spacing: .1em; }
+.is-pre .tf-live { background: var(--team-2); color: var(--team-2-on); }
+.is-pre .tf-live::before { animation: none; background: currentColor; }
+/* the opponent's crest: as big as ours, after the lines, drawn the same way — no disc */
+.team-form img.tf-opp { width: var(--crest); height: var(--crest); object-fit: contain; flex: none; }
+.tf-lines .tf-state { color: var(--ink); font-weight: 700; }
+.tf-out { margin: .3rem 0 0; font-family: var(--body); font-size: .85rem; color: var(--ink); } /* the last out, in prose */
+.tf-lines .tf-out { max-width: 56ch; }
+.tf-out b { font-family: var(--mono); font-size: .74rem; color: var(--ink); }
+.tf-bugwrap { width: max-content; max-width: 100%; margin: 0; }
+.tf-wiki .tf-lead .tf-out { margin: 0; font-family: var(--body); font-size: .82rem; } /* the last out, at the top of the news column, in prose */
+.tf-wiki .tf-lead p, .is-live .tf-wiki .tf-lead p { text-align: left; margin: .25rem 0 0; } /* whatever the cluster centres, the column reads from the left (the second selector outranks the cluster's centring rules) */
+.tf-hl { list-style: none; margin: .1rem 0 0; padding: 0; display: grid; gap: .1rem; min-width: 0; }
+.tf-hl li { min-width: 0; overflow: hidden; } /* so a long title ellipsizes instead of running past the column */
+.tf-hl a { font-size: .8rem; color: var(--ink); text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tf-hl a::before { content: "▶ "; font-size: .6rem; color: var(--team-2); }
+.tf-hl a:hover { text-decoration: underline; color: var(--team-2); }
+.tf-hl-head { margin-bottom: 0 !important; }
+.tf-wiki .tf-lead p:first-child { margin-top: 0; }
+.tf-wiki .tf-lead .tf-blurb { font-family: var(--body); font-size: .85rem; line-height: 1.4; color: var(--ink); max-width: none; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+/* the other sports' bug: team, score, that side's goals (or the ball) */
+.bug-grid.bug-grid-2 { grid-template-columns: minmax(6.6rem, max-content) minmax(3.6rem, max-content) minmax(5rem, 1fr); } /* the name column grows for a record with a tag beside it (SH, the ball) rather than wrapping it */ /* the goals column takes what the row allows and trims with an ellipsis */
+/* (doubled class: these outrank the baseball grid's pins further down) */
+.bug-grid.bug-grid-2 > :nth-child(3) { grid-area: 1 / 3; } .bug-grid.bug-grid-2 > :nth-child(6) { grid-area: 2 / 3; }
+.bug-grid.bug-grid-2 > :nth-child(4) { grid-area: 2 / 1; } .bug-grid.bug-grid-2 > :nth-child(5) { grid-area: 2 / 2; }
+.bug-grid.bug-grid-2 > :nth-child(4), .bug-grid.bug-grid-2 > :nth-child(5), .bug-grid.bug-grid-2 > :nth-child(6) { border-bottom: 0; }
+.bug-ev { display: block; min-width: 0; padding: 0 .7rem; line-height: 1.95rem; border-left: var(--bug-bw, 2px) solid var(--bug-frame); border-bottom: var(--bug-bw, 2px) solid var(--bug-rowline); font-size: .72rem; color: var(--bug-soft); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bug-ball { display: inline-block; vertical-align: middle; margin-right: .4rem; }
+.bug-grid.bug-grid-2.no-ev { grid-template-columns: 8rem minmax(4.4rem, max-content); } .bug-grid-2.no-ev .bug-ev { display: none; } /* a final with nothing beside the scores */
+.bug-ball { width: .55rem; height: .55rem; border-radius: 50%; background: var(--bug-on); flex: none; }
+.bug-team { position: relative; }
+/* the season bug's rows say what they count: SEASON over "every game", HOME over "at T-Mobile Park" (Steve, 2026-10-05: "define season v. home"); taller rows for the second line */
+.is-season-bug .bug-grid { grid-template-rows: 2.5rem 2.5rem; }
+.is-season-bug.is-final .bug-grid.bug-grid-2.no-ev { grid-template-columns: 1fr minmax(4.4rem, max-content); } /* the season played out: two rows of label and record, no last five, no last game; the label cell takes the width the top line needs */
+.is-season-bug .bug-ev { line-height: 2.5rem; }
+.is-season-bug .bug-team { grid-template-rows: auto auto; align-content: center; line-height: 1; }
+.is-season-bug .bug-team small { font-family: var(--mono); font-size: .5rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; text-shadow: none; opacity: .9; margin-top: .2rem; white-space: nowrap; } .bug-poss { position: absolute; left: .3rem; top: 50%; width: 1rem; height: .7rem; transform: translateY(-50%); } /* the football at the left edge of the name cell: who has the ball */
+#teamHead.is-compact .bug-poss { width: .8rem; height: .55rem; left: .15rem; }
+.bug-abbr:has(.bug-xtra) { display: grid; grid-template-columns: 3.1rem max-content; justify-items: start; align-items: center; gap: .3rem; width: 100%; box-sizing: border-box; padding: 0 .4rem; } /* the name in a fixed column, what rides with it (the record, SH, the ball) after: both rows' names start on one line and both records on another, whatever their lengths (Steve, 2026-10-01: SKC 6-3-17 over SEA 9-8-9 sat staggered when the pair was centred); the cell widens for a long extra (bug-grid-2 below) */
+.bug-ab { font-weight: inherit; }
+.bug-xtra { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; } /* the record sits on the name's centre line, not its baseline */
+.bug-grid:has(.bug-poss) .bug-abbr:has(.bug-xtra) { padding-left: 1.5rem; } /* room for the ball at the left edge — in both rows, so the names stay in line */
+.bug-rec { font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .02em; line-height: 1; opacity: .8; text-shadow: none; } /* the record beside the abbreviation (football), as the broadcast prints it — goes with the abbreviation on the compact bar */
+.bug-to { display: inline-flex; gap: .16rem; vertical-align: middle; margin-right: .5rem; } /* the timeouts left: three dashes, the spent ones dimmed (football) */
+.bug-to b { display: block; width: .55rem; height: .2rem; border-radius: 1px; background: var(--bug-off); }
+.bug-to b.on { background: var(--bug-on); }
+.bug-sh { font-family: var(--mono); font-size: .55rem; font-weight: 700; letter-spacing: .08em; margin-right: .3rem; padding: .05rem .25rem; border-radius: 2px; background: var(--bug-on); color: #fff; text-shadow: none; } /* the side a skater down (hockey) */
+.bug-card { display: inline-block; width: .42rem; height: .58rem; border-radius: 1px; vertical-align: middle; margin-right: .22rem; } /* a booking (soccer) */
+.bug-card.is-y { background: #f3d23c; } .bug-card.is-r { background: var(--bug-on); }
+.bug-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 1.2rem; padding: .18rem .8rem .12rem; border-top: var(--bug-bw, 2px) solid var(--bug-frame); font-weight: 700; font-size: .9rem; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; } /* football in play: the quarter, the clock, the down and distance on a tab under the rows, as the broadcast draws it */
+.bug-foot > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.bug-foot .bug-clock { flex: 1 1 auto; text-align: center; }
+.bug-foot.is-pause { justify-content: center; } /* Halftime, End of 3rd */
+.bug-foot .bug-dd.is-redzone { color: var(--bug-redzone); } /* the down and distance, red inside the 20 */
+#teamHead.is-compact .bug-foot { display: none; }
+#teamHead.is-compact .bug-ev { display: none; }
+#teamHead.is-compact .bug-grid.bug-grid-2 { grid-template-columns: minmax(2.7rem, max-content) 1.6rem; }
+/* compact: the scorebug stays, slimmed — no pitcher rows, no last out — in place of the score and the state line */
+/* the odds bug wears a small tab out of its foot saying so (Steve, 2026-09-14) — room for it below, none on the compact bar */
+.tf-bugwrap { position: relative; }
+.tf-bugwrap:has(> .is-pregame) { margin-bottom: 1.5rem; }
+.tf-bugwrap:has(> .is-pregame)::after { content: "ODDS"; position: absolute; left: var(--tab-l, 0); width: var(--tab-w, max-content); box-sizing: border-box; text-align: center; top: 100%; zoom: 1.25; font: 700 .6rem/1 var(--mono); letter-spacing: .14em; color: var(--bug-ink); background: var(--bug-bg); border: var(--bug-bw, 2px) solid var(--bug-frame); border-top: 0; border-radius: 0 0 6px 6px; padding: .22rem .6rem .18rem; box-shadow: 0 6px 20px var(--bug-shadow); } /* hung from the frame's bottom edge (top: 100%), so the frame's own line runs on unbroken above it; the bug's zoom, border and face */
+.tf-bugwrap:has(> .is-pregame.is-tight) { margin-bottom: 1.2rem; }
+.tf-bugwrap:has(> .is-pregame.is-tight)::after { zoom: 1; }
+#teamHead.is-compact .tf-bugwrap { margin: 0; }
+#teamHead.is-compact .tf-bugwrap::after { display: none; }
+#teamHead.is-compact .tf-bugwrap .tf-out, #teamHead.is-compact .bug-top, #teamHead.is-compact .has-bug .tf-head .tf-score, #teamHead.is-compact .has-bug .tf-lines .tf-state { display: none; }
+.tf-bug:not(.is-generic) { zoom: 1.02; } /* baseball's live bug has three rows on top: no room to grow */
+#teamHead.is-compact .tf-bug, #teamHead.is-compact .tf-bug:not(.is-generic) { zoom: 1; border-width: 1px; border-radius: 5px; box-shadow: none; }
+#teamHead.is-compact .bug-grid { grid-template-columns: minmax(2.7rem, max-content) 1.6rem 1.4rem auto; grid-template-rows: 1.2rem 1.2rem; }
+#teamHead.is-compact .bug-team { font-size: .72rem; border-bottom-width: 1px; letter-spacing: .04em; }
+#teamHead.is-compact .bug-score { font-size: 1rem; border-width: 1px; }
+#teamHead.is-compact .bug-inn { border-width: 1px; }
+#teamHead.is-compact .bug-inn b { font-size: .85rem; }
+#teamHead.is-compact .bug-inn i { border-left-width: .25rem; border-right-width: .25rem; }
+#teamHead.is-compact .bug-inn .bug-up { border-bottom-width: .36rem; }
+#teamHead.is-compact .bug-inn .bug-dn { border-top-width: .36rem; }
+#teamHead.is-compact .bug-field { padding: .1rem .45rem; gap: .5rem; }
+#teamHead.is-compact .bug-bases { width: 1.9rem; height: 1.2rem; }
+#teamHead.is-compact .bug-outs i { width: .5rem; height: .5rem; border-width: 1.5px; }
+#teamHead.is-compact .bug-count > b { font-size: .8rem; }
+/* where to watch: a low strip along the foot of the block, under both
+   columns — the cast mark, then each network with the ways to get it
+   inline, dotted apart, each a link where channels.json names one */
+.team-form.is-live { flex-wrap: wrap; }
+.tf-watch { flex: 1 1 100%; display: flex; align-items: center; gap: .5rem 1rem; margin-top: .3rem; padding: 0; height: 2.9rem; overflow: hidden; box-sizing: border-box; } /* two lines' room, its contents centred in it (the refresh control in its right end), so every block is the same height; the block's own bottom padding is folded into it so the centring is true */
+.team-form.is-live { padding-bottom: 0; } /* the strip's height carries the bottom padding (above) */
+.team-form.is-live.no-watch { padding-bottom: .85rem; } /* no strip once the season is played out (app.js renderTeamForm): the padding is the block's own again */
+.tf-watch-label { font-family: var(--mono); font-size: .74rem; color: var(--ink); }
+.tf-watch-none { font-family: var(--mono); font-size: .74rem; color: var(--ink-soft); }
+.tf-channels a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--dot); }
+.tf-channels a:hover { color: var(--team-2); border-bottom-color: currentColor; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* the strip's three sections (app.js buildWatchStrip): streaming at the left, TV centred, radio at the right — a grid of three equal tracks so the middle stays centred whatever the ends hold; an empty section keeps its track */
+.tf-sect { display: flex; align-items: center; gap: .5rem; min-width: 0; max-width: 100%; overflow: hidden; } /* a section never spills into its neighbour: its list wraps (and folds behind the chevron) inside its own track */
+.tf-sect.at-l { justify-self: start; }
+.tf-sect.at-c { justify-self: center; }
+.tf-sect.at-r { justify-self: end; }
+.tf-sect.is-empty { display: none; }
+.tf-ico { flex: none; position: relative; color: var(--ink-soft); display: inline-flex; }
+.tf-ico svg { width: 1.5rem; height: 1.5rem; }
+.tf-sect .tf-channels { justify-content: flex-start; } /* the list starts at its mark; the section as a whole is what sits left, centred or right */
+.tf-sect.at-r .tf-channels { justify-content: flex-start; } /* right-justified as a whole, but its entries still flow from its mark: pushed to the end they would leave a hole after the mark when the line wraps (Steve, 2026-09-14) */
+.tf-watch.has-more { padding-right: 2.2rem; } /* the chevron's room at the right end, clear of the radio section */
+@media (min-width: 641px) {
+  /* the sections' places (app.js buildWatchStrip counts them): three sit left, centre and right; two at the ends; one centred — the ends keep a floor, so a long list wraps behind the chevron rather than crushing its neighbour, and a section never spills into the next */
+  .tf-watch { display: grid; grid-template-columns: minmax(7rem, 1fr) minmax(0, auto) minmax(7rem, 1fr); align-items: center; column-gap: 1rem; }
+  .tf-watch.has-3 { grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, auto); justify-content: space-between; column-gap: 1.2rem; } /* minmax(0, …): a long list wraps inside its track (and folds behind the chevron) instead of running into its neighbour (Steve, 2026-09-16) */ /* each section its own width, the room left over split evenly between them: with a long streaming list and a short radio one, centring the middle section left it hard against the first and a hole before the third (Steve, 2026-09-19) */
+  .tf-watch.has-3 .tf-sect { justify-self: start; }
+  .tf-watch.has-2 { grid-template-columns: minmax(7rem, auto) minmax(7rem, auto); justify-content: space-between; }
+  .tf-watch.has-1, .tf-watch.has-0 { grid-template-columns: minmax(0, auto); justify-content: center; }
+  .tf-sect { min-width: 0; overflow: hidden; }
+  .tf-watch > .tf-watch-label, .tf-watch > .tf-watch-none { grid-column: 1 / -1; }
+}
+.tf-channels { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .25rem 1.1rem; font-family: var(--mono); font-size: .74rem; line-height: 1.5; color: var(--ink-soft); max-height: 1.2rem; overflow: hidden; } /* one line, the groups a little apart (each starts with its bold name, so no more is needed); the rest unfolds behind the chevron (app.js foldWatch sets has-more when there is more) */
+.tf-watch.is-open { height: auto; padding-top: .7rem; padding-bottom: .7rem; }
+.tf-watch.is-open .tf-channels { max-height: none; }
+.tf-wmore { display: none; position: absolute; right: .2rem; top: 50%; transform: translateY(-50%); width: 1.5rem; height: 1.5rem; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-soft); cursor: pointer; place-items: center; }
+.tf-wmore svg { width: 1.1rem; height: 1.1rem; transition: transform .2s; }
+.tf-wmore:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.tf-watch.has-more .tf-wmore { display: grid; }
+.tf-watch.is-open .tf-wmore svg { transform: rotate(180deg); }
+.team-form.has-refresh .tf-watch, .team-form.has-refresh .tf-watch.has-more { padding-right: 3.2rem; } /* the refresh control's room in the strip's right end, on a game in progress */
+.team-form.has-refresh .tf-watch.has-more { padding-right: 5.2rem; } /* both the chevron and the refresh control */
+.team-form.has-refresh .tf-wmore { right: 3.4rem; } /* left of the refresh button on a game block */ /* the entries flow from the left, evenly spaced, rather than spread to the ends */
+.tf-channels li { display: flex; flex-wrap: wrap; column-gap: .45rem; } /* the network, then each way, on one line */
+.tf-channels li span + span::before { content: "· "; }
+.tf-channels b { color: var(--ink); font-weight: 700; }
+#teamHead.is-compact .tf-watch { display: none; }
+/* the scorebug: a baseball game in progress, drawn like the broadcast's —
+   a charcoal panel; the pitcher and the pitch count along the top; a row
+   per side (visitors first): the abbreviation on the club's colour, the
+   score on white; the inning between the half-inning arrows; the bases
+   as diamonds, the outs as lamps, the count. While the block is compact
+   the panel gives way to the head and the state line. */
+.has-bug .tf-head .tf-score, .has-bug .tf-head .tf-live, .has-bug .tf-lines .tf-state { display: none; }
+#teamHead.is-compact .has-bug .tf-head .tf-live { display: inline-flex; }
+/* the compact game bar: both crests at the left end (the opponent's beside ours), then "Mariners at Athletics" in place of the venue, the slim bug and the lead lines; the LIVE tag, the venue, the watch lines and the countdown ring stay off it */
+#teamHead.is-compact .team-form.is-live .tf-row > img:first-child { order: -3; }
+#teamHead.is-compact .team-form.is-live .tf-row > .tf-opp { order: -1; }
+#teamHead.is-compact .team-form.is-live .tf-head .tf-live, #teamHead.is-compact .team-form.is-live .tf-cluster > .tf-where, #teamHead.is-compact .team-form.is-live .tf-brief .tf-brief-watch { display: none; }
+#teamHead.is-compact .team-form.is-live .tf-refresh::before { display: none; }
+#teamHead.is-compact .team-form.is-live .tf-brief .tf-hl-head { display: none; } /* the "Highlights" heading has no list to head on the bar */
+.tf-vs { display: none; }
+#teamHead.is-compact .team-form.is-live .tf-row > .tf-vs { display: block; order: -2; margin: 0 -.15rem; font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); white-space: nowrap; flex: 0 0 auto; } /* between the crests */
+#teamHead.is-compact .team-form.is-live .tf-inner { justify-content: flex-start; }
+/* the compact season bar: the record, the standing, the bug and the next game centred in the run between the crests and last season's line, which sits at the right end */
+#teamHead.is-compact .team-form.is-live.is-season .tf-brief { display: contents; }
+#teamHead.is-compact .team-form.is-season .tf-bugwrap { display: none; } /* the season bug's two records read as a score on the bar; the record and the standing beside it say the same */
+#teamHead.is-compact .team-form.is-live.is-season .tf-head { margin-left: auto; }
+#teamHead.is-compact .team-form.is-live.is-season .tf-brief .tf-series { margin-left: auto; order: 99; }
+#teamHead.is-compact .tf-bug { isolation: isolate; } /* the rounded frame clips its cells even inside the pinned block's own compositing layer */
+.tf-bug { --bug-on: #e5342b; zoom: 1.25; margin: 0 auto; width: max-content; max-width: 100%; font-family: var(--mono); color: var(--bug-ink); border: var(--bug-bw, 2px) solid var(--bug-frame); border-radius: 8px; overflow: hidden; background: var(--bug-bg); box-shadow: 0 6px 20px var(--bug-shadow); }
+.bug-top { display: flex; justify-content: space-between; align-items: baseline; gap: 1.5rem; padding: .2rem .8rem .15rem; border-bottom: var(--bug-bw, 2px) solid var(--bug-frame); font-weight: 700; font-size: .9rem; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.bug-top > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* one line, trimmed, never wrapped */
+/* the pregame's and the season's top rows: the right-hand piece is a label (first pitch; last season's record) — when the frame is too narrow for both it goes, whole, rather than both trimming to nothing: the row wraps and the second line is clipped */
+.is-pregame .bug-top, .is-season-bug .bug-top { flex-wrap: wrap; max-height: calc(1.55em + .35rem); overflow: hidden; }
+.is-pregame .bug-top { justify-content: center; } /* the day and the time, centred over the rows */
+.is-pregame .bug-top > span, .is-season-bug .bug-top > span { flex: 0 1 auto; }
+.is-pregame .bug-top .bug-pc, .is-season-bug .bug-top .bug-pc { flex: 0 0 auto; margin-left: auto; }
+.bug-pc { font-size: .85rem; }
+.bug-top.bug-bat { font-weight: 400; font-size: .8rem; padding-top: .15rem; color: var(--bug-soft); } /* the batter's row under the pitcher's */
+.bug-top.bug-bat .bug-pc { font-size: .75rem; }
+.bug-top.bug-pitch { font-weight: 400; font-size: .72rem; padding: .1rem .7rem .2rem; color: var(--bug-dim); letter-spacing: .04em; } /* the last pitch: speed and type, then what came of it */
+.bug-top.bug-pitch .bug-pc { font-size: .72rem; }
+.bug-grid { display: grid; grid-template-columns: 6.6rem minmax(3.6rem, max-content) 2.4rem auto; grid-template-rows: 1.95rem 1.95rem; } /* wide and low; the score cell grows for a long record */
+.bug-team { display: grid; place-items: center; font-family: var(--display); font-size: 1.15rem; font-weight: 700; letter-spacing: .06em; color: var(--cell-ink, #fff); text-shadow: var(--cell-shadow, none); background: color-mix(in srgb, var(--cell) var(--cell-mix, 100%), var(--bug-bg)); box-shadow: inset var(--cell-bar, 0px) 0 0 var(--cell); border-bottom: var(--bug-bw, 2px) solid var(--bug-rowline); } /* app.js sets --cell to the club colour: the solid cell in the dark theme, a wash with a bar of it in the light one */ /* the line between the two rows, darker than the frame */
+.bug-score { display: grid; place-items: center; padding: 0 .35rem; white-space: nowrap; background: var(--bug-score-bg); color: #111; font-family: var(--display); font-size: 1.5rem; font-weight: 700; line-height: 1; border-bottom: var(--bug-bw, 2px) solid var(--bug-rowline); border-left: var(--bug-bw, 2px) solid var(--bug-frame); }
+.bug-grid > :nth-child(1) { grid-area: 1 / 1; } .bug-grid > :nth-child(2) { grid-area: 1 / 2; } /* every cell pinned: the grid would otherwise place the row-spanning cells first */
+.bug-grid > :nth-child(5) { grid-area: 2 / 1; } .bug-grid > :nth-child(6) { grid-area: 2 / 2; }
+.bug-grid > :nth-child(5), .bug-grid > :nth-child(6) { border-bottom: 0; } /* the bottom row */
+.bug-inn { grid-area: 1 / 3 / 3 / 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem; border-left: var(--bug-bw, 2px) solid var(--bug-frame); border-right: var(--bug-bw, 2px) solid var(--bug-frame); }
+.bug-inn b { font-family: var(--display); font-size: 1.4rem; line-height: 1; }
+.bug-inn i { width: 0; height: 0; border-left: .38rem solid transparent; border-right: .38rem solid transparent; }
+.bug-inn .bug-up { border-bottom: .55rem solid var(--bug-off); }
+.bug-inn .bug-dn { border-top: .55rem solid var(--bug-off); }
+.bug-inn .bug-up.is-on { border-bottom-color: var(--bug-on); }
+.bug-inn .bug-dn.is-on { border-top-color: var(--bug-on); }
+.bug-field { grid-area: 1 / 4 / 3 / 5; display: flex; align-items: center; justify-content: center; gap: 1.1rem; padding: .2rem 1rem .2rem .9rem; border-left: var(--bug-bw, 2px) solid var(--bug-frame); } /* centred: a long top line (the pitch, its result) widens the bug and the extra width lands in this cell — left-aligned, the count and the bases sat off-centre (Steve, 2026-09-18) */
+.bug-bases { width: 3.1rem; height: 1.9rem; }
+.bug-bases polygon { fill: transparent; stroke: var(--bug-soft); stroke-width: 2; stroke-linejoin: round; }
+.bug-bases polygon.is-on { fill: var(--bug-on); stroke: #fff; }
+.bug-count { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; }
+.bug-count > b { font-family: var(--display); font-size: 1.35rem; line-height: 1; letter-spacing: .04em; }
+.bug-outs { display: flex; align-items: center; gap: .35rem; }
+.bug-outs i { width: .8rem; height: .8rem; border-radius: 50%; border: 2px solid var(--bug-soft); }
+.bug-outs i.is-on { background: var(--bug-on); border-color: #fff; }
+
+/* the pregame: the predictor ring and its percentages, one line of starters, the leaders out */
+.tf-lines .tf-series, .tf-lines .tf-next, .tf-lines .tf-starters, .tf-lines .tf-hurt { color: var(--ink-soft); }
+.is-live .tf-lines .tf-next { text-align: center; }
+.tf-pred { display: flex; align-items: center; gap: .6rem; margin-top: .5rem; font-family: var(--mono); font-size: .74rem; color: var(--ink-soft); }
+.tf-pred svg { width: 3.4rem; height: 3.4rem; flex: none; }
+.tp-ring { display: flex; flex-direction: column; align-items: center; gap: .1rem; }
+.tp-ring i { font-style: normal; font-size: .62rem; letter-spacing: .04em; color: var(--ink-soft); } /* soccer: the draw's share, under the ring */
+.tf-pred .tp-side { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.tf-pred .tp-side b { font-family: var(--display); font-size: 1.35rem; font-weight: 700; letter-spacing: .02em; color: var(--ink); } /* the ring carries the colours; the numbers stay legible */
+.is-live .tf-wiki { justify-content: flex-start; } /* beside a game the news sits at the top */
+/* the column wrapped under the row (app.js foldNews sets is-wrapped on the
+   block when it measures the column below the row): as tall as it needs,
+   the lead — the highlights, the last out — in a column of its own beside the news */
+.team-form.is-live.is-wrapped > .tf-wiki { max-height: none; }
+/* the row alone across the block (the news column wrapped under it, or none): as wide as its content, centred, so the crests sit close by the bug instead of at the block's far ends */
+.team-form.is-live.is-wrapped > .tf-main, .team-form.is-live > .tf-main:not(:has(+ .tf-wiki)) { flex: 0 1 auto; max-width: 100%; margin-inline: auto; }
+@media (min-width: 641px) {
+  .team-form.is-live.is-wrapped .tf-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 1.2rem; align-items: start; }
+  .team-form.is-live.is-wrapped .tf-cols .tf-lead { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; padding-right: 1.2rem; border-right: 1px solid var(--line); align-self: stretch; }
+  .team-form.is-live.is-wrapped .tf-cols .tf-lead:only-child, .team-form.is-live.is-wrapped.is-season .tf-cols .tf-lead, .team-form.is-live.is-wrapped.is-pre .tf-cols .tf-lead, .team-form.is-live.is-wrapped.is-final .tf-cols .tf-lead { grid-column: 1 / -1; padding-right: 0; border-right: 0; } /* no news beside it: the lines take the whole width (Steve, 2026-09-16: wasted space) */
+  .team-form.is-live.is-wrapped .tf-cols .tf-lead { max-height: 6.4rem; overflow: hidden; } /* four lines' room under the crests: the block keeps near its wide height, app.js fitLead drops the lower-priority lines to fit */
+}
+/* the club's colours (app.js sets --team / --team-2 from filter.js TEAMS):
+   the frame and the month's name in the accent, home games in the primary */
+.team-cal .cal-month { border-radius: 10px; aspect-ratio: 1; display: flex; flex-direction: column; } /* the site's own frame (soft ink), not the club's accent */ /* a square card: the week rows share what's under the header */
+.team-cal .cal-mname {
+  display: flex; align-items: center; justify-content: center; gap: .6rem; margin: 0; /* an h3: no default margins, or the band gets a spare 1em above and below */
+  padding: .5rem .6rem; font-size: 1.4rem; line-height: 1; letter-spacing: .1em; /* the name sets the header's height; even padding above and below */
+  border-bottom-color: var(--ink-soft); color: #fff;
+  background: color-mix(in srgb, var(--team) 55%, #6f7a85); /* a desaturated wash of the club's primary */
+}
+.team-cal .cal-mname img { width: 1.9rem; height: 1.9rem; object-fit: contain; }
+.team-cal .cal-mname .sport { width: 1.3rem; height: 1.3rem; flex: none; color: rgba(255, 255, 255, .75); }
+.team-cal .cal-mname { font-family: var(--display); font-weight: 700; text-transform: uppercase; text-align: center; }
+/* poster cells: the day number tucked in the corner, the opponent and the
+   time centred; a home game is a solid ink cell, an away game a pale one */
+.team-cal .cal-days { flex: 1 1 auto; grid-auto-rows: minmax(0, 1fr); }
+.team-cal .cal-day {
+  aspect-ratio: auto; height: auto; min-height: 0; padding: .2rem .25rem; position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+}
+.team-cal .cal-day.is-blank { display: block; margin: 0; width: auto; background: color-mix(in srgb, var(--line) 35%, var(--mist)); } /* a padding slot is a cell like the rest, a shade darker, hairlines all round */
+.team-cal .cal-day .num { position: absolute; top: .22rem; left: .3rem; font-size: .7rem; line-height: 1; }
+.team-cal .cal-day .abbr { font-weight: 700; font-size: 1rem; line-height: 1; margin-top: .4rem; }
+.team-cal .cal-day .gtime { font-size: .75rem; line-height: 1; opacity: .85; }
+.team-cal .cal-day .gtime i { font-style: normal; }
+@media (max-width: 640px) {
+  .team-cal .cal-day .num { font-size: .55rem; top: .12rem; left: .18rem; }
+  .team-cal .cal-day .abbr { font-size: .66rem; }
+  .team-cal .cal-day .gtime { font-size: .54rem; }
+}
+/* two-tone: home games solid in the primary, away games solid in the accent
+   (text by the accent's brightness, app.js --team-2-on). The home cell wears
+   a hairline of the accent so a navy primary still stands off a dark card. */
+.team-cal .cal-day.is-home { background: var(--team); color: #fff; box-shadow: inset 0 0 0 1.5px var(--team-2); }
+.team-cal .cal-day.is-away { background: #eef1f4; color: var(--team); box-shadow: inset 0 0 0 1.5px var(--team); } /* white, as the pocket schedules print it; the club's colour for the type and a hairline */
+.team-cal button.cal-day.is-home:hover { background: color-mix(in srgb, var(--team) 80%, #fff); }
+.team-cal button.cal-day.is-away:hover { background: #fff; }
+.team-cal .cal-day.is-today { box-shadow: inset 0 0 0 2px var(--gold); }
+.team-cal .cal-day.is-past:not(.is-blank) { opacity: .5; }
+.team-cal .cal-day.is-past .num { color: inherit; }
+/* the PDF and list ⇄ calendar chips: only while the Teams view is open, just left of Home Teams */
+html:not(.teams-open) #teamPdfBtn { display: none; }
+#teamPdfBtn:disabled { opacity: .35; cursor: default; } /* every club's list (teams-all) has no calendar or poster: the chips stay put, dimmed, so the bar never shifts */
+#teamPdfBtn { order: 2; }
+#teamPdfBtn { padding: .5em .7em; } /* icon only (the label stays for screen readers): the strip needs the room for its names */
+#teamPdfBtn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#teamPdfBtn svg { width: 1.1rem; height: 1.1rem; }
+/* the strip: one tab per team, crest over name, the chosen one solid */
+/* the strip lives in the bar, right of the theme toggle, only while the
+   Teams view is open: one pill per club, crest and name, scrolling sideways
+   if it must; when the names won't fit the row app.js flags is-crests and
+   the pills shrink to their crests */
+html:not(.teams-open) .team-strip { display: none; }
+.filterbar .team-strip { order: 1; flex: 1 1 0; min-width: 0; display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; padding: 0; } /* no vertical padding: the strip is exactly a pill tall, so the bar keeps one height in both modes */ /* order: where the search box was, so Home Teams (3) keeps its place beside the theme pill (5) */
+.team-strip::-webkit-scrollbar { display: none; }
+.team-strip.is-more-right { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.6rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 2.6rem), transparent); } /* more crests beyond the edge: a fade says so (app.js fitTeamStrip) */
+.team-tab {
+  flex: none; display: inline-flex; align-items: center; gap: .4rem; min-height: 2.25rem;
+  padding: .3rem .75rem .3rem .45rem; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--mist); color: var(--ink-soft); cursor: pointer;
+  font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; line-height: 1;
+}
+.team-tab img { width: 1.5rem; height: 1.5rem; object-fit: contain; }
+.team-tab:hover { border-color: var(--ink-soft); color: var(--ink); }
+.team-tab:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: -3px; } /* inside the pill: the strip clips anything past its edges */
+.team-tab[aria-pressed="true"] { background: var(--ink); color: var(--sky); border-color: var(--ink); }
+.team-tab .sport { width: .95rem; height: .95rem; flex: none; opacity: .75; } /* the sport, after the name */
+/* a game in progress: the whole pill breathes — its edge and face lift a
+   little and settle, over and over (no dot) */
+.team-tab.is-live { animation: tab-pulse 1.8s ease-in-out infinite; }
+/* no scale in the pulse (Steve, 2026-09-16): a bordered pill scaled by a few percent rasterises its arcs and its straight edges on different sub-pixels, and a seam showed at the brightest point — the pill breathes in colour and a soft ring instead, drawn on whole pixels */
+@keyframes tab-pulse {
+  50% { border-color: var(--ink); background: color-mix(in srgb, var(--ink) 14%, var(--mist)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 35%, transparent); }
+}
+.team-tab.is-live[aria-pressed="true"] { animation-name: tab-pulse-on; } /* the chosen club's pill is solid ink: it breathes in brightness instead */
+@keyframes tab-pulse-on { 50% { opacity: .78; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .team-tab.is-live { animation: none; border-color: var(--ink); } }
+/* out of season (app.js teamActive): the crest alone, after the clubs in season */
+.team-tab.is-off { order: 1; } /* out of season: after the clubs in season */
+/* the off-season clubs keep their names while the row has room; when it hasn't, they go to crests first (app.js fitTeamStrip), then everyone does */
+.team-strip.is-offcrests .team-tab.is-off { padding: .3rem .45rem; }
+.team-strip.is-offcrests .team-tab.is-off span, .team-strip.is-offcrests .team-tab.is-off .sport { display: none; }
+.team-strip.is-nosport .team-tab .sport { display: none; } /* the first thing to go when the row is tight */
+.team-strip.is-crests .team-tab { padding: .3rem .45rem; }
+.team-strip.is-crests .team-tab span, .team-strip.is-crests .team-tab .sport { display: none; }
+/* the picked opponent: crest, name, how many games, their site, and the way back */
+.team-focus[hidden] { display: none; } /* an author display beats the UA [hidden] rule */
+/* it rides under the pinned bar while the games scroll, so the way back
+   (and the club's site) stay in reach */
+.team-focus {
+  position: sticky; top: calc(var(--barh) + .5rem); z-index: 11;
+  display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin: .4rem 0 .2rem;
+  padding: .55rem .8rem; border: 1px solid var(--line); border-radius: 10px; background: var(--mist);
+  box-shadow: 0 8px 28px rgba(15, 25, 35, .18);
+}
+.team-focus img { width: 1.75rem; height: 1.75rem; object-fit: contain; }
+.team-focus .focus-name { font-weight: 600; }
+.team-focus .focus-n { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+.team-focus .chip { display: inline-flex; align-items: center; text-decoration: none; padding: .4em .8em; }
+.team-focus .chip:last-child { margin-left: auto; }
+.team-focus .chip:hover { border-color: var(--ink-soft); }
+/* the postseason's rounds at the foot of the list: dashed cards, the "if they qualify" badge */
+.team-sched .ev.is-post { border: 1px dashed var(--ink-soft); background: transparent; padding-right: .75rem; }
+.team-sched .ev.is-post .ev-title { color: var(--ink); }
+.badge.b-pre { background: transparent; color: var(--ink-soft); border: 1px dashed var(--ink-soft); } /* a preseason game */
+.team-cal .cal-day.is-pre { opacity: .6; } /* preseason: there, but faded, like a played game */
+.badge.b-post { background: color-mix(in srgb, var(--team-2) 22%, transparent); color: var(--ink); border: 1px dashed var(--team-2); }
+.team-sched .month-group.is-post .month-row > span { color: var(--team-2); }
+.team-sched .month-row.is-phase > span { color: var(--team-2); } /* the phase headings — Preseason, the regular season, Postseason — in the postseason pill's dress (Steve, 2026-09-16) */
+.team-sched .month-row.is-phase { margin-top: .4rem; }
+/* and on the calendar: hatched days, the final's in the accent */
+.team-cal .cal-day.is-post { background: repeating-linear-gradient(-45deg, transparent 0 3px, color-mix(in srgb, var(--ink-soft) 22%, transparent) 3px 5px); }
+.team-cal .cal-day.is-post.is-final { background: repeating-linear-gradient(-45deg, transparent 0 3px, color-mix(in srgb, var(--team-2) 45%, transparent) 3px 5px); }
+/* the season list wears the agenda's day rows and cards */
+.team-sched { list-style: none; margin: 0; padding: 0; }
+/* month rows stick under the opponent bar while one is up (app.js sets --focus-h) */
+.team-sched .month-row { top: calc(var(--barh) + var(--focus-h, 0px) + var(--head-h, 0px)); }
+.team-sched .day-row { grid-template-columns: 5.2rem 1fr; }
+.team-sched .ev { padding-right: calc(2.9rem + .75rem + .6rem); } /* clear of the crest */
+/* on the dark palette a navy mark would sink into the card: a thin white
+   outline traced round the crest's own shape (four hard 1px shadows, no
+   blur, no disc) keeps it legible — in the list, and in the form block */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .team-sched .opp-btn img, :root:not([data-theme="light"]) .team-form img { filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff); }
+}
+:root[data-theme="dark"] .team-sched .opp-btn img, :root[data-theme="dark"] .team-form img { filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff); }
+.team-sched .ev.is-away { background: color-mix(in srgb, var(--ink-soft) 7%, transparent); }
+.team-sched .venue.is-away { color: var(--ink-soft); }
+.team-sched .ev.is-dim { opacity: .28; }
+.team-sched .ev { transition: opacity .2s; }
+/* a game row's foot: the ticket line at the left, TV / radio pushed to the right */
+.team-sched .ev .ev-body { flex: 1 1 auto; } /* so the foot can reach the row's right edge */
+/* the time cell as a scoreboard clock, in the events list and the Teams
+   view alike: the digits as big as the column allows ("12:10" fills it),
+   "PM" centred beneath, the cell centred on the row (Steve, 2026-09-15) */
+.ev .time.t-clock { align-items: stretch; align-self: center; gap: .1rem; padding-top: 0; min-width: 6.4rem; }
+/* the date rail's colours and faces: the digits in the display face and the ink, the PM as the weekday (Steve, 2026-09-15) */
+.t-big { display: block; font: 700 2.05rem/1 var(--display); letter-spacing: -.01em; color: var(--ink); text-align: center; }
+.t-foot { display: block; text-align: center; font: 700 1rem/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); }
+.t-foot.t-zone { letter-spacing: .04em; font-size: .82rem; white-space: nowrap; } /* "PM PDT": the viewer's zone after the meridiem when their clock differs from the city's (2026-10-11) */ /* clearly bigger and bolder than the rail's weekday — .8rem read as no change (Steve, 2026-09-15) */
+.ev-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; align-self: stretch; flex-wrap: wrap; }
+.ev-foot .ev-watch { margin-left: auto; text-align: right; }
+.ev-watch-ico { display: inline-block; width: .95rem; height: .95rem; vertical-align: -.22em; margin-right: .3em; color: var(--ink-soft); }
+.ev-watch-ico svg { width: 100%; height: 100%; display: block; }
+.ev-watch { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); letter-spacing: .02em; }
+.ev-watch-name { white-space: nowrap; } /* "Seattle Sports (710 AM)" breaks between outlets, never inside one */
+.ev-watch b { font-weight: 700; }
+.b-playoff { color: var(--gold); }
+/* the opponent's crest is a button: full colour on the card itself (no
+   disc behind it, Steve's call 2026-09-10 — a navy mark may sink into the
+   dark card, and that is accepted), a ring on hover */
+.opp-btn { position: absolute; right: .75rem; top: 50%; transform: translateY(-50%); width: 2.9rem; height: 2.9rem; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; }
+.opp-btn .team-mark { position: static; transform: none; width: 100%; height: 100%; opacity: .9; }
+:root .opp-btn .team-mark { filter: none; }
+.opp-btn:hover .team-mark, .opp-btn:focus-visible .team-mark { opacity: 1; }
+.opp-btn:hover, .opp-btn:focus-visible { box-shadow: 0 0 0 2px var(--ink-soft); }
+.opp-abbr { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--ink-soft); }
+.team-sched .empty { color: var(--ink-soft); padding: 2rem 0; text-align: center; }
+.team-fold { display: flex; justify-content: center; padding: .2rem 0 .6rem; }
+.team-fold .chip { color: var(--ink-soft); }
+.team-fold .chip:hover { border-color: var(--ink-soft); color: var(--ink); }
+
+/* ---- the calendar chip (narrow layouts only) ---- */
+
+/* Icon + chevron at the far right of the filter bar, a chip like the funnel.
+   The chevron points left while closed ("opens out over the list") and flips
+   right once open. On the wide layout the calendar is docked and app.js
+   hides this. */
+.cal-toggle[hidden] { display: none; }
+.cal-toggle span { /* label for screen readers only */
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.cal-toggle .chev { width: .85rem; height: .85rem; transition: transform .15s; }
+.cal-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+/* phones follow the system light/dark setting, so no toggle; the query
+   mirrors PHONE in index.html's head script — keep them in step */
+/* phones keep the theme pill too (Steve, 2026-09-15): its system stop follows the OS */
+
+/* ---- phones: the event sheet ---- */
+.sheet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; }
+.sheet[hidden] { display: none; }
+.sheet-back { position: absolute; inset: 0; background: rgba(0, 0, 0, .55); }
+.sheet-card {
+  position: relative; width: 100%; max-height: 85vh; max-height: 85dvh; overflow: auto;
+  background: var(--mist); color: var(--ink); border-radius: 16px 16px 0 0;
+  padding: 1.1rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, .35);
+}
+.sheet-venue { font-family: var(--mono); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); margin: 0 0 .3rem; }
+.sheet-title { font: 700 1.25rem/1.25 var(--body); margin: 0 0 .4rem; }
+.sheet-when { color: var(--ink-soft); margin: 0 0 1rem; }
+/* a home game's broadcasts, right under the date: small mono labels, then
+   the names */
+.sheet-when:has(+ .sheet-watch:not([hidden])) { margin-bottom: .3rem; }
+.sheet-watch { color: var(--ink-soft); margin: 0 0 1rem; font-size: .92rem; }
+.sheet-watch b { font: 500 .66rem/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; margin-right: .3rem; }
+.sheet-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .45rem; } /* smaller chips, as many to a line as fit, centred (Steve, 2026-09-15) */
+.sheet-actions .chip[hidden], .sheet-actions .btn-cal[hidden] { display: none; } /* the chip rule below sets a display, which would otherwise beat the hidden attribute — an empty pill where a club's "season" chip isn't (Steve, 2026-09-15) */
+/* short, button-like (Steve, 2026-09-21): two words each, the venue's name
+   is the eyebrow above; solid pills of one height, Tickets in ink as the one
+   primary, the rest in the page's mist */
+.sheet-actions .btn-cal, .sheet-actions .chip {
+  display: inline-flex; justify-content: center; align-items: center; min-height: 2.2rem;
+  font-size: .82rem; font-weight: 600; padding: .4em 1em; text-decoration: none; margin: 0;
+  border: 1px solid transparent;
+}
+.sheet-actions .chip { background: var(--mist); border-color: var(--line); }
+body.sheet-open { overflow: hidden; }
+/* the city switcher (2026-10-14): the same sheet from the More Cities pill and the footer's More Cities — a bottom
+   sheet on phones, a centred dialog on wider screens (the listing sheet becomes a pop placed by app.js there; this
+   one has no card to hang off) — the map link first, then every city grouped by state, this site marked, not linked */
+.sheet.city-sheet { position: fixed; inset: 0; z-index: 35; display: flex; align-items: flex-end; justify-content: center; } /* over the sticky bar (30), under the toast (40) */
+.sheet.city-sheet[hidden] { display: none; }
+.sheet.city-sheet .sheet-back { display: block; }
+.city-map { display: inline-flex; align-items: center; gap: .5rem; margin: 0 0 1rem; font-weight: 600; text-decoration: none; color: var(--ink); }
+.city-map svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.city-map:hover { color: var(--gold); }
+.city-groups { columns: 9rem; column-gap: 1.4rem; margin-bottom: 1.1rem; } /* columns, not a grid: a tall state (Washington) packs beside the short ones instead of pushing a row down */
+.city-groups section { break-inside: avoid; margin-bottom: .9rem; }
+.city-groups h3 { margin: 0 0 .3rem; font: 500 .68rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.city-groups ul { list-style: none; margin: 0; padding: 0; }
+.city-groups li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .45rem; padding: .18rem 0; font-size: .95rem; }
+.city-groups li a { color: var(--ink); text-decoration: none; font-weight: 600; }
+.city-groups li a:hover { color: var(--gold); }
+.city-groups li small { font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.city-groups li.is-here span { font-weight: 700; color: var(--gold); }
+.city-groups li.is-soon span { color: var(--ink-soft); }
+.city-close { display: block; margin: 0 auto; }
+@media (min-width: 641px) {
+  .sheet.city-sheet { align-items: center; }
+  .sheet.city-sheet .sheet-card { width: min(46rem, calc(100vw - 2rem)); max-height: 85vh; max-height: 85dvh; overflow: auto; border-radius: 12px; padding: 1.1rem 1.4rem 1.2rem; box-shadow: 0 12px 40px rgba(0, 0, 0, .35); }
+  .city-close { display: none; } /* outside click or Esc, like every other pop */
+}
+/* wider screens: the same sheet is a pop hanging off the clicked card — the
+   site's floating-panel look (see .pop), placed by app.js, no backdrop, no
+   Close button (outside click / Esc, like every other pop) */
+@media (min-width: 641px) {
+  .sheet { position: fixed; inset: auto; display: block; }
+  .sheet-back { display: none; }
+  .sheet-card {
+    width: min(20rem, calc(100vw - 2rem)); max-height: none; overflow: visible;
+    border: 1px solid var(--line); border-radius: 8px; padding: .9rem 1.1rem 1rem;
+    box-shadow: 0 8px 28px rgba(15, 25, 35, .18);
+  }
+  .sheet-venue { font-size: .72rem; margin-bottom: .2rem; }
+  .sheet-title { font-size: 1.05rem; margin-bottom: .3rem; }
+  .sheet-when { font-size: .88rem; margin-bottom: .8rem; }
+  .sheet-actions { gap: .45rem; }
+  .sheet-actions .btn-cal:hover { background: var(--ink-soft); }
+  .sheet-actions .chip:hover { border-color: var(--ink-soft); }
+  #sheetClose { display: none; }
+}
+
+@media (max-width: 640px) {
+  /* notch-safe edges, and every control at the 44px tap guideline */
+  body {
+    padding: 0 max(1rem, env(safe-area-inset-right)) calc(2.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+  .chip, .filterbar .chip, #searchBox { min-height: 2.75rem; } /* .filterbar .chip would otherwise win */
+  #searchBox { font-size: 1rem; } /* under 16px iOS Safari zooms the page when the box gets focus */
+  :root { --barh-base: 3.9rem; } /* = 2.75rem chips + the .filter-area padding */
+  .theme-toggle { --tt: 2.6rem; }
+  .theme-toggle:not(.view-toggle) { --tt: 2.1rem; } /* the theme pill fits the phone's row */
+  .theme-toggle button { height: 2.35rem; }
+  .cal-days > * { min-height: 2.75rem; }
+  .cal-head button { min-width: 2.75rem; min-height: 2.75rem; }
+  /* presets: one swipeable row instead of three stacked ones; no label */
+  .fp-top { gap: .6rem; margin: 0 -1rem 1rem; padding: 0 1rem; flex-wrap: wrap; }
+  .fp-top .fp-presets { flex-basis: 100%; } /* the presets take the row; Sold Out (or Nearly) and Holidays go to the next (they had sat over the chips) */
+  .masthead { padding: 1.6rem 0 .8rem; gap: 1.1rem; }
+  h1 { font-size: clamp(2.4rem, 11vw, 3.2rem); }
+  .masthead { min-height: 9rem; }
+  .masthead-photo { position: absolute; top: 0; right: 0; bottom: 0; width: 62%; height: 100%; margin: 0; flex: none; opacity: .35; } /* on a phone the band wraps, so the drawing goes back to a box pinned at the right edge, clear of the title (Steve, 2026-09-22); the same mask centres the Needle in it */
+  .pop { left: 0; right: 0; width: auto; }
+
+  /* day groups: date reads across the top instead of down a rail */
+  .day-row { display: block; padding: .85rem 0; }
+  .date-rail {
+    display: flex; flex-direction: row; justify-content: flex-start; align-items: baseline; gap: .55rem; /* a line above the events; the desktop rule's column and centring undone */
+    text-align: left; margin-bottom: .5rem;
+  }
+  .date-rail .dnum { display: inline; font-size: 1.7rem; }
+  .date-rail .dmeta { white-space: nowrap; }
+
+  /* event rows keep the same time-column + stacked-body layout,
+     just with a narrower time column */
+  .ev { padding: .5em .6em; }
+  .ev .time { min-width: 4.4rem; }
+  .ev .time.t-clock { min-width: 5rem; }
+  .t-big { font-size: 1.6rem; }
+  .day-events { gap: .5rem; }
+}
+
+/* ---- print: the season calendar as a poster (the PDF chip) ---- */
+.print-head, .print-foot, .cal-wd { display: none; } /* the poster's own parts, print only */
+/* ---- the static More Cities links (scripts/seo.mjs writes them at build, before <footer>): real <a> links to the map
+   and every other live city, so the HTML of each site links to the rest and Google can walk the network (the pill and
+   sheet are JavaScript). Muted, one running line, the last thing under the list; never printed. (2026-10-19) */
+
+@media print {
+  /* a light sheet whatever the screen theme: the palette's light values,
+     after the dark-theme rules so they win */
+  :root.print-team, :root.print-team[data-theme="dark"] {
+    color-scheme: light;
+    --sky: #fff; --mist: #fff; --ink: #1b2733; --ink-soft: #55636f; --line: #c9d2da; --gold: #e8791d;
+  }
+  html.print-team body > *:not(#teamsView), html.print-team .team-main, html.print-team .floaters, html.print-team #teamHead { display: none !important; }
+  html.print-team body { background: #fff; padding: 0; }
+  html.print-team #teamsView { display: block; width: 100%; max-width: none; margin: 0; }
+  @page { size: letter portrait; margin: 8mm; }
+  /* the banner: crest, "SEATTLE MARINERS", the season, in the club's primary */
+  html.print-team .print-head { display: flex; align-items: center; gap: 5mm; padding: 3mm 6mm; margin-bottom: 4mm; background: var(--team); color: #fff; border-radius: 3mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  html.print-team .print-head img { width: 16mm; height: 16mm; object-fit: contain; }
+  html.print-team .ph-text { display: flex; flex-direction: column; font-family: var(--display); text-transform: uppercase; line-height: 1; }
+  html.print-team .ph-team { font-size: 26pt; font-weight: 700; letter-spacing: .04em; }
+  html.print-team .ph-season { font-size: 12pt; font-weight: 700; letter-spacing: .12em; color: var(--team-2); margin-top: 1.5mm; }
+  /* the months: square cards like the screen's (the week rows share what's
+     under the header), as many across (two, three, four) and as big as
+     lets the whole season fit one sheet — app.js prepPrint sizes them
+     (--pcard, --pgap); a short last row sits centred. Type scales with
+     the card. */
+  html.print-team .team-cal { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--pgap, 5mm); }
+  html.print-team .cal-month { flex: none; width: var(--pcard, 97mm); aspect-ratio: 1; display: flex; flex-direction: column; border: .4mm solid var(--team); border-radius: 2mm; break-inside: avoid; overflow: hidden; }
+  html.print-team .cal-mname { padding: calc(var(--pcard, 97mm) * .02) 2mm; font-size: calc(var(--pcard, 97mm) * .047); letter-spacing: .12em; color: #fff; background: var(--team); border-bottom: 0; }
+  html.print-team .cal-mname img { width: calc(var(--pcard, 97mm) * .067); height: calc(var(--pcard, 97mm) * .067); }
+  html.print-team .cal-mname .sport { display: none; }
+  html.print-team .cal-wd { display: grid; grid-template-columns: repeat(7, 1fr); background: color-mix(in srgb, var(--team) 12%, #fff); font: 700 calc(var(--pcard, 97mm) * .0235)/1 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--team); }
+  html.print-team .cal-wd span { padding: calc(var(--pcard, 97mm) * .013) 0; text-align: center; }
+  html.print-team .cal-days { flex: 1 1 auto; grid-auto-rows: minmax(0, 1fr); gap: 0; background: none; } /* the week rows split the card's height */
+  /* the cells as the pocket schedules print them: the day number top left,
+     the start top right, the opponent large across the foot; a day with no
+     game solid grey with its number in white; home solid in the club's
+     primary, away white in the club's colour with a hairline of it */
+  html.print-team .cal-day { aspect-ratio: auto; height: auto; padding: calc(var(--pcard, 97mm) * .008) calc(var(--pcard, 97mm) * .01) calc(var(--pcard, 97mm) * .006); gap: 0; justify-content: flex-end; border: .2mm solid var(--line); margin: -.1mm; background: #fff; color: var(--ink); opacity: 1; box-shadow: none; }
+  html.print-team .cal-day:not(.is-blank):not(.is-home):not(.is-away):not(.is-post), html.print-team .cal-day.is-blank { background: #b4b9be; color: #fff; border-color: #fff; }
+  html.print-team .team-cal .cal-day.is-past:not(.is-blank) { opacity: 1; } /* played games print as strongly as the rest */
+  html.print-team .cal-day .num { top: calc(var(--pcard, 97mm) * .01); left: calc(var(--pcard, 97mm) * .012); font-size: calc(var(--pcard, 97mm) * .021); }
+  html.print-team .cal-day .abbr { font-family: var(--display); font-size: calc(var(--pcard, 97mm) * .052); line-height: 1; margin-top: auto; letter-spacing: .01em; }
+  html.print-team .cal-day .gtime i { display: none; }
+  html.print-team .cal-day .gtime { position: absolute; top: calc(var(--pcard, 97mm) * .01); right: calc(var(--pcard, 97mm) * .012); font-size: calc(var(--pcard, 97mm) * .019); line-height: 1; opacity: 1; }
+  html.print-team .cal-day.is-home { background: var(--team); color: #fff; border-color: var(--team); box-shadow: none; }
+  html.print-team .cal-day.is-away { background: #fff; color: var(--team); border-color: var(--team); box-shadow: none; } /* a hairline in the club colour, no heavier than the grid's */
+  html.print-team .cal-day.is-today { box-shadow: none; }
+  html.print-team .cal-day.is-pre { opacity: .55; } /* preseason, faded */
+  html.print-team .cal-day, html.print-team .cal-mname, html.print-team .cal-wd, html.print-team .print-head, html.print-team .print-foot { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* the legend */
+  html.print-team .print-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 2mm 6mm; margin-top: 3mm; font: 500 7pt/1 var(--mono); color: var(--ink-soft); text-transform: uppercase; letter-spacing: .08em; }
+  html.print-team .print-foot span { white-space: nowrap; } /* each legend entry whole; the row wraps between entries instead */
+  html.print-team .print-foot span:last-child { margin-left: auto; text-transform: none; letter-spacing: 0; }
+  html.print-team .pf-home::before, html.print-team .pf-away::before { content: ""; display: inline-block; width: 3.5mm; height: 3.5mm; margin-right: 1.5mm; vertical-align: -0.8mm; border: .3mm solid var(--team); }
+  html.print-team .pf-home::before { background: var(--team); }
+  html.print-team .pf-post::before, html.print-team .pf-final::before { content: ""; display: inline-block; width: 3.5mm; height: 3.5mm; margin-right: 1.5mm; vertical-align: -0.8mm; border: .3mm solid #b4b9be; }
+  html.print-team .pf-post::before { background: repeating-linear-gradient(-45deg, #fff 0 .6mm, #b4b9be .6mm 1mm); } /* the playoff windows' hatch */
+  html.print-team .pf-final::before { background: repeating-linear-gradient(-45deg, #fff 0 .6mm, color-mix(in srgb, var(--team-2) 60%, #fff) .6mm 1mm); } /* the final's, in the club's accent */
+}
+
+/* ---- small screens (a phone, or a narrow window): the news column sits under the row, so it is low priority — one headline, no summary line, the rest behind the arrow (app.js foldNews, NEWS_SHOWN_NARROW) ---- */
+@media (max-width: 760px) {
+  .tf-wiki:not(.is-open) .tf-news p { display: none; }
+  .tf-more { width: 100%; margin-top: .5rem; min-height: 2.25rem; font-size: .85rem; }
+}
+
+/* ---- touch screens at any width — phones and tablets, portrait or landscape
+   (Steve, 2026-09-22): the panel's small targets grow to thumb size. Keyed on
+   the pointer, not the width, so a tablet in landscape (wider than some
+   laptops) still gets them and a laptop with a mouse does not ---- */
+@media (pointer: coarse) {
+  .fp-seg-b { padding: .7rem .75rem; font-size: .74rem; } /* ~2.2rem tall */
+  .fp-set { padding: .5rem .2rem; margin: -.5rem -.2rem; } /* Show All · Hide All: the same words, a taller hit area */
+  .fp-switch { padding: .4rem 0; }
+  .sw { width: 2.4rem; height: 1.4rem; }
+  .sw::after { width: 1.05rem; height: 1.05rem; }
+  .fp-switch input:checked + .sw::after { transform: translateX(1rem); }
+}
+/* ---- phones: the game block stacked (kept at the end of the file so it outranks the desktop rules above) ---- */
+@media (max-width: 640px) {
+  /* a phone (these come last, after every desktop rule they override): the crests on one line, small, at either end; the scorebug under them at its natural size; the news and the strip below */
+  .is-live .tf-main { flex-basis: 100%; }
+  .is-live .tf-wiki, .team-form > .tf-wiki { max-height: none; } /* the column itself is unbounded on a phone; its lead (above) is what's capped */
+  .is-live .tf-row { height: auto; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem .8rem; }
+  .is-live .tf-row > img, .is-live .tf-row > img.tf-opp, .is-live .tf-row > .tf-opp-abbr { order: 0; margin-top: 0; min-width: 0; width: var(--crest); height: var(--crest); flex: none; }
+  .is-live .tf-row > .tf-opp { order: 1; }
+  .is-live .tf-row > .tf-body { order: 2; flex: 1 1 100%; }
+  .tf-cluster { padding: 0; }
+  .tf-inner, .tf-cluster, .tf-bugwrap, .is-live .tf-row > .tf-body { min-width: 0; max-width: 100%; width: 100%; } /* nothing wider than the block: the bug's long cells trim instead */
+  .tf-bug, .tf-bug:not(.is-generic) { zoom: 1; width: 100%; max-width: 100%; }
+  .tf-bugwrap:has(> .is-pregame) { margin-bottom: 1.2rem; }
+  .tf-bugwrap:has(> .is-pregame)::after { zoom: 1; }
+  /* the watch strip's sections stack on a phone, each a full row from the left; the strip grows to hold them (blocks stack here, so nothing needs one height) */
+  /* strictly one row (Steve, 2026-09-16): the sections side by side, each clipped to one line, the chevron at the right end opening them as a stack */
+  .tf-watch { flex-direction: row; align-items: center; justify-content: flex-start; gap: .8rem; height: 2.6rem; padding: 0 2.2rem 0 0; }
+  .tf-watch:not(.is-open) .tf-sect { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+  .tf-watch:not(.is-open) .tf-channels { flex-wrap: nowrap; white-space: nowrap; }
+  .tf-watch:not(.is-open) .tf-channels li { flex-wrap: nowrap; white-space: nowrap; }
+  .tf-watch:not(.is-open) .tf-channels { display: block; overflow: hidden; text-overflow: ellipsis; } /* the row's end is an ellipsis, not a word cut in half — a block (not flex) is what text-overflow clips (Steve, 2026-09-18) */
+  .tf-watch:not(.is-open) .tf-channels li { display: inline; } .tf-watch:not(.is-open) .tf-channels li > b { margin-right: .45rem; } /* inline, the flex gap after the network's name is gone: put it back */ .tf-watch:not(.is-open) .tf-channels li + li::before { content: "   "; white-space: pre; }
+  .tf-watch.is-open { flex-direction: column; align-items: stretch; height: auto; padding: .4rem 2.2rem .55rem 0; gap: .3rem; }
+  .tf-watch.is-open .tf-sect { width: 100%; }
+  .tf-sect.is-empty { display: none; }
+  .tf-sect .tf-channels, .tf-sect.at-r .tf-channels { justify-content: flex-start; }
+  .tf-channels { gap: .25rem 1rem; } /* one line a section, the rest behind the chevron — as on a desktop (Steve, 2026-09-16: "still way too much detail" on the phone) */
+  .tf-wmore { top: 50%; transform: translateY(-50%); }
+  .tf-watch.is-open .tf-wmore { top: .75rem; transform: none; }
+  .tf-wiki .tf-lead { max-height: 7.2rem; overflow: hidden; } /* four lines' room, the lower-priority lines dropped by app.js fitLead */
+  .tf-wiki.is-open .tf-lead { max-height: none; }
+  /* the search box is a round icon chip until tapped (or while it holds a
+     query); open, it lies across the whole bar over the other chips
+     (Steve, 2026-09-22: an 85px box with "Se" in it read broken) */
+  .filterbar .search-wrap { flex: none; width: 2.75rem; min-width: 0; max-width: none; }
+  .filterbar .search-wrap:not(.is-open) #searchBox { color: transparent; padding: 0; cursor: pointer; }
+  .filterbar .search-wrap:not(.is-open) #searchBox::placeholder { color: transparent; }
+  .filterbar .search-wrap:not(.is-open) #searchBox::-webkit-search-cancel-button { display: none; }
+  .filterbar .search-wrap:not(.is-open) svg { right: 50%; transform: translate(50%, -50%); color: var(--ink); }
+  .filterbar .search-wrap.is-open { position: absolute; left: 0; right: 0; width: auto; z-index: 20; }
+  .filterbar .search-wrap.is-open #searchBox { background: var(--sky); border-color: var(--ink); } /* opaque over the chips beneath */
+  /* a phone's bar is always the icon-only row: measured, the labelled one runs past the edge and the view switch with it */
+  .filterbar #subscribeBtn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .filterbar #subscribeBtn { padding: .5em .7em; } /* phones: icons only (the chips moved into the bar 2026-09-16) */
+  .filterbar #subscribeBtn svg { width: 1.1rem; height: 1.1rem; }
+  /* the tools sit at the top right, on the eyebrow's line (short, so the room is there), clear of the title below; a flex row would cost the phone a line */
+  .bar-title .masthead-tools { display: none; }
+  .masthead > .masthead-tools { position: absolute; top: 2.5rem; right: 0; margin: 0; } /* the More Cities pill alone, at the top right on the eyebrow's line (short, so the room is there) */
+  .masthead .eyebrow { padding-right: 7.5rem; } /* the eyebrow's line ends short of the More Cities pill at the right (a long eyebrow, "Omaha & Lincoln", would run under it) */
+  .masthead-tools .theme-toggle { display: none; } /* no theme pill on a phone (Steve, 2026-09-16): the site follows the system setting there */
+  .masthead-tools .chip { min-height: 1.9rem; padding: .3em .55em; }
+  /* a 320px phone: measured, the row ran 34px past its box. The mini-calendar chip loses its chevron (its pressed state says open or closed) and the gaps close up a little: the row fits with room to spare and no control hidden */
+  .filterbar { gap: .4rem; }
+  .filterbar #calToggle .chev { display: none; }
+  .filterbar #calToggle { padding: .5em .7em; }
+
+} /* end of the phone block (it ran to the end of the file unclosed, harmlessly, until rules followed it) */
+
+
+/* ---- the Map view (local-map.js, the fourth view stop, in a city whose city.js carries a map block — Steve, 2026-10-24) ---- */
+html.map-open .agenda, html.map-open .cal-toggle, html.map-open #calToday, html.map-open .view-note { display: none; } /* the list and its calendar step aside; the filters and search stay — the pins follow them */
+.local-map { margin-top: 1.2rem; }
+.local-map[hidden] { display: none; }
+.lm-frame { /* all the room there is: the content's width, and the height the window leaves between the toolbar and the pinned footer (local-map.js size() sets it; the calc is the first paint) — Steve, 2026-10-24 */
+  position: relative; width: 100%; height: calc(100vh - 21.5rem); min-height: 18rem; margin: 0 auto;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--mist); overflow: hidden;
+  --land: color-mix(in srgb, var(--ink) 9%, var(--mist)); --shore: color-mix(in srgb, var(--ink) 38%, transparent); --far: color-mix(in srgb, var(--ink) 4%, var(--mist));
+  --water: color-mix(in srgb, #4da3f0 26%, var(--mist)); --road: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+.lm-frame svg { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.lm-frame svg.is-dragging { cursor: grabbing; }
+.lm-island { fill: var(--land); stroke: var(--shore); stroke-width: calc(var(--u, 1) * 1.2); stroke-linejoin: round; }
+.lm-far { fill: var(--far); stroke: var(--shore); stroke-width: calc(var(--u, 1) * .8); opacity: .7; }
+.lm-land { fill: var(--land); }
+.lm-ocean { fill: var(--water); } /* a world ground: the sea under every country */
+.lm-border { fill: none; stroke: var(--shore); stroke-width: calc(var(--u, 1) * .45); opacity: .4; } /* a world ground: state and province lines */
+.lm-sea, .lm-water { fill: var(--water); stroke: var(--shore); stroke-width: calc(var(--u, 1) * .7); stroke-linejoin: round; }
+.lm-road { fill: none; stroke: var(--road); stroke-linecap: round; stroke-linejoin: round; stroke-width: calc(var(--u, 1) * .6); opacity: .45; }
+.lm-road-primary, .lm-road-trunk { stroke-width: calc(var(--u, 1) * .9); opacity: .6; }
+.lm-road-motorway { stroke-width: calc(var(--u, 1) * 1.5); opacity: .8; }
+.lm-town { font-family: var(--mono); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; fill: var(--ink-soft); paint-order: stroke; stroke: var(--mist); stroke-width: calc(var(--u, 1) * 3); stroke-linejoin: round; pointer-events: none; }
+.lm-town-dot { fill: var(--ink-soft); }
+.lm-water-name { font-family: var(--body); font-style: italic; letter-spacing: .04em; fill: color-mix(in srgb, var(--ink) 55%, #4da3f0); pointer-events: none; }
+.lm-peak { fill: none; stroke: var(--ink-soft); stroke-width: calc(var(--u, 1) * 1.2); stroke-linejoin: round; }
+.lm-peak-name { font-family: var(--mono); letter-spacing: .06em; fill: var(--ink-soft); opacity: .8; paint-order: stroke; stroke: var(--mist); stroke-width: calc(var(--u, 1) * 3); pointer-events: none; }
+.lm-pin { cursor: pointer; outline: none; }
+.lm-pin circle { stroke: var(--mist); stroke-width: calc(var(--u, 1) * 1.6); transition: stroke-width .12s; }
+.lm-pin.is-empty circle { fill: var(--mist); stroke: var(--pin); stroke-dasharray: calc(var(--u, 1) * 2) calc(var(--u, 1) * 2); } /* nothing upcoming under the filters: a hollow ring in the room's colour */
+.lm-pin:hover circle, .lm-pin:focus-visible circle, .lm-pin.is-open circle { stroke: var(--ink); stroke-width: calc(var(--u, 1) * 2.4); }
+.lm-pin .lm-n { font-family: var(--mono); font-weight: 700; fill: var(--mist); text-anchor: middle; pointer-events: none; }
+.lm-pin.is-empty .lm-n { fill: var(--pin); }
+.lm-pin .lm-name { font-family: var(--body); font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--mist); stroke-width: calc(var(--u, 1) * 3.2); stroke-linejoin: round; pointer-events: none; }
+.lm-pin.is-empty .lm-name { fill: var(--ink-soft); font-weight: 500; }
+.lm-leader { stroke: var(--ink-soft); stroke-width: calc(var(--u, 1) * .8); fill: none; opacity: .6; } /* a pin nudged off its spot so a neighbour shows: the hair back to the true place */
+.lm-zoom { position: absolute; right: .6rem; top: .6rem; display: flex; flex-direction: column; gap: .3rem; }
+.lm-zoom button { width: 2rem; height: 2rem; padding: 0; display: grid; place-items: center; font: 600 1rem/1 var(--body); color: var(--ink); background: var(--sky); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.lm-zoom button:hover { border-color: var(--ink-soft); }
+.lm-zoom button svg { width: 1rem; height: 1rem; }
+.lm-caption { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin: .55rem auto 0; width: 100%; min-height: 1.6em; font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+/* the pin's card: the month view's day card (.mb-pop), with the room's own site at its foot */
+.lm-pop .lm-site { display: inline-flex; align-items: center; gap: .35rem; margin-top: .35rem; font: 500 .78rem/1 var(--body); color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: .1rem; }
+.lm-pop .lm-site:hover { border-color: var(--ink); }
+.lm-pop .lm-more { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--ink-soft); margin: .1rem 0 .3rem; }
