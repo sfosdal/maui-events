@@ -428,6 +428,7 @@
     document.removeEventListener('click', popOff, true); document.removeEventListener('keydown', popOff); window.removeEventListener('scroll', closePop);
   }
   function popOff(e) { if (e.type === 'keydown' ? e.key === 'Escape' : !e.target.closest('.lm-pop')) closePop(); }
+  function cardDate(iso) { var m = /^(\d{4})-(\d\d)-(\d\d)/.exec(iso || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''; } // "Oct 29": the city's calendar day as written, no zone shift
   function toggleVenue(v, g) {
     if (openVenue === v) { closePop(); return; }
     H.closeDayPop(); closePop();
@@ -438,7 +439,13 @@
     var n = document.createElement('span'); n.className = 'mb-pop-n'; n.textContent = list.length ? list.length + ' upcoming' : 'nothing upcoming'; h.appendChild(n);
     pop.setAttribute('aria-label', v); pop.appendChild(h);
     if (!list.length) { var none = document.createElement('p'); none.className = 'mb-none'; none.textContent = 'Nothing listed under these filters'; pop.appendChild(none); }
-    list.slice(0, 6).forEach(function (e) { var tail = BY_PLACE && e.place ? ' — ' + e.place : ''; pop.appendChild(H.boardEntry(tail && e.title.slice(-tail.length) === tail ? Object.assign({}, e, { title: e.title.slice(0, -tail.length) }) : e, true)); }); // a place's card already names the place: the titles' "— Town, State" tail goes
+    list.slice(0, 6).forEach(function (e) {
+      var tail = BY_PLACE && e.place ? ' — ' + e.place : '';
+      var row = H.boardEntry(tail && e.title.slice(-tail.length) === tail ? Object.assign({}, e, { title: e.title.slice(0, -tail.length) }) : e, true);
+      // the day at the row's right end, month and day only (Steve, 2026-10-26: "add dates here (just day/month, no year)") — the day card has its day for a heading, this card spans weeks
+      var d = document.createElement('span'); d.className = 'lm-date'; d.textContent = cardDate(e.date); row.appendChild(d);
+      pop.appendChild(row);
+    }); // a place's card already names the place: the titles' "— Town, State" tail goes
     var cityRoom = !VENUES[v] && CITYMAP && CITYMAP.venues[v], count = cityRoom ? (t.n[v] || 0) : list.length;
     if (count > 6) { var more = document.createElement('p'); more.className = 'lm-more'; if (cityRoom) { more.textContent = '+ ' + (count - 6) + ' more on '; var ml = document.createElement('a'); ml.href = CITYMAP.url; ml.target = '_blank'; ml.rel = 'noopener'; ml.textContent = CITYMAP.url.replace(/^https?:\/\//, '').replace(/\/$/, ''); more.appendChild(ml); } else more.textContent = '+ ' + (count - 6) + ' more in the list'; pop.appendChild(more); }
     if (room.url) { var a = document.createElement('a'); a.className = 'lm-site'; a.href = room.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = (room.festival ? 'Festival site' : 'Venue site') + ' ↗'; pop.appendChild(a); }

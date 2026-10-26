@@ -1994,3 +1994,6 @@ html.map-open .agenda, html.map-open .cal-toggle, html.map-open #calToday, html.
 .lm-pop .lm-site { display: inline-flex; align-items: center; gap: .35rem; margin-top: .35rem; font: 500 .78rem/1 var(--body); color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: .1rem; }
 .lm-pop .lm-site:hover { border-color: var(--ink); }
 .lm-pop .lm-more { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--ink-soft); margin: .1rem 0 .3rem; }
+/* each row's day at its right end, month and day only (Steve, 2026-10-26) — the title and clock line wrap short of it */
+.lm-pop .mb-ev { position: relative; padding-right: 3.6rem; }
+.lm-pop .lm-date { position: absolute; right: .6rem; top: .45rem; font-family: var(--mono); font-weight: 400; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
