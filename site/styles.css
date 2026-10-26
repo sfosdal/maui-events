@@ -123,6 +123,11 @@ h1 {
 }
 .masthead-text { min-width: 0; max-width: 100%; } /* a flex item would grow to its widest line and push past a phone's edge */
 /* "More Cities" (See All until 2026-10-13, Other Places until 2026-10-18): the pill before the theme pill, to the same map (Steve, 2026-10-12); in the pinned bar the chip's text folds away and the map glyph stays */
+/* Add To My Calendar: the first of the masthead's tools (Steve, 2026-10-26, "should move here" — beside More Cities; in the bar from 2026-09-16 until then), sized like the More Cities pill beside it */
+.masthead-tools #subscribeBtn { order: 3; display: inline-flex; align-items: center; gap: .45rem; min-height: calc(1.7rem + 8px); padding: 0 .95em; }
+.masthead-tools #subscribeBtn svg { width: 1rem; height: 1rem; flex: none; }
+.masthead-tools #subscribeBtn:hover { border-color: var(--ink-soft); }
+.bar-title .masthead-tools #subscribeBtn { min-height: 1.7rem; padding: 0 .5em; } /* icon-only in the title line, like the pill (the label rule is .bar-title .masthead-tools .chip span) */
 .masthead-tools .see-all { order: 4; display: inline-flex; align-items: center; gap: .45rem; min-height: calc(1.7rem + 8px); padding: 0 .95em; text-decoration: none; }
 .masthead-tools .see-all svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .masthead-tools .see-all:hover { border-color: var(--ink-soft); }
@@ -159,10 +164,10 @@ h1 {
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .masthead-photo { background: #000; opacity: .7; } }
 .masthead-text { position: relative; }
 .masthead .eyebrow { font-size: calc(var(--mast-title) * .5); font-weight: 500; letter-spacing: .14em; margin-bottom: .1rem; line-height: 1; } /* "Seattle": half the title's size (Steve, 2026-09-16: twice the quarter it was), a shade bolder */
-/* the masthead's tools (Steve, 2026-09-14): the poster chip (Teams view
-   only, see #teamPdfBtn), Add To Calendar and the theme pill at the
-   masthead's right end, bottom-aligned with the stamp line — the bar below
-   keeps its room for the switch, filters, search and the clubs */
+/* the masthead's tools (Steve, 2026-09-14): Add To My Calendar (back here
+   2026-10-26), the More Cities pill and the theme pill at the masthead's
+   right end — the bar below keeps its room for the switch, filters, search,
+   the clubs and the season calendar chip */
 .masthead { position: relative; }
 .masthead-tools { display: flex; align-items: center; gap: .6rem; flex: none; margin-left: auto; }
 .sub { color: var(--ink-soft); max-width: 34rem; margin: .8rem 0 0; }
@@ -181,10 +186,9 @@ h1 {
 }
 .btn-cal svg { width: 1.15em; height: 1.15em; flex: none; }
 .btn-cal:hover { background: var(--ink-soft); color: var(--sky); }
-/* the subscribe pop hangs from the bar's right end, the mini calendar's
-   width, its right edge on the calendar's; its top lines up with the filter
-   panel's (that one hangs .5rem under the .filter-area, whose bottom padding
-   is .6rem) */
+/* the subscribe pop: app.js placeSubscribePop fixes it under the masthead's
+   Add To My Calendar button (right edges aligned); these are the fallback
+   position and the look */
 .pop {
   position: absolute; right: 0; top: calc(100% + 1.1rem); z-index: 10;
   width: min(18rem, 100%); background: var(--mist); border: 1px solid var(--line);
@@ -237,13 +241,9 @@ h1 {
    deliberately the same whether or not a filter is active — Reset lighting
    up is the "something's filtered" signal. */
 /* The bar can't wrap. When its content wouldn't fit — app.js measures and
-   sets .is-tight — the labeled chips keep just their icons; the labels stay
-   for screen readers. */
-.filterbar.is-tight #subscribeBtn span {
-  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
-}
-.filterbar.is-tight #subscribeBtn { padding: .5em .7em; }
-.filterbar.is-tight #subscribeBtn svg { width: 1.1rem; height: 1.1rem; }
+   sets .is-tight — the view switch's words go (see .view-toggle); the labeled
+   Add To My Calendar chip that used to shed its label here left the bar for
+   the masthead 2026-10-26. */
 /* the Teams chip is a switch: solid while its view is on show */
 /* the view switch: list | month | home teams, a three-stop pill like the theme's (same rules, .view-toggle) */
 .view-toggle[data-active="month"] .theme-knob { left: calc(3px + var(--tt)); }
@@ -271,11 +271,10 @@ html.teams-open #calToday { display: none; }
   position: absolute; right: .85rem; top: 50%; width: 1rem; height: 1rem;
   transform: translateY(-50%); color: var(--ink-soft); pointer-events: none;
 }
-/* Right end of the bar, left to right: Add To Calendar, the calendar chip
-   (narrow layouts only), Home Teams, then the theme pill always last (DOM
-   order keeps the chips together; flex order places them); the search box
-   grows to fill the gap before them */
-#subscribeBtn { order: 3; } /* the bar's last chip in either mode; the small icon chips (the phone's mini calendar, the season calendar) sit before it (back in the bar 2026-09-16) */
+/* Right end of the bar, left to right: the calendar chip (narrow layouts
+   only), then the season calendar chip (DOM order keeps the chips together;
+   flex order places them); the search box grows to fill the gap before them.
+   Add To My Calendar was the bar's last chip from 2026-09-16 to 2026-10-26. */
 #calToggle { order: 2; }
 #viewToggle { order: -1; } /* the view switch leads the bar in either mode (Steve, 2026-09-14) */
 /* light / dark: a two-stop pill at the bar's right end, the ink knob
@@ -1918,14 +1917,13 @@ body.sheet-open { overflow: hidden; }
   .filterbar .search-wrap:not(.is-open) svg { right: 50%; transform: translate(50%, -50%); color: var(--ink); }
   .filterbar .search-wrap.is-open { position: absolute; left: 0; right: 0; width: auto; z-index: 20; }
   .filterbar .search-wrap.is-open #searchBox { background: var(--sky); border-color: var(--ink); } /* opaque over the chips beneath */
-  /* a phone's bar is always the icon-only row: measured, the labelled one runs past the edge and the view switch with it */
-  .filterbar #subscribeBtn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .filterbar #subscribeBtn { padding: .5em .7em; } /* phones: icons only (the chips moved into the bar 2026-09-16) */
-  .filterbar #subscribeBtn svg { width: 1.1rem; height: 1.1rem; }
   /* the tools sit at the top right, on the eyebrow's line (short, so the room is there), clear of the title below; a flex row would cost the phone a line */
   .bar-title .masthead-tools { display: none; }
-  .masthead > .masthead-tools { position: absolute; top: 2.5rem; right: 0; margin: 0; } /* the More Cities pill alone, at the top right on the eyebrow's line (short, so the room is there) */
-  .masthead .eyebrow { padding-right: 7.5rem; } /* the eyebrow's line ends short of the More Cities pill at the right (a long eyebrow, "Omaha & Lincoln", would run under it) */
+  .masthead > .masthead-tools { position: absolute; top: 2.5rem; right: 0; margin: 0; } /* the Add To My Calendar icon and the More Cities pill, at the top right on the eyebrow's line */
+  .masthead .eyebrow { padding-right: 10rem; } /* the eyebrow's line ends short of the two pills at the right (a long eyebrow, "Omaha & Lincoln", would run under them) */
+  /* a phone keeps the calendar icon alone: measured, the labelled chip plus More Cities ran into the eyebrow */
+  .masthead-tools #subscribeBtn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .masthead-tools #subscribeBtn { padding: 0 .55em; }
   .masthead-tools .theme-toggle { display: none; } /* no theme pill on a phone (Steve, 2026-09-16): the site follows the system setting there */
   .masthead-tools .chip { min-height: 1.9rem; padding: .3em .55em; }
   /* a 320px phone: measured, the row ran 34px past its box. The mini-calendar chip loses its chevron (its pressed state says open or closed) and the gaps close up a little: the row fits with room to spare and no control hidden */

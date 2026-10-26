@@ -4302,6 +4302,8 @@
     p.style.position = 'fixed'; p.style.left = 'auto';
     p.style.top = (r.bottom + 8) + 'px';
     p.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+    // right edges aligned — unless the pop then runs off the left edge (a phone, where the button sits mid-line beside More Cities since 2026-10-26): then it spans the screen with 8px margins
+    if (p.getBoundingClientRect().left < 8) { p.style.left = '8px'; p.style.right = '8px'; }
   }
   function setSubscribeOpen(open) {
     $('subscribePop').hidden = !open;
