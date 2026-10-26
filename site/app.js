@@ -703,14 +703,6 @@
     if (g === 'cap') return { map: state.capMode, keys: CAP_BANDS.map(function (b) { return b.key; }) };
     return { map: state.badgeMode, keys: TYPE_LIST.map(function (t) { return t.key; }) };
   }
-  // The sheet's Only Venue: this venue checked and no other check in the
-  // "where" groups, every event type welcome — so the list is exactly what's
-  // on there. X's on other venues stay (they hide nothing here anyway).
-  function onlyVenue(v) {
-    ['venueMode', 'teamMode', 'capMode'].forEach(function (m) { modeKeys(state[m], 'in').forEach(function (k) { delete state[m][k]; }); });
-    state.badgeMode = {};
-    state.venueMode[v] = 'in';
-  }
   // A press on a row's Show or Hide sets that one option to it, or clears
   // it if it was already lit; a tap on the name works Show. Nothing else
   // moves (Steve, 2026-09-22: "don't auto check or uncheck any filters").
@@ -3532,11 +3524,9 @@
     // a free event's link is its details page, so the chip says so (Steve, 2026-09-21)
     var t = $('sheetTickets'); t.href = e.url || '#'; t.hidden = !e.url || eventType(e) === 'bar';
     t.textContent = e.free ? 'Details \u00b7 Free' : 'Tickets';
-    var v = $('sheetVenueLink'); v.href = VENUE_URL[e.venue] || '#'; v.hidden = !VENUE_URL[e.venue]; v.textContent = 'Venue Site \u2197'; v.title = 'What\u2019s on at ' + e.venue; // the venue's own calendar (short: the name is the sheet's eyebrow — Steve, 2026-09-21)
-    var ov = $('sheetOnlyVenue'); ov.textContent = 'Only Venue'; ov.title = 'Only ' + e.venue; ov.hidden = state.venues.indexOf(e.venue) < 0 || eventType(e) === 'bar'; ov.dataset.venue = e.venue; // the filter, narrowed to this venue (bars are a type, not a venue)
+    var v = $('sheetVenueLink'); v.href = VENUE_URL[e.venue] || '#'; v.hidden = !VENUE_URL[e.venue]; v.textContent = 'Venue \u2197'; v.title = 'What\u2019s on at ' + e.venue; // the venue's own calendar (short: the name is the sheet's eyebrow — Steve, 2026-09-21)
     var team = TEAMS.filter(function (t) { return t.re.test(e.title || '') && t.venue === e.venue && t.strip !== false; })[0]; // a home game: the club's season, in the Teams view (a club with no tab there has no Season button)
     var tb = $('sheetTeam'); tb.hidden = !team; if (team) { tb.textContent = 'Season'; tb.title = team.label + ' season, in the Teams view'; tb.dataset.slug = team.slug; }
-    var hv = $('sheetHideVenue'); hv.textContent = 'Hide Venue'; hv.title = 'Hide ' + e.venue; hv.hidden = ov.hidden; hv.dataset.venue = e.venue;
     var ht = $('sheetHideTeam'); ht.hidden = !team; if (team) { ht.textContent = 'Hide ' + team.label; ht.title = 'Hide ' + team.label + ' home games'; ht.dataset.slug = team.slug; }
     var phone = matchMedia(sheetTouch).matches;
     var sheet = $('sheet');
@@ -3557,18 +3547,7 @@
     document.body.classList.remove('sheet-open');
   }
   $('sheetClose').addEventListener('click', closeSheet);
-  $('sheetOnlyVenue').addEventListener('click', function () { // the events list, narrowed to this venue with everything at it showing — with a way back, like Hide
-    var v = this.dataset.venue, snap = filterSnapshot(); closeSheet();
-    if (!$('teamsView').hidden) setTeamsView(null, true);
-    onlyVenue(v); applyFilters();
-    showToast('Only ' + v, function () { restoreSnapshot(snap); });
-  });
   $('sheetTeam').addEventListener('click', function () { var slug = this.dataset.slug; closeSheet(); setTeamsView(slug, true); });
-  $('sheetHideVenue').addEventListener('click', function () { // this venue off, with a way back
-    var v = this.dataset.venue, snap = filterSnapshot(); closeSheet();
-    setMode(state.venueMode, v, 'ex'); applyFilters();
-    showToast(v + ' hidden', function () { restoreSnapshot(snap); });
-  });
   $('sheetHideTeam').addEventListener('click', function () { // this club's home games off (the venue stays), with a way back
     var t = TEAM_BY_SLUG[this.dataset.slug], snap = filterSnapshot(); closeSheet();
     if (!t) return;
