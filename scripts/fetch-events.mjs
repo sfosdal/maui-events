@@ -22,6 +22,7 @@ import { calmTitle, isNotice } from './titles.mjs';
 import { applySchedules } from './schedules.mjs';
 import { slugify, BADGE_FEEDS, TEAMS, CITY } from './badges.mjs';
 import { feedSources, emptyListGate, parseCards, cardDates } from './feeds.mjs';
+import { tmFetch } from './tm-fetch.mjs';
 
 const JSON_OUT = new URL('../site/events.json', import.meta.url);
 const ICS_OUT = new URL('../site/events.ics', import.meta.url);
@@ -84,26 +85,6 @@ function tmEvent(e, venue, fallbackUrl) {
 function keepPrimary(rows) {
   const primaryDates = new Set(rows.filter((e) => !isResale(e)).map((e) => e.dates?.start?.localDate));
   return rows.filter((e) => !isResale(e) || !primaryDates.has(e.dates?.start?.localDate));
-}
-// One Ticketmaster call at a time, a second apart, and a wait of eight
-// seconds on a 429 (the key is shared with the sister cities' builds).
-let tmLast = 0;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let tmQueue = Promise.resolve();
-function tmFetch(url) {
-  const run = async () => {
-    for (let attempt = 0; ; attempt++) {
-      const wait = tmLast + 1000 - Date.now();
-      if (wait > 0) await sleep(wait);
-      tmLast = Date.now();
-      const res = await fetch(url);
-      if (res.status !== 429 || attempt >= 5) return res;
-      await sleep(8000);
-    }
-  };
-  const p = tmQueue.then(run, run);
-  tmQueue = p.catch(() => {});
-  return p;
 }
 async function tmPages(params, label) {
   const key = process.env.TICKETMASTER_API_KEY;
