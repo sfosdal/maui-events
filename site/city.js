@@ -252,10 +252,10 @@
   // The words the page uses for the place
   var WORDS = {
     teamCity: 'Hawaii', // the board drops it from the programs' names ("Hawaii Rainbow Warriors Football" → Rainbow Warriors Football)
-    presetDefault: 'Every room on the island — Kahului and Wailuku, the south and west shores, Upcountry, Haleakalā and Lānaʻi — every team and type',
+    presetDefault: 'Every venue on the island — Kahului and Wailuku, the south and west shores, Upcountry, Haleakalā and Lānaʻi — every team and type',
     presetNeighborhood: 'Central Maui only — the MACC, the ʻĪao Theater and Hale Hōʻikeʻike',
     presetBig: 'Only the places that hold 2,000 or more — the MACC and the Lahaina Civic Center',
-    phrases: { all: 'Showing everything.', none: 'Showing nothing yet — open Filter and pick some venues.', neighborhood: 'Showing Central Maui only — Kahului and Wailuku.', big: 'Showing the big rooms only — the MACC and the Lahaina Civic Center.' },
+    phrases: { all: 'Showing everything.', none: 'Showing nothing yet — open Filter and pick some venues.', neighborhood: 'Showing Central Maui only — Kahului and Wailuku.', big: 'Showing the big venues only — the MACC and the Lahaina Civic Center.' },
   };
 
   // Hawaiʻi's public holidays (app.js holidaysFor reads this instead of its

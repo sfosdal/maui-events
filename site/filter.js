@@ -77,7 +77,7 @@
     { key: 'stadium', label: 'Stadiums', note: '40K+', min: 40000, max: Infinity },
     { key: 'arena', label: 'Arenas & Grounds', note: '5K\u201340K', min: 5000, max: 40000 },
     { key: 'hall', label: 'Halls', note: '800\u20135K', min: 800, max: 5000 },
-    { key: 'room', label: 'Small Rooms', note: 'under 800', min: 0, max: 800 },
+    { key: 'room', label: 'Small Venues', note: 'under 800', min: 0, max: 800 },
   ];
   function bandOf(venue) {
     var c = VENUE_CAPACITY[venue] || 0;

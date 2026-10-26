@@ -419,7 +419,7 @@
   // the Show | Hide pair that sets all of them (city.js `hoods`).
   var HOOD_ROOMS = {}; // label → the rooms under it, in panel order
   function hoodRow(label, n, key, cls) {
-    var row = filterRow('hood', key || label, plainName(label), n, n + (n === 1 ? ' room' : ' rooms'));
+    var row = filterRow('hood', key || label, plainName(label), n, n + (n === 1 ? ' venue' : ' venues'));
     row.classList.add(cls || 'fp-hood');
     var fold = document.createElement('button');
     fold.type = 'button'; fold.className = 'fp-fold'; fold.setAttribute('aria-expanded', 'false'); fold.setAttribute('aria-label', 'The rooms in ' + label);
@@ -492,7 +492,7 @@
     });
     // The long tail (Steve, 2026-10-18: "even neighborhoods are getting
     // complicated"): a group lists the rooms the usual view shows; the rooms
-    // it starts with hidden go behind one "More rooms" row at its foot — a
+    // it starts with hidden go behind one "More venues" row at its foot — a
     // chevron to open them, and a Show | Hide pair that works them all, like
     // a neighbourhood's. A room the reader has turned on (a saved pref, a
     // share code) is listed in the open part, so a row in use never folds.
@@ -502,7 +502,7 @@
       open.forEach(function (r) { list.appendChild(r[1]); });
       if (!tail.length) return;
       HOOD_ROOMS[key] = tail.map(function (r) { return r[0]; });
-      list.appendChild(hoodRow('More rooms', tail.length, key, 'fp-tail'));
+      list.appendChild(hoodRow('More venues', tail.length, key, 'fp-tail'));
       var sub = document.createElement('div'); sub.className = 'fp-sub'; sub.hidden = true;
       tail.forEach(function (r) { sub.appendChild(r[1]); });
       list.appendChild(sub);
