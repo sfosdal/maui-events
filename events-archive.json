@@ -1,0 +1,36 @@
+{
+ "events": [
+  {
+   "venue": "Hui Noʻeau",
+   "title": "Mālama Wao Akua 2026",
+   "date": "2026-09-11",
+   "time": "17:00",
+   "url": "https://www.huinoeau.com/exhibitions/2026/9/malama-wao-akua",
+   "type": "arts"
+  },
+  {
+   "venue": "ʻĪao Theater",
+   "title": "Witch Perfect",
+   "date": "2026-10-23",
+   "time": "",
+   "url": "https://mauionstage.thundertix.com/events/267770",
+   "type": "arts"
+  },
+  {
+   "venue": "Pacific Whale Foundation",
+   "title": "Fins & Frights Night at Maui Ocean Center",
+   "date": "2026-10-24",
+   "time": "",
+   "url": "https://pacificwhale.org/event/fins-frights-night-at-maui-ocean-center/",
+   "type": "community"
+  },
+  {
+   "venue": "ʻĪao Theater",
+   "title": "Broadway on Maui",
+   "date": "2026-10-24",
+   "time": "",
+   "url": "https://mauionstage.thundertix.com/events/271418",
+   "type": "arts"
+  }
+ ]
+}
