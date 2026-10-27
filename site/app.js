@@ -694,6 +694,17 @@
     return snap;
   }
   function restoreSnapshot(snap) { MODE_MAPS.forEach(function (m) { state[m] = snap[m] || {}; }); applyFilters(); }
+  // The map card's "Venue list" (Steve, 2026-10-26: "next to venue site add
+  // venue list that keeps them in the site but just lists their events"):
+  // the list narrowed to that one venue — it Shown, every other venue Hidden,
+  // the types and teams as they were — with Undo on the toast.
+  function onlyVenue(v) {
+    if (state.venues.indexOf(v) < 0) return;
+    var snap = filterSnapshot();
+    state.venues.forEach(function (k) { setMode(state.venueMode, k, k === v ? 'in' : 'ex'); });
+    applyFilters();
+    showToast(v + ' only', function () { restoreSnapshot(snap); });
+  }
 
   // Each group's map and full key list, for the presets and All / None.
   var GROUP_MAP = { venue: 'venueMode', badge: 'badgeMode', team: 'teamMode', cap: 'capMode' };
@@ -4319,5 +4330,5 @@
   }
   // a ?team= link opens the Teams view straight away
   if (new URLSearchParams(location.search).get('team')) setTeamsView(new URLSearchParams(location.search).get('team'), false);
-  window.LQAHooks = { dayItems: dayItems, byDate: function () { return state.byDate; }, boardEntry: boardEntry, closeDayPop: closeDayPop, syncViewSwitch: syncViewSwitch, fitFilterBar: fitFilterBar, todayStr: todayStr, venueColor: venueColor }; // what local-map.js borrows
+  window.LQAHooks = { dayItems: dayItems, byDate: function () { return state.byDate; }, boardEntry: boardEntry, closeDayPop: closeDayPop, syncViewSwitch: syncViewSwitch, fitFilterBar: fitFilterBar, todayStr: todayStr, venueColor: venueColor, onlyVenue: onlyVenue }; // what local-map.js borrows
 })();

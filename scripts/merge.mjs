@@ -48,3 +48,44 @@ export function unionArchives(primary, secondary) {
   return [...byKey.values()]
     .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 }
+
+/**
+ * A venue read from two listings — Ticketmaster and its own calendar, the
+ * rule for every venue since 2026-10-26 — prints the same show twice, often
+ * under two titles ("Derek Hough Dance For The Holidays" / "Derek Hough:
+ * Dance for the Holidays"), so eventKey can't fold them. The secondary
+ * listing's rows go through here against everything read so far: a
+ * candidate is dropped when a row already sits at its venue on its date
+ * and either the clocks agree to the minute or the titles do, loosely:
+ * letters and digits only, equal or one containing the other, or every
+ * word of the shorter title inside the longer ("Washington Huskies vs Penn
+ * State Nittany Lions" against Ticketmaster's "Washington Huskies Football
+ * vs. Penn State Nittany Lions Football"). A title match with both clocks
+ * known needs them within 90 minutes (doors against show time), so an early
+ * and a late show of one act both stay. Two different shows on one night at
+ * one venue — different titles, different clocks — both stay.
+ */
+const loose = (t) => String(t || '').toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, '');
+const words = (t) => String(t || '').toLowerCase().replace(/^the\s+/, '').match(/[a-z0-9]{3,}/g) || [];
+const sameTitle = (a, b) => {
+  const x = loose(a), y = loose(b);
+  if (!x || !y) return false;
+  if (x === y || (x.length >= 6 && y.length >= 6 && (x.includes(y) || y.includes(x)))) return true;
+  const [short, long] = words(a).length <= words(b).length ? [words(a), new Set(words(b))] : [words(b), new Set(words(a))];
+  return short.length >= 3 && short.every((w) => long.has(w));
+};
+const minutes = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+export function dropClashes(candidates, existing) {
+  const byDay = new Map();
+  for (const e of existing) { const k = `${e.venue}|${e.date}`; if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(e); }
+  return candidates.filter((c) => {
+    const rows = byDay.get(`${c.venue}|${c.date}`) || [];
+    const clock = String(c.time || '').slice(0, 5);
+    return !rows.some((e) => {
+      if (clock && String(e.time || '').slice(0, 5) === clock) return true;
+      if (!sameTitle(e.title, c.title)) return false;
+      const a = minutes(e.time), b = minutes(c.time);
+      return a === null || b === null || Math.abs(a - b) <= 90;
+    });
+  });
+}

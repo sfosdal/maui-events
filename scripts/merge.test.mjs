@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeWithArchive, unionArchives, eventKey } from './merge.mjs';
+import { mergeWithArchive, unionArchives, eventKey, dropClashes } from './merge.mjs';
 
 const TODAY = '2026-08-24';
 const CUTOFF = '2025-08-24';
@@ -84,4 +84,34 @@ test('unionArchives with one empty copy is the other copy (a wiped feed cannot s
   const branch = [ev('2025-01-05', 'Old'), ev('2026-08-20', 'Recent')];
   assert.equal(unionArchives([], branch).length, 2);
   assert.equal(unionArchives(branch, []).length, 2);
+});
+
+test('dropClashes: a secondary listing\'s row goes when a row at its venue and date shares the clock or the title, loosely; different shows stay', () => {
+  const existing = [
+    { venue: 'McCaw Hall', title: 'Derek Hough: Dance for the Holidays', date: '2026-11-09', time: '19:30:00' },
+    { venue: 'Paramount Theatre', title: 'Dermot Kennedy', date: '2026-10-26', time: '20:00' },
+    { venue: 'T-Mobile Park', title: 'Seattle Mariners Gift Cards', date: '2026-10-21', time: '' },
+  ];
+  const kept = dropClashes([
+    { venue: 'McCaw Hall', title: 'Derek Hough Dance For The Holidays', date: '2026-11-09', time: '19:30' }, // same show, Ticketmaster's spelling
+    { venue: 'Paramount Theatre', title: 'Dermot Kennedy POSTPONED', date: '2026-10-26', time: '' }, // same show, no clock on the venue's card
+    { venue: 'Paramount Theatre', title: 'Late Show: Something Else', date: '2026-10-26', time: '23:00' }, // a second show that night
+    { venue: 'T-Mobile Park', title: 'Banana Ball', date: '2027-04-23', time: '' }, // nothing on that date
+    { venue: 'Lumen Field', title: 'Dermot Kennedy', date: '2026-10-26', time: '20:00' }, // another venue
+  ], existing);
+  assert.deepEqual(kept.map((e) => e.title), ['Late Show: Something Else', 'Banana Ball', 'Dermot Kennedy']);
+});
+
+test('dropClashes: every word of the shorter title inside the longer is a clash; a title match needs the clocks within 90 minutes when both are known', () => {
+  const existing = [
+    { venue: 'Husky Stadium', title: 'Washington Huskies vs Penn State Nittany Lions', date: '2026-11-07', time: '' },
+    { venue: 'The Crocodile', title: 'Ray Lau', date: '2027-01-29', time: '19:00' },
+    { venue: 'The Crocodile', title: 'Jalen Ngonda', date: '2026-11-28', time: '19:00' },
+  ];
+  const out = dropClashes([
+    { venue: 'Husky Stadium', title: 'Washington Huskies Football vs. Penn State Nittany Lions Football', date: '2026-11-07', time: '' }, // the parser's row, worded by Ticketmaster
+    { venue: 'The Crocodile', title: 'Ray Lau', date: '2027-01-29', time: '21:30' }, // the late show stays
+    { venue: 'The Crocodile', title: 'Jalen Ngonda: Doctrine of Love Tour w/ Brooke Combe', date: '2026-11-28', time: '18:00' }, // doors an hour before the show: the same night
+  ], existing);
+  assert.deepEqual(out.map((r) => r.title), ['Ray Lau']);
 });

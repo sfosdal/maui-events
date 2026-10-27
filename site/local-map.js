@@ -382,16 +382,19 @@
   var PREVIEW = (new URLSearchParams(location.search).get('preview') || ''); // a local demo: ?preview=seattle:8120,everett:8088 sends a city's sign or jump to that preview port instead of its live host, and carries the list along (nothing of it in production links)
   var PREVIEW_PORT = {}; PREVIEW.split(',').forEach(function (kv) { var m = /^([\w-]+):(\d+)$/.exec(kv); if (m) PREVIEW_PORT[m[1]] = m[2]; });
   function cityLink(c) { return (PREVIEW_PORT[c.key] ? 'http://localhost:' + PREVIEW_PORT[c.key] + '/repo/site/' : c.url) + '?view=map&from=' + encodeURIComponent(CITY.key) + (PREVIEW ? '&preview=' + encodeURIComponent(PREVIEW) : ''); }
+  var SAME_WAY = 1.25; // "about the same distance" as the nearest site: within a quarter again of its distance (Honolulu signs Maui; Big Island, at twice as far, waits for the 100 km rule)
   var FROM = new URLSearchParams(location.search).get('from') || ''; // the city whose sign or location jump brought the visitor here: its sign is drawn however far it lies, so there is a way back (Steve, 2026-10-26)
-  function nearbyCities(within) { // the other city-wide sites within `within` km of this ground's centre, nearest first
+  function nearbyCities(within) { // the other city-wide sites within `within` km of this ground's centre, nearest first — and always the nearest one however far it lies, with any others about as far (Steve, 2026-10-26: "every map view should have at least one sign post to another place. if there are other locations within the same distance add those too")
     var b = (CITY.map && CITY.map.home) || (CITY.map && CITY.map.bbox); if (!data || !b) return []; // [S, W, N, E] — miles are from the home box (downtown) when the city has one
     var lat = (b[0] + b[2]) / 2, lon = (b[1] + b[3]) / 2, list = (window.LQACities && window.LQACities.cities) || [], own = CITY.key, cityKey = CITY.map && CITY.map.city && CITY.map.city.key, out = [];
     list.forEach(function (c) {
       if (!c.live || c.lat == null || c.key === own || c.key === cityKey || c.name !== c.city) return;
       var dLat = (c.lat - lat) * Math.PI / 180, dLon = (c.lon - lon) * Math.PI / 180, a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat * Math.PI / 180) * Math.cos(c.lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      var km = 2 * 6371 * Math.asin(Math.sqrt(a)); if (km <= within || c.key === FROM) out.push({ key: c.key, name: c.name, url: c.url, lat: c.lat, lon: c.lon, km: km });
+      out.push({ key: c.key, name: c.name, url: c.url, lat: c.lat, lon: c.lon, km: 2 * 6371 * Math.asin(Math.sqrt(a)) });
     });
-    return out.sort(function (p, q) { return p.km - q.km; });
+    out.sort(function (p, q) { return p.km - q.km; });
+    var near = out.length ? out[0].km : 0;
+    return out.filter(function (c) { return c.km <= within || c.key === FROM || c.km <= near * SAME_WAY; });
   }
   function goTo(m) { // centre on the spot, in as far as a few blocks if the view is wider than that
     atHome = false; var w = Math.min(view.w, MIN_W() * 4); view = { x: m.x - w / 2, y: m.y - w * ar() / 2, w: w, h: w * ar() }; clamp(); closePop(); schedule();
@@ -448,7 +451,14 @@
     }); // a place's card already names the place: the titles' "— Town, State" tail goes
     var cityRoom = !VENUES[v] && CITYMAP && CITYMAP.venues[v], count = cityRoom ? (t.n[v] || 0) : list.length;
     if (count > 6) { var more = document.createElement('p'); more.className = 'lm-more'; if (cityRoom) { more.textContent = '+ ' + (count - 6) + ' more on '; var ml = document.createElement('a'); ml.href = CITYMAP.url; ml.target = '_blank'; ml.rel = 'noopener'; ml.textContent = CITYMAP.url.replace(/^https?:\/\//, '').replace(/\/$/, ''); more.appendChild(ml); } else more.textContent = '+ ' + (count - 6) + ' more in the list'; pop.appendChild(more); }
-    if (room.url) { var a = document.createElement('a'); a.className = 'lm-site'; a.href = room.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = (room.festival ? 'Festival site' : 'Venue site') + ' ↗'; pop.appendChild(a); }
+    var foot = document.createElement('div'); foot.className = 'lm-foot';
+    if (VENUES[v] && H.onlyVenue) { // the venue's own list on this site: the List view narrowed to it (Steve, 2026-10-26); a city venue on a neighbourhood map has its rows on the city site, linked above
+      var lb = document.createElement('button'); lb.type = 'button'; lb.className = 'lm-site lm-list'; lb.textContent = (room.festival ? 'Festival' : 'Venue') + ' list';
+      lb.addEventListener('click', function () { closePop(); H.onlyVenue(v); open(false, true); var ag = document.querySelector('.agenda'); if (ag) ag.scrollIntoView({ block: 'start' }); });
+      foot.appendChild(lb);
+    }
+    if (room.url) { var a = document.createElement('a'); a.className = 'lm-site'; a.href = room.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = (room.festival ? 'Festival site' : 'Venue site') + ' ↗'; foot.appendChild(a); }
+    if (foot.childNodes.length) pop.appendChild(foot);
     document.body.appendChild(pop);
     if (!window.matchMedia('(max-width: 640px)').matches) { // a phone takes the sheet from the foot (styles.css); here the card sits beside the pin
       var r = g.querySelector('circle').getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, w = Math.min(22 * 16, vw - 16);

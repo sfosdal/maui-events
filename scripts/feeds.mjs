@@ -73,7 +73,18 @@
  *                which folds by alias or into `groundsVenue` like any city-wide feed; `type` is the
  *                rows' default type. Also a room's own `feed` (the Central Saloon's Modern Events
  *                Calendar list, whose JSON-LD has dates but no clocks).
- *                `time` is the clock for cards that print none.
+ *                `time` is the clock for cards that print none. `venues` (a regex on `place`) keeps
+ *                only the cards of the venue wanted when the listing covers several (Lumen Field's
+ *                calendar lists the WAMU Theater's nights too; the Crocodile's its promotions at
+ *                other clubs — 2026-10-26).
+ *   mec         — a Modern Events Calendar list page (STG's stgpresents.org/events, 2026-10-26):
+ *                the page's first cards plus every "load more" page, POSTed to admin-ajax.php the
+ *                way the plugin's own script does (action mec_list_load_more with the skin's
+ *                `atts`, the last page's end_date and offset). A card gives the title and link
+ *                (a trailing CANCELED / POSTPONED becomes the row's status), "Oct 26" or "Oct 29
+ *                2026", a clock and the venue's name; `venues` (a regex on that name) picks the
+ *                venue's own cards out of the presenter's whole listing. The list shows a
+ *                multi-night run once (its first night).
  *   nps         — the National Park Service events API for one park (`parkCode=`; NPS_API_KEY in
  *                the environment, else the data.gov DEMO_KEY): one row per listed date at the
  *                first start time (Klondike Gold Rush NHP's Seattle unit, Pioneer Square 2026-10-15).
@@ -100,7 +111,7 @@
 const decode = (s) => String(s || '')
   .replace(/&#8211;/g, '–').replace(/&#8217;/g, '’').replace(/&#8216;/g, '‘').replace(/&#8220;/g, '“').replace(/&#8221;/g, '”')
   .replace(/&#038;|&amp;/g, '&').replace(/&#039;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-  .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+  .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16))) // Webflow writes apostrophes as &#x27; (the Crocodile's calendar)
   .replace(/&([A-Za-z]+);/g, (m, n) => LATIN[n] || m) // the accented letters a Spanish listing spells as entities (Ticketera: "La &Uacute;ltima Noche")
   .replace(/\s+/g, ' ').trim();
 const LATIN = { aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú', Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú', ntilde: 'ñ', Ntilde: 'Ñ', uuml: 'ü', Uuml: 'Ü', iquest: '¿', iexcl: '¡', ccedil: 'ç', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', ndash: '–', mdash: '—', hellip: '…' };
@@ -658,10 +669,13 @@ const CARD_MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, au
 /**
  * A card's date text → [{ date, time }]: "October 15, 2026 | 10:00 AM - 2:00 PM" is one row at
  * 10:00; "December 05-06, 2026 | 10:00 AM - 4:00 PM" and "October 31 - November 2, 2026" one per
- * day, at most seven; no clock → an all-day row. [] when there is no readable date.
+ * day, at most seven; no clock → an all-day row; "2026-10-30 5:00 PM" (an ISO date) one row. []
+ * when there is no readable date.
  */
 export function cardDates(text, today = new Date()) {
   const t = decode(text);
+  const iso = /\b(\d{4}-\d{2}-\d{2})\b/.exec(t); // a hidden sort field already in ISO (Lumen Field's Webflow cards, 2026-10-26)
+  if (iso) return [{ date: iso[1], time: cardClock(t.slice(iso.index + iso[0].length)) || cardClock(t) }];
   // "October 15, 2026", "December 05-06, 2026", "October 31 - November 2, 2026", "15 Oct", "15 Oct 2026"
   // month first — not a clock's hour after the month ("Oct 7:00 pm") and not the month of a day-first date ("15 Oct")
   let m = /(?<!\d\s{0,2})([A-Za-z]{3,9})\.?\s+(\d{1,2})(?![:\d])(?:\s*[-–]\s*(?:([A-Za-z]{3,9})\.?\s+)?(\d{1,2}))?(?:,?\s*(\d{4}))?/.exec(t);
@@ -708,7 +722,7 @@ export function cardClock(text) {
   return single ? to24(single[1], single[2], single[3]) : '';
 }
 /** The cards of a listing page → feed events (see the header). */
-export function parseCards(html, { item, title, when, place, venue, drop, type, types, base = '', time: defaultTime = '' } = {}) {
+export function parseCards(html, { item, title, when, place, venue, drop, type, types, base = '', time: defaultTime = '', venues } = {}) {
   const out = [];
   for (const card of String(html || '').split(item).slice(1)) {
     const tm = title.exec(card); const wm = when.exec(card);
@@ -716,7 +730,9 @@ export function parseCards(html, { item, title, when, place, venue, drop, type, 
     const name = decode(tm[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim(); const url = decode(tm[1]); // a title may wrap a tag or two (Waterfront Park's no-widow spans)
     if (!name || (drop && drop.test(name))) continue;
     const pm = place && place.exec(card);
-    const room = venue || (pm && decode(pm[1])) || '';
+    const placeName = pm ? decode(pm[1].replace(/<[^>]+>/g, ' ')) : '';
+    if (venues && !venues.test(placeName)) continue; // another venue's card on a shared listing
+    const room = venue || placeName;
     let href = url; try { href = new URL(url, base || 'https://localhost/').href; } catch { /* keep as written */ }
     for (const { date, time: clock } of cardDates(wm.slice(1).filter(Boolean).map((x) => x.replace(/<[^>]+>/g, ' ')).join(' '))) { // tags inside a date too ("Jan 2,<span>&nbsp;</span>2027")
       const time = clock || defaultTime; // `time`: the clock a listing never prints (the art walk is 5 to 8 every first Thursday) // every group of `when` — a date and a clock in separate spans
@@ -730,8 +746,80 @@ export function parseCards(html, { item, title, when, place, venue, drop, type, 
 async function fetchCards(url, ua, label, opts) {
   const { feed = {}, venue, types, defaultType, drop } = opts;
   const html = await fetchText(url, ua);
-  const evs = parseCards(html, { item: feed.item, title: feed.title, when: feed.when, place: feed.place, venue, drop: drop || feed.drop, type: feed.type || defaultType, types, base: url, time: feed.time });
+  const evs = parseCards(html, { item: feed.item, title: feed.title, when: feed.when, place: feed.place, venue, drop: drop || feed.drop, type: feed.type || defaultType, types, base: url, time: feed.time, venues: opts.venues || feed.venues || opts.rooms || feed.rooms });
   console.log(`${label} (cards): ${evs.length} events from ${Math.max(0, String(html).split(feed.item).length - 1)} cards`);
+  return evs;
+}
+
+// ---- Modern Events Calendar (the WordPress plugin) list pages ----
+/**
+ * The list skin's init call on the page — `jQuery("#mec_skin_mec1").mecListView({ id: "mec1",
+ * start_date: "2026-10-26", end_date: "2026-10-28", offset: "4", limit: "12", atts: "atts%5B…",
+ * ajax_url: "…/admin-ajax.php", … })` — read for what the "load more" request needs. null when
+ * the page has no list skin.
+ */
+export function parseMecInit(html) {
+  const m = /mecListView\(\s*\{([\s\S]*?)\}\s*\);/.exec(String(html || ''));
+  if (!m) return null;
+  const field = (k) => { const f = new RegExp(`\\b${k}:\\s*"([^"]*)"`).exec(m[1]); return f ? f[1] : ''; };
+  const init = { id: field('id'), startDate: field('start_date'), endDate: field('end_date'), offset: Number(field('offset')) || 0, limit: Number(field('limit')) || 12, atts: field('atts'), ajaxUrl: field('ajax_url') };
+  return init.atts ? init : null;
+}
+/**
+ * The cards of one MEC list page (the page itself or a load-more response's html) →
+ * [{ title, url, date, time, place, status? }]. A card: `<article class="… mec-event-article …">`,
+ * `.mec-event-title a` (href + name), `.mec-start-date-label` ("Oct 26" on the page, "Oct 29 2026"
+ * in a load-more response), `.mec-start-time` ("7:30 PM"), `.mec-venue-details span` (the venue).
+ * "… CANCELED" / "… POSTPONED" at the end of a title is the row's status, not its name.
+ */
+export function parseMecCards(html, today = new Date()) {
+  const out = [];
+  for (const card of String(html || '').split(/<article\b[^>]*\bmec-event-article\b/).slice(1)) {
+    const t = /mec-event-title"[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(card);
+    const d = /mec-start-date-label"[^>]*>([^<]+)</.exec(card);
+    if (!t || !d) continue;
+    let title = decode(t[2].replace(/<[^>]+>/g, ' '));
+    const st = /\b(CANCELL?ED|POSTPONED)\b\.?$/i.exec(title);
+    if (st) title = title.slice(0, st.index).replace(/[\s:–—-]+$/, '').trim();
+    const tm = /mec-start-time"[^>]*>([^<]+)</.exec(card);
+    const pl = /mec-venue-details"[^>]*>[\s\S]*?<span[^>]*>([^<]+)</.exec(card);
+    const [first] = cardDates(decode(d[1]), today);
+    if (!first) continue;
+    const ev = { title, url: decode(t[1]), date: first.date, time: tm ? cardClock(decode(tm[1])) : '', place: pl ? decode(pl[1]) : '' };
+    if (st) ev.status = /^cancel/i.test(st[1]) ? 'cancelled' : 'postponed';
+    out.push(ev);
+  }
+  return out;
+}
+async function fetchMec(url, ua, label, opts) {
+  const { feed = {}, venue, types, defaultType, drop, venues = feed.venues || opts.rooms || feed.rooms } = opts;
+  const html = await fetchText(url, ua);
+  const init = parseMecInit(html);
+  const pages = [html];
+  if (!init) console.error(`${label}: no Modern Events Calendar list on the page — first cards only`);
+  let { endDate, offset } = init || {};
+  for (let page = 0; init && page < 40; page++) { // the plugin's own "load more", page after page
+    const body = `action=mec_list_load_more&mec_start_date=${encodeURIComponent(endDate)}&mec_offset=${offset}&apply_sf_date=0&${init.atts}`;
+    const res = await fetch(init.ajaxUrl || new URL('/wp-admin/admin-ajax.php', url).href, { method: 'POST', headers: { 'User-Agent': ua, 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', Accept: 'application/json, text/javascript, */*' }, body, signal: AbortSignal.timeout(60000) });
+    if (!res.ok) { console.error(`${label} load more ${page + 1} HTTP ${res.status}`); break; }
+    const data = await res.json();
+    pages.push(data.html || '');
+    if (!data.has_more_event || !data.end_date) break;
+    if (data.end_date === endDate && Number(data.offset) === offset) break; // the plugin would loop here too
+    endDate = data.end_date; offset = Number(data.offset) || 0;
+  }
+  const cards = pages.flatMap((h) => parseMecCards(h));
+  const evs = [];
+  for (const c of cards) {
+    if (venues && !venues.test(c.place)) continue;
+    if (drop && drop.test(c.title)) continue;
+    const ev = { venue: venue || c.place, title: c.title, date: c.date, time: c.time, url: c.url };
+    if (c.status) ev.status = c.status;
+    const type = feed.type || defaultType;
+    if (type && (!types || types.includes(type))) ev.type = type;
+    evs.push(ev);
+  }
+  console.log(`${label} (MEC): ${evs.length} events from ${cards.length} cards on ${pages.length} pages`);
   return evs;
 }
 
@@ -952,7 +1040,7 @@ async function fetchSpektrix(url, ua, label, opts) {
   return out;
 }
 
-const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix };
+const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix, mec: fetchMec };
 
 /**
  * One source thunk per city.js venue with a `feed` (its listings pinned to that row) and one per
@@ -965,7 +1053,7 @@ export function feedSources(city, ua) {
   const run = (feed, label, venue) => () => {
     const fn = KINDS[feed.kind];
     if (!fn) { console.error(`${label}: unknown feed kind "${feed.kind}"`); return []; }
-    return fn(feed.url, ua, label, { drop: feed.drop, maxRepeat: feed.maxRepeat, rooms: feed.rooms, types, defaultType: venue ? city.venues[venue].type : feed.type, feed, venue, tz: city.tz });
+    return fn(feed.url, ua, label, { drop: feed.drop, maxRepeat: feed.maxRepeat, venues: feed.venues, rooms: feed.rooms || feed.venues, types, defaultType: venue ? city.venues[venue].type : feed.type, feed, venue, tz: city.tz });
   };
   return [
     ...Object.entries(city.venues || {}).filter(([, v]) => v.feed).map(([label, v]) => run(v.feed, label, label)),
