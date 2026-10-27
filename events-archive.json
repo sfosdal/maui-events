@@ -31,6 +31,22 @@
    "time": "",
    "url": "https://mauionstage.thundertix.com/events/271418",
    "type": "arts"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-10-26",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=145521",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Cowboys vs Eagles",
+   "date": "2026-10-26",
+   "time": "14:15",
+   "url": "https://lahainacannerymall.com/event/cowboys-vs-eagles/",
+   "type": "community"
   }
  ]
 }
