@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards } from './feeds.mjs';
+import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents } from './feeds.mjs';
 
 const room = 'Field Arts &#038; Events Hall &#8211; Donna M. Morris Theater';
 const row = (title, start, extra = {}) => ({ title, start_date: start, status: 'publish', all_day: false, venue: { venue: room }, categories: [], ...extra });
@@ -430,4 +430,35 @@ test('parseCards `venues` keeps only the cards whose place matches (Lumen Field\
   const all = parseCards(html, opts);
   assert.equal(all.length, 2);
   assert.deepEqual(parseCards(html, { ...opts, venues: /lumen field/i, venue: 'Lumen Field' }), [{ venue: 'Lumen Field', title: 'Zach Bryan', date: '2027-05-22', time: '19:00', url: 'https://www.lumenfield.com/events/zach-bryan-2027' }]);
+});
+
+test('mapSquarespaceEvents `venues` keeps only the items at the place wanted (Bayfront Park\'s trust lists Maurice A. Ferré Park too)', () => {
+  const data = { website: { timeZone: 'America/New_York' }, upcoming: [
+    { startDate: Date.UTC(2026, 9, 29, 23, 0), title: 'Man Alive', fullUrl: '/events/man-alive', location: { addressTitle: 'FPL Amphitheater' } },
+    { startDate: Date.UTC(2026, 10, 14, 13, 0), title: 'Give Miami 5K', fullUrl: '/events/give-miami-5k', location: { addressTitle: 'Maurice A. Ferré Park' } },
+  ] };
+  assert.deepEqual(mapSquarespaceEvents(data, { venue: 'FPL Solar Amphitheater', base: 'https://www.bayfrontparkmiami.com', venues: /fpl|bayfront park/i }).map((e) => e.title), ['Man Alive']);
+  assert.equal(mapSquarespaceEvents(data, { venue: 'FPL Solar Amphitheater', base: 'https://www.bayfrontparkmiami.com' }).length, 2);
+});
+
+test('parseRssEvents (carbonhouse /events/rss): the UTC start on the city clock, the venue kept or pinned, the type from ev:type, drop, past items and other venues left out', () => {
+  const xml = `<rss><channel><item><title>Young Miko</title><link>https://www.kaseyacenter.com/events/detail/young-miko</link><ev:location>Kaseya Center</ev:location><ev:startdate>2026-10-29T00:00:00Z</ev:startdate><ev:type>Concerts</ev:type></item>
+<item><title>Kaseya Center All&#45;Access Tour</title><link>https://www.kaseyacenter.com/events/detail/tour</link><ev:location>Kaseya Center</ev:location><ev:startdate>2026-11-01T19:00:00Z</ev:startdate><ev:type>All-Access Tours</ev:type></item>
+<item><title>The Carpenters Songbook</title><link>https://www.browardcenter.org/events/detail/carpenters</link><ev:location>The Parker</ev:location><ev:startdate>2026-10-28T23:30:00Z</ev:startdate><ev:type>Music</ev:type></item>
+<item><title>Last Spring</title><link>https://www.kaseyacenter.com/events/detail/old</link><ev:location>Kaseya Center</ev:location><ev:startdate>2026-03-01T01:00:00Z</ev:startdate></item>
+<item><title>No date</title><link>https://www.kaseyacenter.com/events/detail/nodate</link></item></channel></rss>`;
+  const opts = { tz: 'America/New_York', types: ['concert', 'sports', 'arts', 'community'], defaultType: 'sports', today: '2026-10-27', drop: /all-access tour/i };
+  assert.deepEqual(parseRssEvents(xml, opts), [
+    { venue: 'Kaseya Center', title: 'Young Miko', date: '2026-10-28', time: '20:00', url: 'https://www.kaseyacenter.com/events/detail/young-miko', type: 'concert' },
+    { venue: 'The Parker', title: 'The Carpenters Songbook', date: '2026-10-28', time: '19:30', url: 'https://www.browardcenter.org/events/detail/carpenters', type: 'concert' },
+  ]);
+  assert.deepEqual(parseRssEvents(xml, { ...opts, venue: 'Kaseya Center', venues: /kaseya/i }).map((e) => `${e.venue}|${e.title}`), ['Kaseya Center|Young Miko']);
+});
+
+test('parseRssEvents: an XML &apos; in a title becomes an apostrophe', () => {
+  const xml = `<rss><channel><item><title>Disney&apos;s Beauty and the Beast</title><link>https://x/y</link><ev:location>The Broward Center</ev:location><ev:startdate>2027-04-06T23:30:00Z</ev:startdate></item></channel></rss>`;
+  const [ev] = parseRssEvents(xml, { venue: 'Broward Center', tz: 'America/New_York', today: '2026-10-27' });
+  assert.equal(ev.title, "Disney's Beauty and the Beast"); assert.equal(ev.time, '19:30');
+  const gone = parseRssEvents(xml.replace('Disney&apos;s', 'Cancelled: Disney&apos;s'), { venue: 'Broward Center', tz: 'America/New_York', today: '2026-10-27' });
+  assert.equal(gone.length, 0);
 });

@@ -101,6 +101,14 @@
  *                = sold out. `link` is the ticket page, `{id}` filled with the event id's leading
  *                digits — the number the theatre's own purchase site uses (Pentacle Theatre,
  *                Salem 2026-10-20).
+ *   rss        — an RSS feed whose items carry event dates: carbonhouse's venue sites publish the
+ *                whole listing at /events/rss, each item with the title, the event page, the venue
+ *                in `ev:location`, the type in `ev:type` and the first show's instant in
+ *                `ev:startdate`, UTC, which lands on the city's clock via `tz`; a "Cancelled: …" item is skipped. `venues` (a regex
+ *                on ev:location) picks one venue out of a presenter's feed (the Broward Center's
+ *                lists the Parker and the Miniaci too); `drop` takes tours and parking by title;
+ *                past items are left out (Kaseya Center, Amerant Bank Arena, the Watsco Center,
+ *                the Broward Center — Miami, 2026-10-27).
  *
  * Also here: the empty-list gate every build runs (`emptyListGate`) — a
  * fresh pull with zero upcoming events is a scouting failure or an outage,
@@ -639,7 +647,7 @@ async function fetchLinked(url, ua, label, opts) {
  * location.addressTitle room. The clock is the site's own (website.timeZone).
  * Returns [{ venue, title, date, time, url, type? }].
  */
-export function mapSquarespaceEvents(data, { venue, base = '', drop, type, types, label = 'feed' } = {}) {
+export function mapSquarespaceEvents(data, { venue, base = '', drop, type, types, label = 'feed', venues } = {}) {
   const tz = data?.website?.timeZone || 'UTC';
   const fmt = new Intl.DateTimeFormat('sv-SE', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const out = [];
@@ -647,6 +655,7 @@ export function mapSquarespaceEvents(data, { venue, base = '', drop, type, types
     if (!Number.isFinite(it.startDate)) continue;
     const title = decode(it.title || '');
     if (!title || (drop && drop.test(title))) continue;
+    if (venues && !venues.test(decode(it.location?.addressTitle || ''))) continue; // another place on a trust's calendar (Bayfront Park's lists Maurice A. Ferré Park too)
     const [date, time] = fmt.format(new Date(it.startDate)).split(' '); // "2026-10-20 19:30"
     const ev = { venue: venue || decode(it.location?.addressTitle || '') || label, title, date, time: time || '', url: it.fullUrl ? new URL(it.fullUrl, base || 'https://localhost/').href : base };
     if (type && (!types || types.includes(type))) ev.type = type;
@@ -659,7 +668,7 @@ async function fetchSquarespace(url, ua, label, opts) {
   const u = new URL(url); u.searchParams.set('format', 'json');
   const res = await fetch(u, { headers: { 'User-Agent': ua, Accept: 'application/json' } });
   if (!res.ok) { console.error(`${label} HTTP ${res.status}`); return []; }
-  const evs = mapSquarespaceEvents(await res.json(), { venue, base: u.origin, drop: drop || feed.drop, type: feed.type || defaultType, types, label });
+  const evs = mapSquarespaceEvents(await res.json(), { venue, base: u.origin, drop: drop || feed.drop, type: feed.type || defaultType, types, label, venues: opts.venues || feed.venues });
   console.log(`${label} (Squarespace): ${evs.length} events`);
   return evs;
 }
@@ -1040,7 +1049,43 @@ async function fetchSpektrix(url, ua, label, opts) {
   return out;
 }
 
-const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix, mec: fetchMec };
+// ---- an RSS feed with event dates (carbonhouse's /events/rss) ----
+/**
+ * Every <item> with an `ev:startdate` → a feed event: the title, the event page (`link`), the
+ * venue from `ev:location` unless pinned, the UTC instant on the city's clock (`tz`), the type
+ * from `ev:type` through the shared bank, else the venue's. `venues` keeps the items of one
+ * venue, `drop` leaves titles out, items before `today` are skipped.
+ */
+export function parseRssEvents(xml, { venue, tz = 'UTC', venues, drop, type, types, defaultType, today = '' } = {}) {
+  const allowed = types ? new Set(types) : null;
+  const field = (item, tag) => { const m = new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</${tag}>`).exec(item); return m ? decode(m[1]).replace(/&apos;/g, "'") : ''; }; // &apos; is XML's, not HTML's (Broward's "Disney&apos;s Beauty and the Beast")
+  const out = [];
+  for (const item of String(xml || '').split(/<item\b[^>]*>/).slice(1)) {
+    const title = field(item, 'title');
+    const start = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2})?(?:\.\d+)?Z$/.exec(field(item, 'ev:startdate'));
+    if (!title || !start || (drop && drop.test(title)) || /^cancell?ed\b/i.test(title)) continue; // carbonhouse keeps a cancelled show listed under "Cancelled: …"
+    const where = field(item, 'ev:location');
+    if (venues && !venues.test(where)) continue;
+    const w = wallClock(Date.UTC(+start[1], +start[2] - 1, +start[3], +start[4], +start[5]), tz);
+    const ev = { venue: venue || where, title, date: w.slice(0, 10), time: w.slice(11, 16), url: field(item, 'link') || field(item, 'guid') };
+    if (ev.date < today) continue;
+    const t = (type && (!allowed || allowed.has(type)) ? type : null) || tribeType([field(item, 'ev:type')], allowed) || defaultType;
+    if (t) ev.type = t;
+    out.push(ev);
+  }
+  return out;
+}
+async function fetchRss(url, ua, label, opts) {
+  const { feed = {}, venue, types, defaultType, drop, tz } = opts;
+  const res = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'application/rss+xml,application/xml,text/xml,*/*' } });
+  if (!res.ok) { console.error(`${label} HTTP ${res.status}`); return []; }
+  const xml = await res.text();
+  const evs = parseRssEvents(xml, { venue, tz, venues: opts.venues || feed.venues, drop: drop || feed.drop, type: feed.type, types, defaultType, today: new Date().toISOString().slice(0, 10) });
+  console.log(`${label} (RSS): ${evs.length} events from ${(xml.match(/<item\b/g) || []).length} items`);
+  return evs;
+}
+
+const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix, mec: fetchMec, rss: fetchRss };
 
 /**
  * One source thunk per city.js venue with a `feed` (its listings pinned to that row) and one per

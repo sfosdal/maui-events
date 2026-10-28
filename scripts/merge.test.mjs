@@ -115,3 +115,16 @@ test('dropClashes: every word of the shorter title inside the longer is a clash;
   ], existing);
   assert.deepEqual(out.map((r) => r.title), ['Ray Lau']);
 });
+
+test('dropClashes: a loose title folds accents and reads & as "and" (the venue\'s "Marcello Hernandez" against Ticketmaster\'s "Marcello Hernández")', () => {
+  const existing = [
+    { venue: 'Hard Rock Live', title: 'Marcello Hernández', date: '2026-11-27', time: '20:00:00' },
+    { venue: 'Pompano Beach Amphitheater', title: 'Leonid and Friends', date: '2027-04-17', time: '20:00:00' },
+  ];
+  const out = dropClashes([
+    { venue: 'Hard Rock Live', title: 'Marcello Hernandez', date: '2026-11-27', time: '19:00' },
+    { venue: 'Pompano Beach Amphitheater', title: 'Leonid & Friends', date: '2027-04-17', time: '19:00' },
+    { venue: 'Hard Rock Live', title: 'Grupo Niche', date: '2026-11-27', time: '21:30' },
+  ], existing);
+  assert.deepEqual(out.map((e) => e.title), ['Grupo Niche']);
+});

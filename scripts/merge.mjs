@@ -65,8 +65,9 @@ export function unionArchives(primary, secondary) {
  * and a late show of one act both stay. Two different shows on one night at
  * one venue — different titles, different clocks — both stay.
  */
-const loose = (t) => String(t || '').toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, '');
-const words = (t) => String(t || '').toLowerCase().replace(/^the\s+/, '').match(/[a-z0-9]{3,}/g) || [];
+const plain = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/^the\s+/, ''); // "Marcello Hernández" against the venue's "Marcello Hernandez", "Leonid & Friends" against "Leonid and Friends"
+const loose = (t) => plain(t).replace(/[^a-z0-9]+/g, '');
+const words = (t) => plain(t).match(/[a-z0-9]{3,}/g) || [];
 const sameTitle = (a, b) => {
   const x = loose(a), y = loose(b);
   if (!x || !y) return false;
