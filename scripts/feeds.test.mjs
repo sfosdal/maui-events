@@ -462,6 +462,8 @@ test('parseRssEvents: an XML &apos; in a title becomes an apostrophe', () => {
   const xml = `<rss><channel><item><title>Disney&apos;s Beauty and the Beast</title><link>https://x/y</link><ev:location>The Broward Center</ev:location><ev:startdate>2027-04-06T23:30:00Z</ev:startdate></item></channel></rss>`;
   const [ev] = parseRssEvents(xml, { venue: 'Broward Center', tz: 'America/New_York', today: '2026-10-27' });
   assert.equal(ev.title, "Disney's Beauty and the Beast"); assert.equal(ev.time, '19:30');
+  const em = parseRssEvents(xml.replace('Disney&apos;s Beauty and the Beast', 'Handel&apos;s &lt;em&gt;Messiah&lt;/em&gt;'), { venue: 'Broward Center', tz: 'America/New_York', today: '2026-10-27' });
+  assert.equal(em[0].title, "Handel's Messiah"); // markup inside a title is dropped
   const gone = parseRssEvents(xml.replace('Disney&apos;s', 'Cancelled: Disney&apos;s'), { venue: 'Broward Center', tz: 'America/New_York', today: '2026-10-27' });
   assert.equal(gone.length, 0);
 });

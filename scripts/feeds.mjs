@@ -1139,7 +1139,7 @@ export function parseRssEvents(xml, { venue, tz = 'UTC', venues, drop, type, typ
   const field = (item, tag) => { const m = new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</${tag}>`).exec(item); return m ? decode(m[1]).replace(/&apos;/g, "'") : ''; }; // &apos; is XML's, not HTML's (Broward's "Disney&apos;s Beauty and the Beast")
   const out = [];
   for (const item of String(xml || '').split(/<item\b[^>]*>/).slice(1)) {
-    const title = field(item, 'title');
+    const title = field(item, 'title').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(); // the ASO sets work titles in <em> ("Handel's <em>Messiah</em>")
     const start = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2})?(?:\.\d+)?Z$/.exec(field(item, 'ev:startdate'));
     if (!title || !start || (drop && drop.test(title)) || /^cancell?ed\b/i.test(title)) continue; // carbonhouse keeps a cancelled show listed under "Cancelled: …"
     const where = field(item, 'ev:location');
