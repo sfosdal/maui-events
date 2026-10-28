@@ -76,7 +76,8 @@
  *                `time` is the clock for cards that print none. `venues` (a regex on `place`) keeps
  *                only the cards of the venue wanted when the listing covers several (Lumen Field's
  *                calendar lists the WAMU Theater's nights too; the Crocodile's its promotions at
- *                other clubs — 2026-10-26).
+ *                other clubs — 2026-10-26). `chrome: true` fetches the page through
+ *                scripts/cffi-fetch.py, for an edge that answers Node 403 (2026-10-28).
  *   mec         — a Modern Events Calendar list page (STG's stgpresents.org/events, 2026-10-26):
  *                the page's first cards plus every "load more" page, POSTed to admin-ajax.php the
  *                way the plugin's own script does (action mec_list_load_more with the skin's
@@ -832,7 +833,7 @@ export function parseCards(html, { item, title, when, place, venue, drop, type, 
 }
 async function fetchCards(url, ua, label, opts) {
   const { feed = {}, venue, types, defaultType, drop } = opts;
-  const html = await fetchText(url, ua);
+  const html = feed.chrome ? (await chromeFetch([url], label)).get(url) || '' : await fetchText(url, ua); // `chrome: true` for an edge that 403s Node (SeeTickets' Concourse Project, the Golden Nugget, the Casbah)
   const evs = parseCards(html, { item: feed.item, title: feed.title, when: feed.when, place: feed.place, venue, drop: drop || feed.drop, type: feed.type || defaultType, types, base: url, time: feed.time, venues: opts.venues || feed.venues || opts.rooms || feed.rooms });
   console.log(`${label} (cards): ${evs.length} events from ${Math.max(0, String(html).split(feed.item).length - 1)} cards`);
   return evs;
