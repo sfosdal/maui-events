@@ -279,6 +279,9 @@ test('cardDates reads one date with a clock, a day range as one row per day, and
   assert.deepEqual(cardDates('October 31 - November 2, 2026').map((d) => d.date), ['2026-10-31', '2026-11-01', '2026-11-02']);
   assert.deepEqual(cardDates('November 1, 2026 | 7 PM'), [{ date: '2026-11-01', time: '19:00' }]);
   assert.deepEqual(cardDates('Every Thursday'), []);
+  assert.deepEqual(cardDates('2026-11-14T19:30:00-08:00'), [{ date: '2026-11-14', time: '19:30' }]); // an ISO datetime's own clock (the Symphony's Tessitura page)
+  assert.deepEqual(cardDates('2026-10-30 5:00 PM'), [{ date: '2026-10-30', time: '17:00' }]);
+  assert.deepEqual(cardDates('October   29 , 2026   at  7:30 PM'), [{ date: '2026-10-29', time: '19:30' }]); // the year in its own span, tags stripped to spaces (Carbonhouse)
 });
 
 test('parseCards cuts a listing into cards and keeps the link, the name, the room and every date', () => {

@@ -109,6 +109,18 @@
  *                lists the Parker and the Miniaci too); `drop` takes tours and parking by title;
  *                past items are left out (Kaseya Center, Amerant Bank Arena, the Watsco Center,
  *                the Broward Center — Miami, 2026-10-27).
+ *   aeg        — an AEG Presents venue site's events JSON (aegwebprod.blob.core.windows.net/json/
+ *                events/<n>/events.json, the `data-file` of the site's c-axs-events block — the
+ *                site's own /events page answers 403 to every non-browser client): one object per
+ *                show with eventDateTime as the venue's wall clock ("TBD" for an undated one, left
+ *                out), title.eventTitleText, ticketing.url (AXS) and ticketing.status (Cancelled,
+ *                Sold Out, Coming Soon), venue.title; `venues` (a regex on venue.title) keeps one
+ *                venue's shows out of a shared blob (the Bluebird, Ogden, Mission Ballroom and
+ *                Gothic, Denver 2026-10-27).
+ *   plot       — a venue site built with Plot (builtwithplot.com; the hi-dive's): its listings
+ *                JSON at <site>/api/plot/v1/listings?listingsPerPage=200 — day "YYYYMMDD", endDay
+ *                for a run (one row a day, at most seven), startTime "7pm", title, permalink, the
+ *                ticket link in ticket.link (Denver 2026-10-27).
  *
  * Also here: the empty-list gate every build runs (`emptyListGate`) — a
  * fresh pull with zero upcoming events is a scouting failure or an outage,
@@ -365,10 +377,10 @@ export function parseJsonLdEvents(html, { venue, at, types } = {}) {
       if (!o || !/Event/.test(String(o['@type']))) continue;
       const loc = typeof o.location === 'object' ? o.location?.name : o.location;
       if (at && !at.test(loc || '')) continue;
-      const sd = String(o.startDate || '');
+      const sd = String(o.startDate || ''); // "2026-10-29T20:00:00-06:00", or "2026-10-29 20:00:00" (HoldMyTicket's markup at the Oriental Theater, Denver)
       if (!/^\d{4}-\d{2}-\d{2}/.test(sd)) continue;
-      const ev = { venue: venue || decode(loc) || '', title: decode(o.name), date: sd.slice(0, 10), time: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(sd) ? sd.slice(11, 16) : '', url: String(o.url || '') };
-      const offers = Array.isArray(o.offers) ? o.offers : o.offers ? [o.offers] : [];
+      const offers = (Array.isArray(o.offers) ? o.offers : o.offers ? [o.offers] : []).flatMap((x) => (Array.isArray(x?.offers) ? x.offers : [x])); // an AggregateOffer's own offers too (HoldMyTicket's markup)
+      const ev = { venue: venue || decode(loc) || '', title: decode(o.name), date: sd.slice(0, 10), time: /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(sd) ? sd.slice(11, 16) : '', url: String(o.url || offers.find((x) => x?.url)?.url || '') }; // no event url → the first offer's (the box-office page)
       if (offers.length && offers.every((x) => /SoldOut/i.test(String(x.availability || '')))) ev.soldOut = true;
       const st = String(o.eventStatus || '');
       if (/Cancelled/i.test(st)) ev.status = 'cancelled'; else if (/Postponed|Rescheduled/i.test(st)) ev.status = 'postponed';
@@ -381,7 +393,8 @@ export function parseJsonLdEvents(html, { venue, at, types } = {}) {
 async function fetchJsonLd(url, ua, label, opts) {
   const html = await fetchText(url, ua);
   const drop = opts.drop || opts.feed?.drop;
-  const evs = parseJsonLdEvents(html, { venue: opts.venue, at: opts.feed?.at, types: opts.types }).filter((e) => !drop || !drop.test(e.title));
+  const type = opts.feed?.type || opts.defaultType; // a venue's own page rarely types its events: the venue's type fills in (the Oriental, 2026-10-27)
+  const evs = parseJsonLdEvents(html, { venue: opts.venue, at: opts.feed?.at, types: opts.types }).filter((e) => !drop || !drop.test(e.title)).map((e) => (e.type || !type ? e : { ...e, type }));
   console.log(`${label} (schema.org events): ${evs.length} events`);
   return evs;
 }
@@ -673,6 +686,71 @@ async function fetchSquarespace(url, ua, label, opts) {
   return evs;
 }
 
+// ---- AEG Presents venue sites (their events JSON blob) ----
+/**
+ * An AEG venue site's events.json → feed events: one row per show at its wall clock; "TBD" dates
+ * are left out, a Cancelled / Postponed status becomes the row's status, Sold Out the soldOut
+ * flag. `venues` keeps the shows whose venue.title matches (a blob can carry a promoter's whole
+ * list).
+ */
+export function mapAegEvents(data, { venue, drop, type, types, venues } = {}) {
+  const out = [];
+  for (const e of data?.events || []) {
+    if (e.private || e.active === false) continue;
+    const place = decode(e.venue?.title || '');
+    if (venues && !venues.test(place)) continue;
+    const title = decode(e.title?.eventTitleText || e.title?.eventTitle || '');
+    if (!title || (drop && drop.test(title))) continue;
+    const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(String(e.eventDateTime || ''));
+    if (!m) continue;
+    const ev = { venue: venue || place, title, date: m[1], time: m[2], url: String(e.ticketing?.url || e.ticketing?.eventUrl || e.ticketing?.ticketURL || '') };
+    const st = String(e.ticketing?.status || '');
+    if (/cancel/i.test(st)) ev.status = 'cancelled'; else if (/postpone|reschedul/i.test(st)) ev.status = 'postponed';
+    if (/sold out/i.test(st)) ev.soldOut = true;
+    if (type && (!types || types.includes(type))) ev.type = type;
+    out.push(ev);
+  }
+  return out;
+}
+async function fetchAeg(url, ua, label, opts) {
+  const { feed = {}, venue, types, defaultType, drop } = opts;
+  const res = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'application/json' }, signal: AbortSignal.timeout(60000) });
+  if (!res.ok) { console.error(`${label} HTTP ${res.status}`); return []; }
+  const evs = mapAegEvents(await res.json(), { venue, drop: drop || feed.drop, type: feed.type || defaultType, types, venues: opts.venues || feed.venues });
+  console.log(`${label} (AEG): ${evs.length} events`);
+  return evs;
+}
+
+// ---- Plot venue sites (builtwithplot.com) ----
+/** A Plot site's listings JSON → feed events: one row a day over day…endDay (at most seven), at startTime. */
+export function mapPlotListings(data, { venue, drop, type, types, label = 'feed' } = {}) {
+  const out = [];
+  for (const it of Array.isArray(data) ? data : data?.listings || []) {
+    const title = decode(it.title || '');
+    const d = /^(\d{4})(\d{2})(\d{2})$/.exec(String(it.day || ''));
+    if (!title || !d || (drop && drop.test(title))) continue;
+    const time = cardClock(String(it.startTime || ''));
+    const start = Date.UTC(+d[1], +d[2] - 1, +d[3]);
+    const e = /^(\d{4})(\d{2})(\d{2})$/.exec(String(it.endDay || ''));
+    const end = e ? Date.UTC(+e[1], +e[2] - 1, +e[3]) : start;
+    const url = String(it.permalink || it.url || it.ticket?.link || '');
+    for (let t = start, n = 0; t <= end && n < 7; t += 86400e3, n++) {
+      const ev = { venue: venue || decode(it.venue?.title || it.venue || '') || label, title, date: new Date(t).toISOString().slice(0, 10), time, url };
+      if (type && (!types || types.includes(type))) ev.type = type;
+      out.push(ev);
+    }
+  }
+  return out;
+}
+async function fetchPlot(url, ua, label, opts) {
+  const { feed = {}, venue, types, defaultType, drop } = opts;
+  const res = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'application/json' }, signal: AbortSignal.timeout(60000) });
+  if (!res.ok) { console.error(`${label} HTTP ${res.status}`); return []; }
+  const evs = mapPlotListings(await res.json(), { venue, drop: drop || feed.drop, type: feed.type || defaultType, types, label });
+  console.log(`${label} (Plot): ${evs.length} events`);
+  return evs;
+}
+
 // ---- a server-rendered listing cut into cards ----
 const CARD_MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 /**
@@ -683,11 +761,11 @@ const CARD_MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, au
  */
 export function cardDates(text, today = new Date()) {
   const t = decode(text);
-  const iso = /\b(\d{4}-\d{2}-\d{2})\b/.exec(t); // a hidden sort field already in ISO (Lumen Field's Webflow cards, 2026-10-26)
-  if (iso) return [{ date: iso[1], time: cardClock(t.slice(iso.index + iso[0].length)) || cardClock(t) }];
+  const iso = /\b(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2})|\b)/.exec(t); // a hidden sort field already in ISO (Lumen Field's Webflow cards, 2026-10-26); an ISO datetime carries its own wall clock ("2026-11-14T19:30:00-08:00", the Symphony's Tessitura page, 2026-10-27)
+  if (iso) return [{ date: iso[1], time: iso[2] || cardClock(t.slice(iso.index + iso[0].length)) || cardClock(t) }];
   // "October 15, 2026", "December 05-06, 2026", "October 31 - November 2, 2026", "15 Oct", "15 Oct 2026"
   // month first — not a clock's hour after the month ("Oct 7:00 pm") and not the month of a day-first date ("15 Oct")
-  let m = /(?<!\d\s{0,2})([A-Za-z]{3,9})\.?\s+(\d{1,2})(?![:\d])(?:\s*[-–]\s*(?:([A-Za-z]{3,9})\.?\s+)?(\d{1,2}))?(?:,?\s*(\d{4}))?/.exec(t);
+  let m = /(?<!\d\s{0,2})([A-Za-z]{3,9})\.?\s+(\d{1,2})(?![:\d])(?:\s*[-–]\s*(?:([A-Za-z]{3,9})\.?\s+)?(\d{1,2}))?(?:\s*,?\s*(\d{4}))?/.exec(t); // the year may sit in its own span ("29 </span><span>, 2026" — Carbonhouse date markup, 2026-10-27)
   let mon1, d1, mon2, d2, year;
   if (m && CARD_MONTHS[m[1].slice(0, 3).toLowerCase()]) { [mon1, d1, mon2, d2, year] = [m[1], m[2], m[3], m[4], m[5]]; }
   else {
@@ -1085,7 +1163,7 @@ async function fetchRss(url, ua, label, opts) {
   return evs;
 }
 
-const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix, mec: fetchMec, rss: fetchRss };
+const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix, mec: fetchMec, rss: fetchRss, aeg: fetchAeg, plot: fetchPlot };
 
 /**
  * One source thunk per city.js venue with a `feed` (its listings pinned to that row) and one per
