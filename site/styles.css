@@ -953,7 +953,13 @@ footer::after {
 /* two things across, one at each end — the credit and the links (the Updated
    stamp that sat dead centre between them was removed 2026-10-05, Steve) */
 @media (min-width: 641px) {
-  .foot-inner { display: grid; grid-template-columns: auto auto; justify-content: space-between; }
+  .foot-inner { display: grid; grid-template-columns: auto 1fr; }
+  /* the links fill the rest of the row, packed right; More Cities, first among
+     them, takes equal auto margins so it sits centred in the open space between
+     the credit and About (Steve, 2026-10-29: "more cities in the footer should be
+     centerd in this open space") */
+  footer .foot-links { justify-content: flex-end; }
+  footer #moreCities { margin-inline: auto; }
 }
 footer p { color: var(--ink-soft); font-size: .72rem; margin: 0; }
 .gw { display: flex; align-items: center; gap: .7rem; }
@@ -964,7 +970,7 @@ footer .gw { order: 1; }
 footer .foot-links { order: 3; display: flex; align-items: center; gap: 1.2rem; }
 footer .foot-link { order: 1; } /* Advertise, Embed, Sources */
 footer #embed { order: 2; }
-footer .share.info { order: 3; position: relative; }
+footer #sources { order: 3; } /* a page link since 2026-10-29, still last on the row */
 /* the Advertise link: dressed as the Sources / Embed labels, after them */
 footer .foot-link { position: relative; top: -.5px; display: inline-flex; align-items: center; gap: .4rem; /* measured half a pixel under its neighbours' labels (Steve, 2026-09-15) */ font-family: var(--mono); font-size: .9rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); text-decoration: none; padding: .2rem 0; white-space: nowrap; }
 footer .foot-link:hover { color: var(--ink-soft); }
@@ -980,10 +986,6 @@ footer .share summary .chev { color: var(--ink-bright); }
 .ad-page ul { padding-left: 1.2rem; }
 .ad-page .ad-lead { font-size: 1.1rem; color: var(--ink); }
 .ad-page .ad-back { display: inline-block; margin-top: 2rem; font-family: var(--mono); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
-footer .info summary svg { width: 1.1rem; height: 1.1rem; }
-.info-body { width: min(18rem, 90vw); text-align: left; } /* the Embed panel's width; its own details box is only as wide as its label */
-.info-body h3 { font-size: 1.05rem; margin: 0 0 .4rem; }
-.info-body p { color: var(--ink-soft); margin: 0 0 .5rem; }
 footer .share summary { font-size: .9rem; white-space: nowrap; }
 .foot-inner.is-tight .share summary span, .foot-inner.is-tighter .gw-credit {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;

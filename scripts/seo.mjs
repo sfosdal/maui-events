@@ -2,7 +2,7 @@
  * Search plumbing for a city site, written at build time after fetch-events
  * (Steve, 2026-10-16: "queue site maps and structured data"):
  *   site/robots.txt   — allow everything, name the sitemap
- *   site/sitemap.xml  — the page (and advertise.html / faq.html when the city has them)
+ *   site/sitemap.xml  — the page (and advertise.html / about.html / faq.html / sources.html when the city has them)
  *   site/index.html   — one <script type="application/ld+json"> block at the end
  *                       of <body> (parsers reach the visible page first; Google
  *                       reads it anywhere): the WebSite plus an Event per upcoming row
@@ -134,7 +134,9 @@ export function main(siteDir = new URL('../site/', import.meta.url), today = new
   writeFileSync(new URL('index.html', siteDir), injectLd(injectMapLink(read('index.html')), ld));
   const pages = [{ path: '', freq: 'daily' }];
   if (existsSync(new URL('advertise.html', siteDir))) pages.push({ path: 'advertise.html', freq: 'monthly' });
-  if (existsSync(new URL('faq.html', siteDir))) pages.push({ path: 'faq.html', freq: 'monthly' });
+  for (const page of ['about.html', 'faq.html', 'sources.html']) {
+    if (existsSync(new URL(page, siteDir))) pages.push({ path: page, freq: 'monthly' });
+  }
   writeFileSync(new URL('sitemap.xml', siteDir), sitemapXml(site, pages, today));
   writeFileSync(new URL('robots.txt', siteDir), robotsTxt(site));
   console.log(`seo: ${ld['@graph'].length - 1} events as JSON-LD (${place.city}, ${place.state}), More Cities link in the footer, sitemap ${pages.length} url(s), robots.txt → ${site}`);
