@@ -46,7 +46,7 @@ async function probe(url, fetchImpl, timeoutMs) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const res = await fetchImpl(url, { redirect: 'follow', signal: ctl.signal, headers: { 'user-agent': UA, accept: 'text/html,*/*' } });
+    const res = await fetchImpl(url, { redirect: 'follow', signal: ctl.signal, headers: { 'user-agent': UA, accept: 'text/html,*/*' }, [Symbol.for('here.events/quiet')]: true }); // a dead ticket link is what this looks for, not a failure (failures.mjs)
     try { await res.body?.cancel(); } catch {}
     if (res.status === 404 || res.status === 410) return 'dead';
     if (res.ok && res.url && res.url !== url && DEAD_PATH.test(new URL(res.url).pathname)) return 'dead';

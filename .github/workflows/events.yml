@@ -3,19 +3,24 @@ name: build & publish events
 on:
   schedule:
     - cron: '17 22 * * *'   # once a day at noon Hawaii time (22:00 UTC; Hawaii keeps no daylight time; GitHub cron is UTC, best-effort), off the sister sites' minutes — Steve, 2026-10-11
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      schedule:
+        description: 'test the noon gate: a cron line to act as (blank = just build)'
+        required: false
+        default: ''
   push:
     branches: [main]
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    concurrency:   # one build at a time; a newer run waits instead of cancelling this one
+      group: pages-build
+      cancel-in-progress: false
     permissions:
       contents: write   # to push the archive record to the `archive` branch
+      issues: write     # the "Calls failing after retries" issue (scripts/failure-issue.mjs)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,9 +63,18 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      - name: Mail Steve about calls still failing after their retries (one issue, assigned to him; a mail only for a new failure; never fails the run)
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/failure-issue.mjs
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    concurrency:   # deploys queue too, never cancel each other
+      group: pages-deploy
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write

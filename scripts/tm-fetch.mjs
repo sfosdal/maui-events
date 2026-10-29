@@ -51,6 +51,7 @@ export const tmFetch = makeTmFetch((...a) => fetch(...a), { gap: Number(process.
 export const tmFailedVenues = new Set();
 export function tmFailed(label, res) {
   tmFailedVenues.add(label);
+  globalThis[Symbol.for('here.events/recordFailure')]?.(`Ticketmaster ${label}`, res.status ? `HTTP ${res.status}` : res.statusText || 'no answer'); // the build's call log (failures.mjs), when one is installed
   return new Error(`Ticketmaster ${label} failed after retries (${res.status ? 'HTTP ' + res.status : res.statusText || 'no answer'})`);
 }
 

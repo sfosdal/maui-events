@@ -13,6 +13,7 @@
  * here — the MACC's "Load More" pages and Da Playground's Shopify ticket shop.
  * The Rainbow Warriors' seasons come from ESPN (scripts/schedules.mjs).
  */
+import './failures.mjs'; // first: every outside call retried, the ones still failing written to failures.json (Steve, 2026-10-29)
 import { writeFileSync, readFileSync } from 'node:fs';
 import { buildIcs } from './ics.mjs';
 import { isChurch } from './sources.mjs';
