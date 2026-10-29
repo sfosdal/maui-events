@@ -55,6 +55,30 @@
    "time": "09:00",
    "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=138289",
    "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Aloha Wailea Luau",
+   "date": "2026-10-28",
+   "time": "17:30",
+   "url": "https://www.alohawailealuau.com",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "John Cruz Island Style Series",
+   "date": "2026-10-28",
+   "time": "19:00",
+   "url": "https://proartsmaui.org/event/john-cruz-island-style-series-oct-28-2026/",
+   "type": "concert"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "The Land Has Spoken",
+   "date": "2026-10-28",
+   "time": "19:00",
+   "url": "https://mauiarts.org/show-details/the-land-has-spoken",
+   "type": "arts"
   }
  ]
 }
