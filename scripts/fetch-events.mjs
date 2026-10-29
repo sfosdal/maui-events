@@ -22,7 +22,7 @@ import { calmTitle, isNotice } from './titles.mjs';
 import { applySchedules } from './schedules.mjs';
 import { slugify, BADGE_FEEDS, TEAMS, CITY } from './badges.mjs';
 import { feedSources, emptyListGate, parseCards, cardDates } from './feeds.mjs';
-import { tmFetch } from './tm-fetch.mjs';
+import { tmFetch, tmFailed, keepFailedVenues } from './tm-fetch.mjs';
 
 const JSON_OUT = new URL('../site/events.json', import.meta.url);
 const ICS_OUT = new URL('../site/events.ics', import.meta.url);
@@ -93,7 +93,7 @@ async function tmPages(params, label) {
   for (let page = 0; page < 5; page++) {
     const q = new URLSearchParams({ apikey: key, sort: 'date,asc', size: '200', page: String(page), ...params });
     const res = await tmFetch(`https://app.ticketmaster.com/discovery/v2/events.json?${q}`);
-    if (!res.ok) { console.error(`Ticketmaster ${label} page ${page} HTTP ${res.status}`); break; }
+    if (!res.ok) throw tmFailed(label, res); // every retry spent (tm-fetch.mjs): the venue keeps its previous rows, not an empty or half list
     const data = await res.json();
     all.push(...(data?._embedded?.events || []));
     if (page + 1 >= (data?.page?.totalPages || 1)) break;
@@ -319,7 +319,7 @@ if (branchArchive === null) console.error('Archive branch unreadable — buildin
 const archived = unionArchives(liveArchive || [], branchArchive || []);
 console.log(`Archive: ${(liveArchive || []).length} events in the live feed, ${(branchArchive || []).length} on the archive branch, ${archived.length} in the union`);
 
-const merged = mergeWithArchive(fresh, archived, today, cutoff).slice(-MAX_EVENTS);
+const merged = mergeWithArchive(fresh.concat(keepFailedVenues(archived, fresh, today)), archived, today, cutoff).slice(-MAX_EVENTS);
 
 // League schedules flag floating dates Ticketmaster doesn't know yet, and
 // the full seasons (home and away) feed the site's Teams view

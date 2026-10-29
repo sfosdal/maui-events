@@ -1988,6 +1988,19 @@ html.map-open .agenda, html.map-open .cal-toggle, html.map-open #calToday, html.
 @keyframes lm-pulse { 0% { fill-opacity: .22; } 100% { fill-opacity: .08; } }
 .lm-pin.is-city circle { opacity: .78; } /* the rest of the city on a neighbourhood map: a shade quieter than the neighbourhood's own rooms */
 .lm-pin.is-city .lm-name { font-weight: 500; fill: var(--ink-soft); }
+.lm-pin .lm-stack { stroke: var(--mist); stroke-width: calc(var(--u, 1) * 1.6); } /* a group of venues (Steve, 2026-10-28): the next venues' discs peek out behind the first */
+.lm-pin.is-group .lm-name { font-weight: 700; }
+/* a group's card: one row a venue, folded like a reddit thread — [+] opens its next events under a thread line, [–] folds them */
+.lm-pop .lm-tree { margin: 0 0 .3rem; }
+.lm-pop .lm-branch + .lm-branch { border-top: 1px solid var(--line); }
+.lm-pop .lm-branch-head { display: flex; align-items: center; gap: .45rem; width: 100%; background: none; border: 0; border-radius: 0; padding: .45rem .1rem; font: 500 .86rem/1.25 var(--body); color: var(--ink); text-align: left; cursor: pointer; }
+.lm-pop .lm-branch-head:hover .lm-branch-name { text-decoration: underline; text-underline-offset: .15em; }
+.lm-pop .lm-tog { flex: none; width: 1.7rem; font-family: var(--mono); font-size: .7rem; color: var(--ink-soft); }
+.lm-pop .lm-dot { flex: none; width: .62rem; height: .62rem; border-radius: 50%; background: var(--pin); }
+.lm-pop .lm-branch-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lm-pop .lm-branch-n { flex: none; font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; color: var(--ink-soft); }
+.lm-pop .lm-branch-body { margin: 0 0 .5rem .5rem; padding-left: 1.05rem; border-left: 2px solid var(--line); } /* the thread line */
+.lm-pop .lm-branch-body .lm-foot { margin-bottom: .1rem; }
 .lm-caption .lm-note { color: var(--ink); text-transform: none; letter-spacing: 0; font-family: var(--body); font-size: .8rem; }
 .lm-caption { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin: .55rem auto 0; width: 100%; min-height: 1.6em; font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
 /* the pin's card: the month view's day card (.mb-pop), with the room's own site at its foot */

@@ -34,6 +34,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readTicketWeb, ticketWebId } from './ticketweb.mjs';
 import { CITY } from './badges.mjs';
+import { tmFetch } from './tm-fetch.mjs'; // paced, and a 429, 5xx or dropped connection retried (Steve, 2026-10-28: "I want ticketmaster calls to not fail")
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'scripts', 'data', 'soldout.json'); // committed — the build (fetch-events.mjs) stamps it onto the feed
@@ -70,13 +71,16 @@ if (!KEY) { console.error('No TICKETMASTER_API_KEY'); process.exit(1); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- the events to check: on sale now, by the public (Discovery) ----
+// a Discovery list read that failed after tmFetch's retries: the run is then partial, and every event it
+// could not list keeps the last run's answer (until 2026-10-28 a dropped connection crashed the run instead)
+let listFailed = false;
 async function listEvents(venues = VENUES, idOf = (url) => { const m = (url || '').match(/\/event\/([0-9A-F]{16})/i); return m && m[1].toUpperCase(); }) {
   const out = [];
   const now = Date.now();
   for (const v of venues) {
     for (let page = 0; page < 5; page++) {
-      const res = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?apikey=${KEY}&venueId=${v.id}&sort=date,asc&size=200&page=${page}`);
-      if (!res.ok) { console.warn(v.label, 'discovery', res.status); break; }
+      const res = await tmFetch(`https://app.ticketmaster.com/discovery/v2/events.json?apikey=${KEY}&venueId=${v.id}&sort=date,asc&size=200&page=${page}`);
+      if (!res.ok) { console.warn(v.label, 'discovery failed', res.status || res.statusText); listFailed = true; break; }
       const data = await res.json();
       const evs = (data._embedded && data._embedded.events) || [];
       for (const e of evs) {
@@ -107,10 +111,10 @@ async function listAwayGames() {
     if (!games.length) continue;
     let evs = [];
     try {
-      const res = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?apikey=${KEY}&keyword=${encodeURIComponent(name)}&startDateTime=${ymd(today)}T00:00:00Z&endDateTime=${ymd(until)}T23:59:59Z&sort=date,asc&size=100`); // no country: the Kraken's Canadian hosts list on Ticketmaster Canada
-      if (!res.ok) { console.warn(slug, 'discovery', res.status); continue; }
+      const res = await tmFetch(`https://app.ticketmaster.com/discovery/v2/events.json?apikey=${KEY}&keyword=${encodeURIComponent(name)}&startDateTime=${ymd(today)}T00:00:00Z&endDateTime=${ymd(until)}T23:59:59Z&sort=date,asc&size=100`); // no country: the Kraken's Canadian hosts list on Ticketmaster Canada
+      if (!res.ok) { console.warn(slug, 'discovery failed', res.status || res.statusText); listFailed = true; continue; }
       evs = ((await res.json())._embedded || {}).events || [];
-    } catch (e) { console.warn(slug, 'discovery', String(e).slice(0, 60)); continue; }
+    } catch (e) { console.warn(slug, 'discovery failed', String(e).slice(0, 60)); listFailed = true; continue; }
     await sleep(250); // Discovery's rate limit: five a second
     for (const g of games) {
       const opp = [g.opp && g.opp.name, g.opp && g.opp.short].filter(Boolean).map(norm);
@@ -290,7 +294,8 @@ try {
   if (chrome) chrome.kill();
 }
 for (const ev of events) if (!ev.onsale) results[ev.id] = { status: 'presale', name: ev.name, date: ev.date, venue: ev.venue, ...(ev.away ? { club: ev.club, away: true } : {}), checked: new Date().toISOString() }; // not yet on public sale: nothing to be sold out of
-if (limit || onlyAway || onlyTw || aborted) for (const k of Object.keys(prev)) if (!results[k]) results[k] = prev[k]; // a partial run keeps the rest of the last one
+if (listFailed) console.log('a Discovery list read failed — the events it could not list keep the last run\'s answers');
+if (limit || onlyAway || onlyTw || aborted || listFailed) for (const k of Object.keys(prev)) if (!results[k]) results[k] = prev[k]; // a partial run keeps the rest of the last one
 fs.writeFileSync(OUT, JSON.stringify({ generated: new Date().toISOString(), _: 'scripts/soldout-check.mjs (a local run — Ticketmaster inventory as a real Chrome sees it, TicketWeb pages (TW… keys, the Crocodile) by plain fetch; committed by scripts/soldout-run.sh). status: available = box-office tickets on sale; soldout = only resale left; none = the inventory call and the page both showed nothing (not treated as sold out); presale = public sale not started; unknown = the page gave no answer; a none/unknown run keeps the last real answer, its own checked time, note says so.', events: results }, null, 1) + '\n');
 const tally = {}; for (const r of Object.values(results)) tally[r.status] = (tally[r.status] || 0) + 1;
 console.log('wrote', path.relative(ROOT, OUT), JSON.stringify(tally));
