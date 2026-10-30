@@ -79,6 +79,62 @@
    "time": "19:00",
    "url": "https://mauiarts.org/show-details/the-land-has-spoken",
    "type": "arts"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-10-29",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=145522",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Hula Lessons",
+   "date": "2026-10-29",
+   "time": "13:00",
+   "url": "https://lahainacannerymall.com/event/hula-lessons/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Panthers vs Packers",
+   "date": "2026-10-29",
+   "time": "14:15",
+   "url": "https://lahainacannerymall.com/event/panthers-vs-packers/",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Mulligans Magic Show",
+   "date": "2026-10-29",
+   "time": "18:30",
+   "url": "https://mulligansontheblue.com/event/mulligans-magic-show-95/",
+   "type": "concert"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Night Sky Program",
+   "date": "2026-10-29",
+   "time": "18:30",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=145524",
+   "type": "community"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "Scary Night Cinema - Rocky Horror Picture Show",
+   "date": "2026-10-29",
+   "time": "18:30",
+   "url": "https://mauiarts.org/show-details/scary-night-cinema-rocky-horror-picture-show",
+   "type": "arts"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "The Toxic Avenger (the musical)",
+   "date": "2026-10-29",
+   "time": "19:30",
+   "url": "https://proartsmaui.org/event/the-toxic-avenger-oct-29-2026/",
+   "type": "arts"
   }
  ]
 }
