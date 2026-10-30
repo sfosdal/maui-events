@@ -13,8 +13,12 @@ stays in feeds.mjs. Run by feeds.mjs through uv (one process per batch):
 
     uv run scripts/cffi-fetch.py <url> ...
 
-Reads nothing else, writes one JSON object to stdout — url → page text, or
-url → {"error": "..."} — and paces the calls half a second apart.
+An argument that starts with "{" is a JSON request, {"url": ..., "data": {...}}:
+a form POST (the Kings' Shops' EyeOn events call, 2026-10-30). One session
+serves every argument, so a cookie a page sets reaches the calls after it.
+
+Reads nothing else, writes one JSON object to stdout — argument → page text,
+or argument → {"error": "..."} — and paces the calls half a second apart.
 """
 import json
 import sys
@@ -24,12 +28,16 @@ from curl_cffi import requests
 
 out = {}
 session = requests.Session(impersonate="chrome")
-for i, url in enumerate(sys.argv[1:]):
+for i, arg in enumerate(sys.argv[1:]):
     if i:
         time.sleep(0.5)
     try:
-        r = session.get(url, timeout=30)
-        out[url] = r.text if r.status_code == 200 else {"error": f"HTTP {r.status_code}"}
+        spec = json.loads(arg) if arg.startswith("{") else {"url": arg}
+        if "data" in spec:
+            r = session.post(spec["url"], data=spec["data"], timeout=30)
+        else:
+            r = session.get(spec["url"], timeout=30)
+        out[arg] = r.text if r.status_code == 200 else {"error": f"HTTP {r.status_code}"}
     except Exception as e:  # noqa: BLE001 — every failure is reported the same way
-        out[url] = {"error": str(e)}
+        out[arg] = {"error": str(e)}
 json.dump(out, sys.stdout)

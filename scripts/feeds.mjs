@@ -22,6 +22,8 @@
  *   tribe      — WordPress + The Events Calendar's REST API (/wp-json/tribe/events/v1/events).
  *                start_date is the venue's wall clock ("YYYY-MM-DD HH:MM:SS"); `website` is the
  *                ticket link when the venue sets one, else the event page; categories give the type.
+ *                `chrome: true` (here and for `ics`) reads each page through scripts/cffi-fetch.py, for a
+ *                site that refuses GitHub's runners (403) — Deschutes History, Downtown Seattle (2026-10-30).
  *   tusboletos — tusboletos.mx (the Yucatán peninsula's ticketer): the server-rendered /eventos
  *                list, one card per event with the title, the city ("Cancún, Quintana Roo"), the
  *                room, a Spanish date and a commented-out category; the clock sits on the event
@@ -197,9 +199,16 @@ async function fetchTribe(url, ua, label, opts) {
   for (let page = 1; page <= 20; page++) {
     const u = new URL(url);
     u.searchParams.set('per_page', '50'); u.searchParams.set('page', String(page)); u.searchParams.set('start_date', today);
-    const res = await fetch(u, { headers: { 'User-Agent': ua, Accept: 'application/json' } });
-    if (!res.ok) { if (page === 1 || res.status !== 400) console.error(`${label} page ${page} HTTP ${res.status}`); break; } // Tribe answers 400 past the last page
-    const data = await res.json();
+    let data;
+    if (opts.feed?.chrome) { // `chrome: true`: an edge that refuses GitHub's runners (403) reads through cffi-fetch.py; a failed page is logged and recorded there
+      const text = (await chromeFetch([u.href], label)).get(u.href);
+      if (text == null) break;
+      data = JSON.parse(text);
+    } else {
+      const res = await fetch(u, { headers: { 'User-Agent': ua, Accept: 'application/json' } });
+      if (!res.ok) { if (page === 1 || res.status !== 400) console.error(`${label} page ${page} HTTP ${res.status}`); break; } // Tribe answers 400 past the last page
+      data = await res.json();
+    }
     all.push(...(data.events || []));
     if (page >= (data.total_pages || 1)) break;
   }
@@ -260,9 +269,14 @@ async function fetchIcs(url, ua, label, opts) {
   for (let call = 1; call <= 30 && bar < until; call++) {
     const u = new URL(url);
     u.searchParams.set('ical', '1'); u.searchParams.set('tribe-bar-date', bar);
-    const res = await fetch(u, { headers: { 'User-Agent': ua, Accept: 'text/calendar,*/*' } });
-    if (!res.ok) { console.error(`${label} from ${bar} HTTP ${res.status}`); break; }
-    const batch = icsToTribeRows(await res.text()).filter((r) => r.start_date >= today);
+    let text;
+    if (opts.feed?.chrome) { text = (await chromeFetch([u.href], label)).get(u.href); if (text == null) break; } // `chrome: true`, as for Tribe's REST
+    else {
+      const res = await fetch(u, { headers: { 'User-Agent': ua, Accept: 'text/calendar,*/*' } });
+      if (!res.ok) { console.error(`${label} from ${bar} HTTP ${res.status}`); break; }
+      text = await res.text();
+    }
+    const batch = icsToTribeRows(text).filter((r) => r.start_date >= today);
     let last = bar;
     for (const r of batch) {
       const k = r.uid || `${r.title}|${r.start_date}`;
@@ -490,9 +504,20 @@ export function pageRoom(cards) {
   return top && top[1] * 2 > cards.length ? top[0] : '';
 }
 const TK_CATEGORY = { conciertos: 'concert', deportes: 'sports', teatros: 'arts', familia: 'community', gastronomico: 'community', conferencias: 'community' };
-/** Pages fetched through the Chrome-fingerprint helper (scripts/cffi-fetch.py via uv), url → text; a failure is logged and the URL left out. */
+/**
+ * Pages fetched through the Chrome-fingerprint helper (scripts/cffi-fetch.py via uv), url → text; a failure is logged and the URL left out.
+ * A request may also be a JSON string, {"url", "data"}: a form POST (the Kings' Shops' EyeOn call); its answer is keyed by that string.
+ * Exported for a city's own readers whose site refuses GitHub's runners (Showbox Presents, the Kings' Shops — 2026-10-30).
+ */
+const plainFetch = async (u) => { // the fallback when uv cannot run: the same request, without the fingerprint
+  if (!u.startsWith('{')) return fetchText(u, '');
+  const { url, data } = JSON.parse(u);
+  const res = await fetch(url, { method: 'POST', body: new URLSearchParams(data), signal: AbortSignal.timeout(60000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+};
 const chromeCache = new Map(); // one fetch of a page per build, however many feed rows ask for it
-async function chromeFetch(urls, label) {
+export async function chromeFetch(urls, label) {
   const out = new Map();
   for (const u of urls) if (chromeCache.has(u)) out.set(u, chromeCache.get(u));
   const want = [...new Set(urls.filter((u) => !chromeCache.has(u)))];
@@ -502,10 +527,10 @@ async function chromeFetch(urls, label) {
   const r = spawnSync('uv', ['run', '--quiet', script.pathname, ...want], { encoding: 'utf8', maxBuffer: 256 << 20 });
   if (r.error || r.status !== 0) {
     console.error(`${label}: cffi-fetch.py did not run (${r.error ? r.error.message : `exit ${r.status}: ${(r.stderr || '').trim().slice(-300)}`}) — plain fetch instead, which the site may refuse`);
-    for (const u of want) { try { out.set(u, await fetchText(u, '')); chromeCache.set(u, out.get(u)); } catch (err) { console.error(`${label}: ${u} ${err.message}`); } }
+    for (const u of want) { try { out.set(u, await plainFetch(u)); chromeCache.set(u, out.get(u)); } catch (err) { console.error(`${label}: ${u} ${err.message}`); } }
     return out;
   }
-  for (const [u, v] of Object.entries(JSON.parse(r.stdout))) { if (typeof v === 'string') { out.set(u, v); chromeCache.set(u, v); } else { console.error(`${label}: ${u} ${v.error}`); globalThis[Symbol.for('here.events/recordFailure')]?.(`${u} (Chrome-fingerprint fetch)`, v.error); } }
+  for (const [u, v] of Object.entries(JSON.parse(r.stdout))) { if (typeof v === 'string') { out.set(u, v); chromeCache.set(u, v); } else { console.error(`${label}: ${u.startsWith('{') ? JSON.parse(u).url : u} ${v.error}`); const at = new URL(u.startsWith('{') ? JSON.parse(u).url : u); globalThis[Symbol.for('here.events/recordFailure')]?.(`${at.origin}${at.pathname} (Chrome-fingerprint fetch)`, v.error); } } // the query can carry keys and dates — never written down (failures.mjs)
   return out;
 }
 async function fetchTicketera(url, ua, label, opts) {
