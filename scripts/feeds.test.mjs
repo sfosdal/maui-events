@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents } from './feeds.mjs';
+import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents, feedFailedVenues } from './feeds.mjs';
 
 const room = 'Field Arts &#038; Events Hall &#8211; Donna M. Morris Theater';
 const row = (title, start, extra = {}) => ({ title, start_date: start, status: 'publish', all_day: false, venue: { venue: room }, categories: [], ...extra });
@@ -65,17 +65,17 @@ test('a venue sent as a one-element array (B-Town Blog) reads like an object; an
   assert.deepEqual(mapTribeEvents(rows, null, { rooms: /kennedy/i }).map((e) => e.title), ['Poe Night']);
 });
 
-test('feedSources makes one source per venue with a feed and names an unknown kind', () => {
+test('feedSources makes one source per venue with a feed and names an unknown kind', async () => {
   const city = { types: [{ key: 'arts' }], venues: { A: { tm: { id: 'x' } }, B: { feed: { kind: 'tribe', url: 'https://x/wp-json/tribe/events/v1/events' } }, C: { feed: { kind: 'nope', url: 'https://x/' } } } };
   const srcs = feedSources(city, 'ua');
   assert.equal(srcs.length, 2);
-  assert.deepEqual(srcs[1](), []); // unknown kind: an empty source, logged
+  assert.deepEqual(await srcs[1](), []); // unknown kind: an empty source, logged
   const wide = feedSources({ types: [], venues: {}, feeds: [{ kind: 'tusboletos', url: 'https://x/eventos', label: 'TusBoletos' }, { kind: 'nope', url: 'https://x/' }] }, 'ua');
   assert.equal(wide.length, 2); // city-wide feeds (cancun-events) make a source each too
-  assert.deepEqual(wide[1](), []);
+  assert.deepEqual(await wide[1](), []);
   const pinned = feedSources({ types: [{ key: 'community' }], venues: { Around: { type: 'community' } }, feeds: [{ kind: 'nope', url: 'https://x/', venue: 'Around' }] }, 'ua');
   assert.equal(pinned.length, 1); // a city-wide feed with a `venue` is a source like a room feed (seattle-events)
-  assert.deepEqual(pinned[0](), []);
+  assert.deepEqual(await pinned[0](), []);
 });
 
 // ---- TusBoletos (cancun-events, 2026-10-13) ----
@@ -466,4 +466,18 @@ test('parseRssEvents: an XML &apos; in a title becomes an apostrophe', () => {
   assert.equal(em[0].title, "Handel's Messiah"); // markup inside a title is dropped
   const gone = parseRssEvents(xml.replace('Disney&apos;s', 'Cancelled: Disney&apos;s'), { venue: 'Broward Center', tz: 'America/New_York', today: '2026-10-27' });
   assert.equal(gone.length, 0);
+});
+
+test('feedSources: a leading venue calendar that failed is marked for the safety net; a secondary one, or one whose site answered, is not', async () => {
+  const realFetch = globalThis.fetch, K = Symbol.for('here.events/failedHost'), realCheck = globalThis[K];
+  globalThis.fetch = async () => ({ ok: false, status: 406, text: async () => '' });
+  globalThis[K] = (host) => host === 'www.a.org'; // the call log: only a.org failed after its retries
+  const err = console.error; console.error = () => {};
+  try {
+    const feed = (url, more = {}) => ({ type: 'concert', feed: { kind: 'rss', url, ...more } });
+    const city = { types: [], venues: { A: feed('https://www.a.org/events/rss'), B: feed('https://www.b.org/events/rss'), C: feed('https://www.a.org/other', { secondary: true }) } };
+    feedFailedVenues.clear();
+    for (const t of feedSources(city, 'ua')) assert.deepEqual(await t(), []);
+    assert.deepEqual([...feedFailedVenues], ['A']);
+  } finally { globalThis.fetch = realFetch; globalThis[K] = realCheck; console.error = err; feedFailedVenues.clear(); }
 });

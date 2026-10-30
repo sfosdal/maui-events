@@ -63,8 +63,11 @@ export function makeCallLog({ fetchImpl, sleep = (ms) => new Promise((r) => setT
     fetch: loggedFetch,
     recordFailure: (what, detail = '') => record(`${what} ${detail}`.trim(), { what, ...(detail ? { error: String(detail).slice(0, 160) } : {}) }),
     // a "Source failed: …" line with no HTTP status of its own (a parse error): the last call before it names the source
-    noteSourceFailed: (message) => { if (/HTTP \d{3}/.test(message)) return; record(`source ${message.slice(0, 80)}`, { what: 'Source failed', error: message.slice(0, 160), after: lastUrl }); },
+    // skipped when the call behind it is already written down: Ticketmaster's own (tmFailed), or a fetch that failed
+    noteSourceFailed: (message) => { if (/HTTP \d{3}/.test(message) || /^Ticketmaster /.test(message) || [...failures.values()].some((f) => f.url === lastUrl && (f.error || f.status))) return; record(`source ${message.slice(0, 80)}`, { what: 'Source failed', error: message.slice(0, 160), after: lastUrl }); },
     list: () => [...failures.entries()].map(([key, v]) => ({ key, ...v })),
+    // did a call to this host fail after its retries? (feeds.mjs: an empty venue calendar is a failed one only then)
+    failedHost: (host) => [...failures.entries()].some(([key, v]) => (v.url ? new URL(v.url).hostname === host : key.includes(host))),
   };
 }
 
@@ -79,6 +82,7 @@ export function installCallLog({ path = 'failures.json', env = process.env } = {
   active = makeCallLog({ fetchImpl: globalThis.fetch.bind(globalThis) });
   globalThis.fetch = active.fetch;
   globalThis[RECORD] = active.recordFailure;
+  globalThis[Symbol.for('here.events/failedHost')] = active.failedHost;
   const error = console.error.bind(console);
   console.error = (...a) => { // the builds' "Source failed: <message>" lines (and "… sweep failed:")
     if (typeof a[0] === 'string' && /failed:$/i.test(a[0])) try { active.noteSourceFailed(a.slice(1).map(String).join(' ')); } catch { /* the log never breaks the build */ }

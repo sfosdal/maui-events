@@ -59,9 +59,9 @@ export function tmFailed(label, res) {
 // clash with what this build already has there (merge.mjs dropClashes: the
 // same clock, or the same show within 90 minutes — a venue's own calendar
 // lists the doors where Ticketmaster lists the show).
-export function keepFailedVenues(archived, fresh, today, failed = tmFailedVenues, log = console.error) {
+export function keepFailedVenues(archived, fresh, today, failed = tmFailedVenues, log = console.error, what = 'Ticketmaster') { // what: 'Ticketmaster', or 'Own calendar' for a venue feed (feeds.mjs feedFailedVenues)
   if (!failed.size) return [];
   const kept = dropClashes(archived.filter((e) => failed.has(e.venue) && e.date >= today), fresh);
-  for (const v of failed) log(`Ticketmaster ${v}: failed — kept ${kept.filter((e) => e.venue === v).length} upcoming rows from the previous feed`);
+  for (const v of failed) log(`${what} ${v}: failed — kept ${kept.filter((e) => e.venue === v).length} upcoming rows from the previous feed`);
   return kept;
 }

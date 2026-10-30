@@ -71,4 +71,6 @@ test('keepFailedVenues: a failed venue keeps its upcoming rows, not its past one
   assert.deepEqual(kept.map((e) => e.title), ['Show A']);
   assert.match(logs[0], /Moore Theatre: failed — kept 1 upcoming rows/);
   assert.deepEqual(keepFailedVenues(archived, fresh, '2026-10-28', new Set()), []);
+  keepFailedVenues(archived, fresh, '2026-10-28', failed, (m) => logs.push(m), 'Own calendar');
+  assert.match(logs.at(-1), /^Own calendar Moore Theatre: failed — kept 1 upcoming rows/);
 });

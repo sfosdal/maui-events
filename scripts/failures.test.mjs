@@ -76,3 +76,18 @@ test('the issue: opened only when something fails; a comment (a mail) only for n
   assert.ok(!clear.comment && !clear.close); assert.deepEqual(keysIn(clear.edit), []); assert.match(clear.edit, /Nothing failing/);
   assert.ok(plan([a], { number: 7, body: clear.edit }).comment, 'failing again after a clear build is new again');
 });
+
+test('failedHost: a host is failed only when a call to it is still failing after its retries', async () => {
+  const l = log(answers(503, 200)); await l.fetch('https://ok.example.org/x');
+  const m = log(answers(406)); await m.fetch('https://www.aso.org/events/rss'); m.recordFailure('https://chrome.example.org/p (Chrome-fingerprint fetch)', 'HTTP 403');
+  assert.equal(l.failedHost('ok.example.org'), false);
+  assert.equal(m.failedHost('www.aso.org'), true); assert.equal(m.failedHost('chrome.example.org'), true); assert.equal(m.failedHost('aso.org'), false);
+});
+
+test('a "Source failed" line whose call is already written down is not written twice', async () => {
+  const l = log(answers(Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' })));
+  await l.fetch('https://www.centerstage-atlanta.com/wp-json/x/').catch(() => {});
+  l.noteSourceFailed('The operation was aborted due to timeout');
+  l.recordFailure('Ticketmaster State Farm Arena', 'fetch failed'); l.noteSourceFailed('Ticketmaster State Farm Arena failed after retries (fetch failed)');
+  assert.deepEqual(l.list().map((f) => f.key), ['https://www.centerstage-atlanta.com/wp-json/x/ TimeoutError', 'Ticketmaster State Farm Arena fetch failed']);
+});

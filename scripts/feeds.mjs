@@ -505,7 +505,7 @@ async function chromeFetch(urls, label) {
     for (const u of want) { try { out.set(u, await fetchText(u, '')); chromeCache.set(u, out.get(u)); } catch (err) { console.error(`${label}: ${u} ${err.message}`); } }
     return out;
   }
-  for (const [u, v] of Object.entries(JSON.parse(r.stdout))) { if (typeof v === 'string') { out.set(u, v); chromeCache.set(u, v); } else console.error(`${label}: ${u} ${v.error}`); }
+  for (const [u, v] of Object.entries(JSON.parse(r.stdout))) { if (typeof v === 'string') { out.set(u, v); chromeCache.set(u, v); } else { console.error(`${label}: ${u} ${v.error}`); globalThis[Symbol.for('here.events/recordFailure')]?.(`${u} (Chrome-fingerprint fetch)`, v.error); } }
   return out;
 }
 async function fetchTicketera(url, ua, label, opts) {
@@ -1156,9 +1156,13 @@ export function parseRssEvents(xml, { venue, tz = 'UTC', venues, drop, type, typ
 }
 async function fetchRss(url, ua, label, opts) {
   const { feed = {}, venue, types, defaultType, drop, tz } = opts;
-  const res = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'application/rss+xml,application/xml,text/xml,*/*' } });
-  if (!res.ok) { console.error(`${label} HTTP ${res.status}`); return []; }
-  const xml = await res.text();
+  let xml;
+  if (feed.chrome) xml = (await chromeFetch([url], label)).get(url) || ''; // `chrome: true`: carbonhouse's Fastly edge answers GitHub's runners 406 (every run since 2026-10-28)
+  else {
+    const res = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'application/rss+xml,application/xml,text/xml,*/*' } });
+    if (!res.ok) { console.error(`${label} HTTP ${res.status}`); return []; }
+    xml = await res.text();
+  }
   const evs = parseRssEvents(xml, { venue, tz, venues: opts.venues || feed.venues, drop: drop || feed.drop, type: feed.type, types, defaultType, today: new Date().toISOString().slice(0, 10) });
   console.log(`${label} (RSS): ${evs.length} events from ${(xml.match(/<item\b/g) || []).length} items`);
   return evs;
@@ -1172,12 +1176,23 @@ const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, j
  * and `groundsVenue` in fetch-events.mjs to fold — unless the entry names a `venue`, which then
  * takes every row, as a room feed does), for fetch-events.mjs's source list.
  */
+// The venues whose own calendar failed this build (feedSources), for keepFailedVenues.
+export const feedFailedVenues = new Set();
+const feedFailedHost = (url, check = globalThis[Symbol.for('here.events/failedHost')]) => { try { return !!check?.(new URL(url).hostname); } catch { return false; } };
 export function feedSources(city, ua) {
   const types = (city.types || []).map((t) => t.key);
-  const run = (feed, label, venue) => () => {
+  const run = (feed, label, venue) => async () => {
     const fn = KINDS[feed.kind];
     if (!fn) { console.error(`${label}: unknown feed kind "${feed.kind}"`); return []; }
-    return fn(feed.url, ua, label, { drop: feed.drop, maxRepeat: feed.maxRepeat, venues: feed.venues, rooms: feed.rooms || feed.venues, types, defaultType: venue ? city.venues[venue].type : feed.type, feed, venue, tz: city.tz });
+    // A venue whose own calendar leads (not `secondary`, so no Ticketmaster rows stand behind it) and
+    // failed — threw, or came back empty while a call to its site failed after its retries — keeps its
+    // upcoming rows from the previous feed (fetch-events.mjs → tm-fetch.mjs keepFailedVenues).
+    const leads = venue && !feed.secondary;
+    let rows;
+    try { rows = await fn(feed.url, ua, label, { drop: feed.drop, maxRepeat: feed.maxRepeat, venues: feed.venues, rooms: feed.rooms || feed.venues, types, defaultType: venue ? city.venues[venue].type : feed.type, feed, venue, tz: city.tz }); }
+    catch (err) { if (leads) feedFailedVenues.add(venue); throw err; }
+    if (leads && !rows.length && feedFailedHost(feed.url)) feedFailedVenues.add(venue);
+    return rows;
   };
   return [
     ...Object.entries(city.venues || {}).filter(([, v]) => v.feed).map(([label, v]) => run(v.feed, label, label)),
