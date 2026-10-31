@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeCallLog, QUIET } from './failures.mjs';
+import { makeCallLog, QUIET, seasonAhead } from './failures.mjs';
 import { plan, keysIn, TITLE } from './failure-issue.mjs';
 
 const answers = (...seq) => { let n = 0; const calls = []; const f = async (url, init) => { calls.push(url); const a = seq[Math.min(n++, seq.length - 1)]; if (a instanceof Error) throw a; return { ok: a < 400, status: a }; }; f.calls = calls; return f; };
@@ -90,4 +90,15 @@ test('a "Source failed" line whose call is already written down is not written t
   l.noteSourceFailed('The operation was aborted due to timeout');
   l.recordFailure('Ticketmaster State Farm Arena', 'fetch failed'); l.noteSourceFailed('Ticketmaster State Farm Arena failed after retries (fetch failed)');
   assert.deepEqual(l.list().map((f) => f.key), ['https://www.centerstage-atlanta.com/wp-json/x/ TimeoutError', 'Ticketmaster State Farm Arena fetch failed']);
+});
+
+test('a season\'s page not up yet is no failure; an older season\'s missing page is', async () => {
+  assert.equal(seasonAhead('/2027-28-season', 2026), true);
+  assert.equal(seasonAhead('/sports/bsb/2026-27/schedule', 2026), true);
+  assert.equal(seasonAhead('/sports/bsb/2025-26/schedule', 2026), false);
+  assert.equal(seasonAhead('/events/2026/10/30', 2026), false, 'a date is not a season');
+  const f = answers(404), l = log(f);
+  await l.fetch(`https://nwacsports.com/sports/bsb/${new Date().getFullYear()}-${String((new Date().getFullYear() + 1) % 100).padStart(2, '0')}/schedule`);
+  await l.fetch('https://nwacsports.com/sports/bsb/2019-20/schedule');
+  assert.deepEqual(l.list().map((x) => x.key), ['https://nwacsports.com/sports/bsb/2019-20/schedule HTTP 404']);
 });

@@ -13,7 +13,8 @@
 //     retries it, and reports a venue it gave up on (recordFailure);
 //   - expected misses are not failures: HEAD probes (crest and link
 //     checks), ESPN's per-team leaders (absent for some sports), a
-//     Wikipedia page that does not exist, and any call made with
+//     Wikipedia page that does not exist, a season's page that is not up yet
+//     (a 404 under /2026-27/), and any call made with
 //     { [QUIET]: true } (links.mjs, which probes ticket links on purpose).
 // A source that fails for another reason (a page that answered HTML where
 // JSON was expected) is caught by the build's own "Source failed:" line,
@@ -27,7 +28,15 @@ const PASS = [/(^|\.)ticketmaster\.com$/i]; // tm-fetch.mjs owns these
 const EXPECTED = [
   (u) => /(^|\.)espn\.com$/i.test(u.hostname) && /\/leaders$/.test(u.pathname),
   (u, status) => /(^|\.)wikipedia\.org$/i.test(u.hostname) && status === 404,
+  (u, status) => status === 404 && seasonAhead(u.pathname), // a season's page before the club or society publishes it (Steve, 2026-10-30)
 ];
+// "/2027-28-season", "/sports/bsb/2026-27/schedule": a season label — the current season or a later one, which may
+// not be up yet (NWAC's spring schedules appear in winter, a concert society's next season in spring); an older
+// season's page that is gone is a real failure.
+export function seasonAhead(path, year = new Date().getFullYear()) {
+  const m = /(?:^|\/|-|_)(20\d\d)[-_](\d\d|20\d\d)(?=$|\/|-|_)/.exec(path);
+  return !!m && Number(m[1]) >= year;
+}
 
 export function makeCallLog({ fetchImpl, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), waits = [2000, 6000] } = {}) {
   const failures = new Map(); // key → { url, status|error, count }
