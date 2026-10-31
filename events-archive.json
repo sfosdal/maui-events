@@ -135,6 +135,46 @@
    "time": "19:30",
    "url": "https://proartsmaui.org/event/the-toxic-avenger-oct-29-2026/",
    "type": "arts"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "Old School Fridays - Halloween Thriller Edition",
+   "date": "2026-10-30",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/old-school-fridays-halloween-thriller-edition",
+   "type": "concert"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-10-30",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=145523",
+   "type": "community"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "\"A Starry Night Cinema” with Imua Family Services Keiki Halloween Festival",
+   "date": "2026-10-30",
+   "time": "17:00",
+   "url": "https://mauiarts.org/show-details/a-starry-night-cinema-with-imua-family-services-keiki-halloween-festival",
+   "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Joe Benedett",
+   "date": "2026-10-30",
+   "time": "18:00",
+   "url": "https://lahainacannerymall.com/event/joebenedett/",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "The Toxic Avenger (the musical)",
+   "date": "2026-10-30",
+   "time": "19:30",
+   "url": "https://proartsmaui.org/event/the-toxic-avenger-oct-30-2026/",
+   "type": "arts"
   }
  ]
 }
