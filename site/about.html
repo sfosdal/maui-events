@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#edf1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141a20">
+<script>
+  try {
+    var t = localStorage.getItem('lqa-theme');
+    var PHONE = '(max-width: 640px), (pointer: coarse) and (max-height: 500px)';
+    if ((t === 'light' || t === 'dark') && !matchMedia(PHONE).matches) document.documentElement.dataset.theme = t;
+  } catch (e) { /* no storage — system it is */ }
+</script>
+<title>About Us — here.events</title>
+<meta name="description" content="About here.events: free local events calendars for each city and neighbourhood, gathered from the venues and teams themselves.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:opsz,wght@10..72,500;10..72,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+<script src="city.js?v=__V__"></script>
+</head>
+<body>
+
+<!-- the Ghostwood Labs mark, drawn once; the masthead and the footer <use> it -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="gw-mark" viewBox="0 0 576 576">
+    <g fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M300.19 51.03A26 26 0 0 1 275.81 51.03L235.63 29.71A26 26 0 0 0 210.57 30.08L103.63 91.02A26 26 0 0 0 90.5 113.61L90.5 161.4A26 26 0 0 1 77.38 183.98L39.62 205.52A26 26 0 0 0 26.5 228.1L26.5 347.9A26 26 0 0 0 39.62 370.48L77.38 392.02A26 26 0 0 1 90.5 414.6L90.5 462.39A26 26 0 0 0 103.63 484.98L210.57 545.92A26 26 0 0 0 235.63 546.29L275.81 524.97A26 26 0 0 1 300.19 524.97L340.37 546.29A26 26 0 0 0 365.43 545.92L472.37 484.98A26 26 0 0 0 485.5 462.39L485.5 414.6A26 26 0 0 1 498.62 392.02L536.38 370.48A26 26 0 0 0 549.5 347.9L549.5 228.1A26 26 0 0 0 536.38 205.52L498.62 183.98A26 26 0 0 1 485.5 161.4L485.5 113.61A26 26 0 0 0 472.37 91.02L365.43 30.08A26 26 0 0 0 340.37 29.71L300.19 51.03Z"/>
+      <path d="M288 57.5L288 177.5"/>
+      <path d="M288 518.5L288 403.5"/>
+      <path d="M90.5 176.5L144.63 204.58A26 26 0 0 0 169.19 204.26L209.58 181.92A26 26 0 0 0 223 159.17L223 101.5L158.5 137.5"/>
+      <path d="M485.5 176.5L431.37 204.58A26 26 0 0 1 406.81 204.26L366.42 181.92A26 26 0 0 1 353 159.17L353 101.5L417.5 137.5"/>
+      <path d="M157 211L157 287.5"/>
+      <path d="M419 211L419 287.5"/>
+      <path d="M90.5 399.5L144.63 371.42A26 26 0 0 1 169.19 371.74L209.58 394.08A26 26 0 0 1 223 416.83L223 474.5L158.5 438.5"/>
+      <path d="M485.5 399.5L431.37 371.42A26 26 0 0 0 406.81 371.74L366.42 394.08A26 26 0 0 0 353 416.83L353 474.5L417.5 438.5"/>
+      <path d="M26.5 288L92 325.5L92 250.5"/>
+      <path d="M549.5 288L484 325.5L484 250.5"/>
+    </g>
+  </symbol>
+</svg>
+
+<!-- About us (Steve, 2026-10-29: "Create an about us section just to the left of FAQ, make it work
+     the same"): one shared page for every city, word for word, like the FAQ. Styled by .ad-page. -->
+<header class="masthead">
+  <div class="masthead-text">
+    <p class="eyebrow">here.events</p>
+    <h1>About Us</h1>
+  </div>
+</header>
+<main class="ad-page about-page">
+  <p class="ad-lead">here.events is a family of free local events calendars, one for each city and neighbourhood, gathered from the venues and teams themselves.</p>
+
+  <h2>Why we built it</h2>
+  <p>Every venue keeps its own calendar, every team its own schedule, and every ticket seller its own list. Finding out what’s on near you means checking a dozen of them. These calendars do that checking once a day and put the answer on one page.</p>
+
+  <h2>Who we are</h2>
+  <p>here.events is made by Ghostwood Sites, part of <a href="https://ghostwoodlabs.com/" rel="noopener">Ghostwood Labs</a>. We build and run every calendar ourselves. There are no accounts and no ads that follow you, and nothing is sold on these pages — every listing links to the place that sells it.</p>
+
+  <h2>Every city</h2>
+  <p><a href="https://here.events/">here.events</a> has the map of every city and neighbourhood we cover. More are added as we go; if you would like yours next, tell us.</p>
+
+  <h2>Get in touch</h2>
+  <p>A wrong listing, a missing venue, a city you would like, or advertising: reach us through <a href="https://ghostwoodlabs.com/" rel="noopener">Ghostwood Labs</a>. The <a href="faq.html">FAQ</a> answers the usual questions.</p>
+
+  <a class="ad-back" href="./">← Back to the calendar</a>
+</main>
+</body>
+</html>

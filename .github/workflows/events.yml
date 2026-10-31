@@ -60,7 +60,7 @@ jobs:
           git push -q origin archive
           echo "archive branch updated: $n past events"
       - name: Stamp asset versions (cache busting)
-        run: sed -i "s/__V__/${GITHUB_SHA::12}/g" site/index.html site/advertise.html site/sources.html
+        run: sed -i "s/__V__/${GITHUB_SHA::12}/g" site/index.html site/advertise.html site/faq.html site/about.html site/sources.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
