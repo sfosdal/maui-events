@@ -83,8 +83,10 @@
     homeW = view.w;
     if (draw !== false) render();
   }
-  var homeW = 0; // the opening view's width: the signs wait for a zoom in past it
-  function zoomedIn() { return homeW > 0 && view.w < homeW * .98; } // a pan alone is not a zoom
+  var homeW = 0; // the opening view's width: the signs wait for a deep zoom in past it
+  // three presses of + (1.6× each, about 4× in) past the opening view, or the deepest the map goes when that is nearer
+  // (Steve, 2026-10-30: "drop green nearbay cities until much more zoomed in"; until then one press brought them)
+  function zoomedIn() { return homeW > 0 && view.w <= Math.max(homeW / Math.pow(1.6, 3), MIN_W()) * 1.02; } // a pan alone is not a zoom
   function fit(draw) { atHome = false; var a = ar(), w = COVER() ? MAX_W() : Math.max(FRAME.w, FRAME.h / a); view = { x: (FRAME.w - w) / 2, y: (FRAME.h - w * a) / 2, w: w, h: w * a }; if (draw !== false) render(); } // a city ground: as far out as still fills the frame; an island or the world: the whole ground
   // the frame's own proportions (height over width): it fills the content's width and the height the window leaves,
   // whatever the ground's shape — the viewBox follows the frame, not the other way round (Steve, 2026-10-24)

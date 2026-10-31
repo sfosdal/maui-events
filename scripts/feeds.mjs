@@ -1203,20 +1203,30 @@ const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, j
  */
 // The venues whose own calendar failed this build (feedSources), for keepFailedVenues.
 export const feedFailedVenues = new Set();
+// The venues whose own calendar answered and listed nothing this build, each with the calendars' URLs (feedSources), for
+// merge.mjs keepQuietVenues: the rows that calendar's site gave the venue last time are kept (Steve, 2026-10-31).
+export const feedQuietVenues = new Map();
+// The city-wide feeds (city.js `feeds` without a `venue`) that failed or listed nothing this build, URL → label: they name no
+// venue of their own, so merge.mjs keepQuietVenues keeps the upcoming rows that link to their site (the Alliance for Pioneer
+// Square's calendar beside First Thursday's, both folded into Around Pioneer Square).
+export const feedQuietSites = new Map();
 const feedFailedHost = (url, check = globalThis[Symbol.for('here.events/failedHost')]) => { try { return !!check?.(new URL(url).hostname); } catch { return false; } };
 export function feedSources(city, ua) {
   const types = (city.types || []).map((t) => t.key);
   const run = (feed, label, venue) => async () => {
     const fn = KINDS[feed.kind];
     if (!fn) { console.error(`${label}: unknown feed kind "${feed.kind}"`); return []; }
-    // A venue whose own calendar leads (not `secondary`, so no Ticketmaster rows stand behind it) and
-    // failed — threw, or came back empty while a call to its site failed after its retries — keeps its
-    // upcoming rows from the previous feed (fetch-events.mjs → tm-fetch.mjs keepFailedVenues).
-    const leads = venue && !feed.secondary;
+    // A venue whose own calendar failed — threw, or came back empty while a call to its site failed
+    // after its retries — keeps its upcoming rows from the previous feed (fetch-events.mjs → tm-fetch.mjs
+    // keepFailedVenues), whether that calendar leads or stands behind Ticketmaster (`secondary`: the rows
+    // Ticketmaster has are in the build already, so dropClashes keeps only the ones it lacks; Steve,
+    // 2026-10-31: "feed source that errors out (or is suddenly empty) should keep last events"). One that
+    // answered and listed nothing goes to feedQuietVenues, and a city-wide feed that failed or listed nothing to
+    // feedQuietSites: merge.mjs keepQuietVenues keeps the rows they gave.
     let rows;
     try { rows = await fn(feed.url, ua, label, { drop: feed.drop, maxRepeat: feed.maxRepeat, venues: feed.venues, rooms: feed.rooms || feed.venues, types, defaultType: venue ? city.venues[venue].type : feed.type, feed, venue, tz: city.tz }); }
-    catch (err) { if (leads) feedFailedVenues.add(venue); throw err; }
-    if (leads && !rows.length && feedFailedHost(feed.url)) feedFailedVenues.add(venue);
+    catch (err) { if (venue) feedFailedVenues.add(venue); else feedQuietSites.set(feed.url, label); throw err; }
+    if (!rows.length) { if (!venue) feedQuietSites.set(feed.url, label); else if (feedFailedHost(feed.url)) feedFailedVenues.add(venue); else feedQuietVenues.set(venue, (feedQuietVenues.get(venue) || []).concat(feed.url)); }
     return rows;
   };
   return [

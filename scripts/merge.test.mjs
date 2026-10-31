@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeWithArchive, unionArchives, eventKey, dropClashes } from './merge.mjs';
+import { mergeWithArchive, unionArchives, eventKey, dropClashes, keepQuietVenues, capUpcoming } from './merge.mjs';
 
 const TODAY = '2026-08-24';
 const CUTOFF = '2025-08-24';
@@ -42,10 +42,73 @@ test('a known-cancelled future show stays, marked, after the source drops it; a 
   assert.equal(out[0].statusSince, '2026-08-20T00:00:00.000Z');
 });
 
-test('past events older than the cutoff age out', () => {
-  const archived = [ev('2025-08-23', 'Ancient'), ev('2025-08-24', 'Exactly A Year')];
+test('past events never age out (Steve, 2026-10-31: "all old events should be kept")', () => {
+  const archived = [ev('2023-01-05', 'Ancient'), ev('2025-08-23', 'A Year And A Day'), ev('2025-08-24', 'Exactly A Year')];
   const out = mergeWithArchive([], archived, TODAY, CUTOFF);
-  assert.deepEqual(out.map((e) => e.title), ['Exactly A Year']);
+  assert.deepEqual(out.map((e) => e.title), ['Ancient', 'A Year And A Day', 'Exactly A Year']);
+});
+
+const at = (venue, date, title, url = 'u') => ({ venue, title, date, time: '19:00', url });
+const VENUES = new Set(['Central Saloon', 'Highline PAC', 'Paramount', 'Around Pioneer Square', "Owl 'n Thistle"]);
+const quiet = (archived, current, feeds = new Map()) => keepQuietVenues(archived, current, TODAY, { venues: VENUES, feeds }, () => {});
+
+test('keepQuietVenues: a venue with nothing upcoming keeps its upcoming rows, not its past ones', () => {
+  const archived = [at('Central Saloon', '2026-08-20', 'Past Night'), at('Central Saloon', '2026-08-28', 'Blues Jam'), at('Central Saloon', '2026-09-02', 'Open Mic'),
+    at('Around Pioneer Square', '2026-09-03', 'First Thursday'), at('Paramount', '2026-08-30', 'Hamilton')];
+  const current = [at('Paramount', '2026-08-30', 'Hamilton')];
+  assert.deepEqual(quiet(archived, current).map((e) => `${e.venue}|${e.title}`), ['Central Saloon|Blues Jam', 'Central Saloon|Open Mic', 'Around Pioneer Square|First Thursday']);
+  const lines = []; keepQuietVenues(archived, current, TODAY, { venues: VENUES }, (l) => lines.push(l));
+  assert.deepEqual(lines, ['Venue Central Saloon: nothing upcoming this build — kept 2 upcoming rows from the previous feed', 'Venue Around Pioneer Square: nothing upcoming this build — kept 1 upcoming rows from the previous feed']);
+});
+
+test('keepQuietVenues: an always-empty venue resurrects nothing; a venue with any upcoming row drops its others as before; a venue not in city.js is not kept', () => {
+  assert.deepEqual(quiet([at('Highline PAC', '2026-08-20', 'Last Spring')], []), []); // Ticketmaster watched, never anything upcoming
+  const archived = [at('Paramount', '2026-08-30', 'Hamilton'), at('Paramount', '2026-09-01', 'Cancelled Quietly'), at('Old Name Hall', '2026-09-05', 'Ghost')];
+  assert.deepEqual(quiet(archived, [at('Paramount', '2026-08-30', 'Hamilton')]), []);
+});
+
+test('keepQuietVenues: rows the build wrote itself (a weekly table, a home game) count as listed — run on the finished list', () => {
+  const archived = [at("Owl 'n Thistle", '2026-08-25', 'Aqualizer')];
+  assert.deepEqual(quiet(archived, [at("Owl 'n Thistle", '2026-08-25', 'New Tuesday Act')]), []);
+});
+
+test('keepQuietVenues: a calendar that answered with nothing keeps the rows it gave (links on its own site), beside another source that still lists', () => {
+  const own = (d, t) => at('Central Saloon', d, t, `https://centralsaloon.com/events/${t}`), baba = (d, t) => ({ ...at('Central Saloon', d, t, 'https://babaobscura.com/tickets'), time: '21:00' });
+  const archived = [own('2026-08-26', 'Blues Jam'), own('2026-08-27', 'Metal Night'), baba('2026-08-28', 'Baba Show'), own('2026-08-20', 'Past')];
+  const feeds = new Map([['Central Saloon', 'https://centralsaloon.com/events/']]);
+  assert.deepEqual(quiet(archived, [baba('2026-08-28', 'Baba Show')], feeds).map((e) => e.title), ['Blues Jam', 'Metal Night']);
+  const lines = []; keepQuietVenues(archived, [baba('2026-08-28', 'Baba Show')], TODAY, { venues: VENUES, feeds }, (l) => lines.push(l));
+  assert.deepEqual(lines, ['Own calendar Central Saloon: answered with nothing — kept 2 upcoming rows it listed last time']);
+  // a subdomain is the same site; Ticketmaster's rows are not the calendar's; an always-empty calendar gave nothing
+  const croc = new Map([['Paramount', 'https://www.stgpresents.org/events/']]);
+  const pa = [at('Paramount', '2026-09-01', 'STG Only', 'https://www.stgpresents.org/events/x'), at('Paramount', '2026-09-02', 'TM Dropped', 'https://www.ticketmaster.com/event/1')];
+  assert.deepEqual(quiet(pa, [at('Paramount', '2026-09-03', 'Hamilton', 'https://www.ticketmaster.com/event/2')], croc).map((e) => e.title), ['STG Only']);
+  assert.deepEqual(quiet([at('Paramount', '2026-09-02', 'TM Dropped', 'https://www.ticketmaster.com/event/1')], [at('Paramount', '2026-09-03', 'H', 'https://www.ticketmaster.com/event/2')], croc), []);
+  // a row the build already has (same venue, day and clock) is not kept twice
+  assert.deepEqual(quiet([own('2026-08-26', 'Blues Jam')], [own('2026-08-26', 'Blues Jam')], feeds), []);
+});
+
+test('keepQuietVenues: a city-wide feed that failed or listed nothing keeps the upcoming rows on its site, beside a feed on the same site that still lists', () => {
+  const alliance = (d, t) => ({ ...at('Around Pioneer Square', d, t, `https://pioneersquare.org/our-events/${t}`), time: '' });
+  const walk = { ...at('Around Pioneer Square', '2026-09-03', 'First Thursday Art Walk', 'https://pioneersquare.org/art-walks/sept'), time: '17:00' };
+  const archived = [alliance('2026-08-29', 'Trick or Treat'), alliance('2026-08-31', 'Craft Club'), walk, alliance('2026-08-20', 'Past Fair'),
+    at('Lumen Field', '2026-08-30', 'Sounders', 'https://www.ticketmaster.com/event/9')];
+  const current = [walk, at('Lumen Field', '2026-08-30', 'Sounders', 'https://www.ticketmaster.com/event/9')];
+  const sites = new Map([['https://pioneersquare.org/events/', 'Alliance for Pioneer Square']]);
+  const lines = [];
+  const kept = keepQuietVenues(archived, current, TODAY, { venues: VENUES, sites }, (l) => lines.push(l));
+  assert.deepEqual(kept.map((e) => e.title), ['Trick or Treat', 'Craft Club']); // the walk is listed already; the past fair stays in the past
+  assert.deepEqual(lines, ['City-wide calendar Alliance for Pioneer Square: failed or answered with nothing — kept 2 upcoming rows from its site']);
+  assert.deepEqual(quiet(archived, current), []); // without the site net: Around Pioneer Square still has the walk, so nothing was kept
+});
+
+test('capUpcoming: past events all stay; past the cap the farthest upcoming dates go', () => {
+  const evs = [at('V', '2020-01-01', 'Old'), at('V', '2026-08-01', 'Recent'), at('V', '2026-08-25', 'U1'), at('V', '2026-09-01', 'U2'), at('V', '2026-10-01', 'U3')];
+  const lines = [];
+  assert.deepEqual(capUpcoming(evs, TODAY, 2, (l) => lines.push(l)).map((e) => e.title), ['Old', 'Recent', 'U1', 'U2']);
+  assert.deepEqual(lines, ['Cap: 3 upcoming rows, 2 kept — the farthest dates dropped']);
+  assert.equal(capUpcoming(evs, TODAY, 3), evs);
+  assert.equal(capUpcoming(evs.slice(0, 2), TODAY, 1).length, 2); // all past: nothing to cap
 });
 
 test('fresh data wins when a past event is still listed by a source', () => {

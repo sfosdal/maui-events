@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents, feedFailedVenues } from './feeds.mjs';
+import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
 
 const room = 'Field Arts &#038; Events Hall &#8211; Donna M. Morris Theater';
 const row = (title, start, extra = {}) => ({ title, start_date: start, status: 'publish', all_day: false, venue: { venue: room }, categories: [], ...extra });
@@ -468,16 +468,19 @@ test('parseRssEvents: an XML &apos; in a title becomes an apostrophe', () => {
   assert.equal(gone.length, 0);
 });
 
-test('feedSources: a leading venue calendar that failed is marked for the safety net; a secondary one, or one whose site answered, is not', async () => {
+test('feedSources: a venue calendar that failed is marked for the safety net, leading or secondary; one whose site answered is not', async () => {
   const realFetch = globalThis.fetch, K = Symbol.for('here.events/failedHost'), realCheck = globalThis[K];
   globalThis.fetch = async () => ({ ok: false, status: 406, text: async () => '' });
   globalThis[K] = (host) => host === 'www.a.org'; // the call log: only a.org failed after its retries
   const err = console.error; console.error = () => {};
   try {
     const feed = (url, more = {}) => ({ type: 'concert', feed: { kind: 'rss', url, ...more } });
-    const city = { types: [], venues: { A: feed('https://www.a.org/events/rss'), B: feed('https://www.b.org/events/rss'), C: feed('https://www.a.org/other', { secondary: true }) } };
+    const city = { types: [], venues: { A: feed('https://www.a.org/events/rss'), B: feed('https://www.b.org/events/rss'), C: feed('https://www.a.org/other', { secondary: true }) },
+      feeds: [{ kind: 'rss', label: 'Wide', url: 'https://www.w.org/rss' }, { kind: 'rss', label: 'Pinned', url: 'https://www.p.org/rss', venue: 'B' }] };
     feedFailedVenues.clear();
     for (const t of feedSources(city, 'ua')) assert.deepEqual(await t(), []);
-    assert.deepEqual([...feedFailedVenues], ['A']);
-  } finally { globalThis.fetch = realFetch; globalThis[K] = realCheck; console.error = err; feedFailedVenues.clear(); }
+    assert.deepEqual([...feedFailedVenues], ['A', 'C']);
+    assert.deepEqual([...feedQuietVenues], [['B', ['https://www.b.org/events/rss', 'https://www.p.org/rss']]]); // b.org answered (no failed call): quiet, for keepQuietVenues — and the city-wide feed pinned to B
+    assert.deepEqual([...feedQuietSites], [['https://www.w.org/rss', 'Wide']]); // a city-wide feed with no venue: its site, for keepQuietVenues
+  } finally { globalThis.fetch = realFetch; globalThis[K] = realCheck; console.error = err; feedFailedVenues.clear(); feedQuietVenues.clear(); feedQuietSites.clear(); }
 });
