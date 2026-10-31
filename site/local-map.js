@@ -80,8 +80,11 @@
     atHome = true; var hb = hoodBox();
     if (hb || (data && data.home)) { var h = hb || data.home, a = ar(), w = Math.max(h[2], h[3] / a); view = { x: h[0] + h[2] / 2 - w / 2, y: h[1] + h[3] / 2 - w * a / 2, w: w, h: w * a }; }
     else fit(false);
+    homeW = view.w;
     if (draw !== false) render();
   }
+  var homeW = 0; // the opening view's width: the signs wait for a zoom in past it
+  function zoomedIn() { return homeW > 0 && view.w < homeW * .98; } // a pan alone is not a zoom
   function fit(draw) { atHome = false; var a = ar(), w = COVER() ? MAX_W() : Math.max(FRAME.w, FRAME.h / a); view = { x: (FRAME.w - w) / 2, y: (FRAME.h - w * a) / 2, w: w, h: w * a }; if (draw !== false) render(); } // a city ground: as far out as still fills the frame; an island or the world: the whole ground
   // the frame's own proportions (height over width): it fills the content's width and the height the window leaves,
   // whatever the ground's shape — the viewBox follows the frame, not the other way round (Steve, 2026-10-24)
@@ -290,7 +293,7 @@
       }
       return best || bx;
     }
-    nearbyCities(100).forEach(function (c) {
+    (zoomedIn() ? nearbyCities(100) : []).forEach(function (c) { // only once zoomed in past the opening view (Steve, 2026-10-30: "signe posts here … are dumb. only use them when zoomed in")
       var p = px(c.lat, c.lon), row = { name: c.name, key: c.key, dist: Math.max(1, Math.round(dUnit === 'km' ? c.km : c.km * .621371)), url: c.url, x: p[0], y: p[1] };
       if (p[0] > view.x + inset && p[0] < view.x + view.w - inset && p[1] > view.y + inset && p[1] < view.y + view.h - inset) { // inside the view: its dot, the sign beside it where the rooms leave room
         el('circle', { cx: p[0], cy: p[1], r: 3.5 * u, 'class': 'lm-city-dot' }, signLayer);
