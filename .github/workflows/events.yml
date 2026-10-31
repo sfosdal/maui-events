@@ -30,6 +30,7 @@ jobs:
         run: node --test scripts/*.test.mjs
       - name: Fetch & aggregate events
         env:
+          GITHUB_TOKEN: ${{ github.token }}   # reads the festival-finder issue in sfosdal/lqa-events (scripts/festivals.mjs)
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
           ALLOW_NO_ARCHIVE: ${{ vars.ALLOW_NO_ARCHIVE }}   # set to 1 for the very first build only (no live feed, no archive branch yet), then delete the variable
         run: node scripts/fetch-events.mjs

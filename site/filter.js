@@ -185,7 +185,7 @@
     var words = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
     if (!words.length) return true;
     var title = e.title || '';
-    var hay = [e.venue || '', title, TYPE_WORDS[eventType(e)] || ''];
+    var hay = [e.venue || '', title, TYPE_WORDS[eventType(e)] || '', e.festival || '']; // an approved festival's name (scripts/festivals.mjs)
     TEAMS.forEach(function (t) {
       if (t.re.test(title)) hay.push(t.label + ' home game ' + (SPORT_WORDS[t.slug] || ''));
     });

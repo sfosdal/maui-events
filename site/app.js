@@ -4014,6 +4014,8 @@
         // the grid); one of its sets: the stage and when it ends (Steve, 2026-10-05: the grid on the day's row "look[ed] bad")
         if (Array.isArray(e.sets) && e.sets.length) { var ns = 0; e.sets.forEach(function (st) { ns += st.acts.length; }); var sl = document.createElement('span'); sl.className = 'ev-stage'; sl.textContent = e.sets.length + ' stages \u00b7 ' + ns + ' sets, each listed below'; body.appendChild(sl); }
         else if (e.stage) { var sg = document.createElement('span'); sg.className = 'ev-stage'; sg.textContent = e.stage + (e.end ? ' \u00b7 until ' + fmtTime(e.end, e.date) : ' \u00b7 to close'); body.appendChild(sg); }
+        // one of a festival Steve approved from the weekly list (scripts/festivals.mjs, 2026-10-30): its name, a line of its own
+        if (e.festival) { var fl = document.createElement('span'); fl.className = 'ev-stage ev-fest'; fl.textContent = e.festival; fl.title = 'Part of ' + e.festival; body.appendChild(fl); }
         // a show that's off: struck through, with a third line saying so
         // (and when we noticed, if the feed knows)
         if (e.status) {
