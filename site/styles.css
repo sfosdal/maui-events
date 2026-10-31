@@ -2003,6 +2003,12 @@ html.map-open .agenda, html.map-open .cal-toggle, html.map-open #calToday, html.
 .lm-pop .lm-branch-n { flex: none; font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; color: var(--ink-soft); }
 .lm-pop .lm-branch-body { margin: 0 0 .5rem .5rem; padding-left: 1.05rem; border-left: 2px solid var(--line); } /* the thread line */
 .lm-pop .lm-branch-body .lm-foot { margin-bottom: .1rem; }
+.lm-heat { pointer-events: none; } /* the heat map's glow under the pins (2026-10-30) */
+:root[data-theme="dark"] .lm-heat { mix-blend-mode: screen; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lm-heat { mix-blend-mode: screen; } }
+.lm-heat-key { display: inline-flex; align-items: center; gap: .45em; }
+.lm-heat-key[hidden] { display: none; }
+.lm-heat-key i { display: inline-block; width: 5.5em; height: .62em; border-radius: .31em; background: linear-gradient(90deg, rgb(253,230,160), rgb(247,178,82), rgb(234,112,52), rgb(196,52,44), rgb(128,22,38)); }
 .lm-caption .lm-note { color: var(--ink); text-transform: none; letter-spacing: 0; font-family: var(--body); font-size: .8rem; }
 .lm-caption { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin: .55rem auto 0; width: 100%; min-height: 1.6em; font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
 /* the pin's card: the month view's day card (.mb-pop), with the room's own site at its foot */
