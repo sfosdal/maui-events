@@ -38,24 +38,13 @@
   var openVenue = null, rafId = 0;
   var HOOD = {}; (CITY.hoods || []).forEach(function (h) { (h.venues || []).forEach(function (v) { HOOD[v] = h.label; }); }); // a venue's neighbourhood (city.js hoods), the name a group of its venues goes by
   var GROUPS = {}; // the group pins of the last render, by key ('group:' + the venues' names)
-  // A heat map, not a venue's colour (Steve, 2026-10-30: "color coding is likely not the right anser. I want something
-  // more like a heat map"): a pin's colour says how busy it is, on one warm scale from pale gold to deep red, against the
-  // busiest pin on the map (square-root, so a venue with a quarter of the busiest's events sits halfway); a soft glow under
-  // the pins adds up where venues crowd together, so a busy quarter of town reads as a hot zone at a glance.
-  var HEAT = [[253, 230, 160], [247, 178, 82], [234, 112, 52], [196, 52, 44], [128, 22, 38]];
-  function heat(f) { f = Math.max(0, Math.min(1, f)) * (HEAT.length - 1); var i = Math.min(HEAT.length - 2, Math.floor(f)), t = f - i, a = HEAT[i], b = HEAT[i + 1]; return 'rgb(' + [0, 1, 2].map(function (k) { return Math.round(a[k] + (b[k] - a[k]) * t); }).join(',') + ')'; }
-  function heatInk(f) { return f > .5 ? '#fff' : '#3a1d0e'; } // the count on the disc: dark on the pale end, white on the deep one
-  var HEAT_STEPS = 6;
-  function heatDefs() { // one radial gradient per step of the scale (a gradient's stops cannot take a colour from the shape that uses it)
-    var defs = el('defs', {}, svg);
-    for (var i = 0; i < HEAT_STEPS; i++) {
-      var gr = el('radialGradient', { id: 'lmHeat' + i }, defs), c = heat(i / (HEAT_STEPS - 1));
-      el('stop', { offset: '0', 'stop-color': c, 'stop-opacity': '.85' }, gr);
-      el('stop', { offset: '.45', 'stop-color': c, 'stop-opacity': '.4' }, gr);
-      el('stop', { offset: '1', 'stop-color': c, 'stop-opacity': '0' }, gr);
-    }
-  }
-
+  // One colour, one size (Steve, 2026-10-30: "instread of red with the GWL orange (include the light and dark version)",
+  // "the glow around them isn't needed", "I want size of dot to be proportional to number of venues in the dote"): every
+  // dot is the Ghostwood orange (styles.css --lm-dot, a shade per theme); a lone venue is the smallest dot whatever its
+  // count, and a group's dot has the area of its venues' dots together (radius × √venues), so a dot's size says how many
+  // venues it holds — never how busy one is. Nearby venues fold into one dot as soon as their dots would touch
+  // ("close venues … collapse into one until you zoom in").
+  var DOT_R = 12, DOT_MAX = 4; // a lone venue's radius, in screen pixels; a group's at most DOT_MAX times it
   function el(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
   function px(lat, lon) { var p = data.proj; if (p.kind === 'miller') return [(lon - p.cx) * p.s + p.w / 2, (p.my0 - 1.25 * Math.asinh(Math.tan(.8 * lat * Math.PI / 180)) * 180 / Math.PI) * p.s]; return [(lon - p.cx) * p.k * p.s + p.w / 2, (p.cy - lat) * p.s + p.h / 2]; } // a world ground is Miller cylindrical; a city's is flat
   function version() { var s = document.querySelector('script[src*="local-map.js"]'); var m = s && /[?&]v=([^&]+)/.exec(s.getAttribute('src')); return m ? m[1] : ''; }
@@ -176,7 +165,7 @@
   // A city.js neighbourhood is a wall (a group is one neighbourhood's, and takes its name), and a neighbourhood
   // site's own venues never group with the rest of the city's. Done over every pin, in view or not, so a pan
   // never regroups anything — only a zoom does. `scale` sizes the discs for another zoom (canSplit).
-  var GROUP_AT = .6;
+  var GROUP_AT = 1.15; // dots whose centres sit closer than the two radii plus a little fold into one (was .6, mostly on one another, 2026-10-28)
   function group(pins, scale) {
     var left = pins.slice().sort(function (a, b) { return b.n - a.n || b.r - a.r || (a.v < b.v ? -1 : 1); }), out = [];
     while (left.length) {
@@ -204,11 +193,11 @@
     out.forEach(function (p) { if (p.group && seen[p.name] > 1) p.name = p.group[0].name + ' & ' + (p.group.length - 1) + ' more'; });
     return out;
   }
-  function groupPin(m) { // the members biggest first; the disc at their centre, weighted by count, a little larger than the biggest's
+  function groupPin(m) { // the members busiest first; the dot at their centre, weighted by count, its area the members' together
     var n = 0, x = 0, y = 0, w = 0, top = m[0];
     m.forEach(function (p) { var k = p.n || .5; n += p.n; x += p.ox * k; y += p.oy * k; w += k; });
     return { v: 'group:' + m.map(function (p) { return p.v; }).sort().join('|'), group: m, city: top.city, name: HOOD[top.v] || top.name + ' & ' + (m.length - 1) + ' more',
-      ox: x / w, oy: y / w, x: x / w, y: y / w, n: n, r: top.r * (1 + .15 * Math.log2(m.length)), color: top.color };
+      ox: x / w, oy: y / w, x: x / w, y: y / w, n: n, r: top.r * Math.min(DOT_MAX, Math.sqrt(m.length)), color: top.color };
   }
   function canSplit(g) { // would the deepest zoom part this group? Venues on one spot (the Rose Quarter's two halls) never part: no Zoom in for those
     if (view.w <= MIN_W() * 1.01) return false;
@@ -245,27 +234,20 @@
       (data.far || data.neighbours || []).forEach(function (d) { el('path', { d: d, 'class': 'lm-far' }, svg); });
       (data.land || [data.island]).forEach(function (d) { el('path', { d: d, 'class': 'lm-island' }, svg); });
     }
-    var heatLayer = el('g', { 'class': 'lm-heat', 'aria-hidden': 'true' }, svg); // filled once the pins are counted, under every label and pin
-    // ---- the rooms: size by count, then nudged apart, then labelled ----
+    // ---- the venues: one dot each (or a group's), nudged apart, then labelled ----
     var t = tally(), fs = 12.5 * u, total = 0, cityTotal = 0, keys = (BY_PLACE ? Object.keys(t.geo) : ROOMS).concat(CITY_ROOMS);
     var pins = keys.map(function (v) {
       var cm = !VENUES[v] && CITYMAP && CITYMAP.venues[v]; // one of the city's rooms beyond the neighbourhood
       var g = cm ? cm.geo : BY_PLACE ? t.geo[v] : VENUES[v].geo, p = px(g[0], g[1]), n = t.n[v] || 0; if (cm) cityTotal += n; else total += n;
       var room = cm || VENUES[v] || {};
-      return { v: v, city: !!cm, name: BY_PLACE && !cm ? v.split(',')[0] : (room.short || v.replace(/ National Historic(al)? (Park|Site)$/, '')), ox: p[0], oy: p[1], x: p[0], y: p[1], n: n, r: (n ? 7 + 2.2 * Math.sqrt(n) : 5) * u, color: cm ? (cm.color || '#8899aa') : H.venueColor(BY_PLACE ? t.color[v] : v) }; // a place takes the hue of its first event's row; a city room its own
+      return { v: v, city: !!cm, name: BY_PLACE && !cm ? v.split(',')[0] : (room.short || v.replace(/ National Historic(al)? (Park|Site)$/, '')), ox: p[0], oy: p[1], x: p[0], y: p[1], n: n, r: DOT_R * u, color: 'var(--lm-dot)' };
     });
     pins = group(pins, 1); GROUPS = {}; pins.forEach(function (p) { if (p.group) GROUPS[p.v] = p; });
-    var most = pins.reduce(function (m, p) { return (p.group || [p]).reduce(function (k, q) { return Math.max(k, q.n); }, m); }, 0) || 1; // the busiest single venue sets the top of the scale; a group of venues may run past it (and stays at the deep end)
-    function heatOf(p) { var f = p.n ? Math.sqrt(p.n / most) : 0; p.f = f; p.color = p.n ? heat(f) : '#8d949b'; p.ink = heatInk(f); } // nothing upcoming: a grey ring, not the scale's palest gold
-    pins.forEach(function (p) { heatOf(p); if (p.group) p.group.forEach(heatOf); });
     // crowding: the discs in view may cover about a sixth of it; past that every disc shrinks alike (a dense city at the whole-frame zoom), never below half
     var area = 0; pins.forEach(function (p) { if (p.ox > view.x - p.r && p.ox < view.x + view.w + p.r && p.oy > view.y - p.r && p.oy < view.y + view.h + p.r) area += Math.PI * p.r * p.r; });
     var shrink = Math.min(1, Math.max(.5, Math.sqrt(.16 * view.w * view.h / (area || 1))));
     pins.forEach(function (p) { p.r *= shrink; p.cap = p.group ? Math.max(p.r * 2, 10 * u) : Math.max(p.r * .9, 10 * u); }); // a group's spot is an average anyway: it may stray farther to clear its neighbours
     spread(pins, 3 * u);
-    heatDefs(); pins.forEach(function (p) { // the glow at each venue's true spot, wider and hotter the busier it is; a group's glow is its venues' glows
-      (p.group || [p]).forEach(function (q) { if (!q.n) return; var f = q.f, r = (34 + 70 * f) * u * Math.max(.6, shrink); el('circle', { cx: q.ox, cy: q.oy, r: r, fill: 'url(#lmHeat' + Math.round(f * (HEAT_STEPS - 1)) + ')' }, heatLayer); });
-    });
     // ---- the other cities on here.events nearby, as highway mileage signs (Steve, 2026-10-26: "add labels for nearby locations … more like these, including distance"):
     // one green sign per edge the cities lie beyond, a row each — name left, distance right — and a one-row sign beside the dot of a city inside the view.
     // Laid out before the labels, which keep clear of the boards; drawn on top of everything (the layer is re-appended at the end) ----
@@ -361,9 +343,8 @@
       var g = el('g', { 'class': 'lm-pin' + (p.n ? '' : ' is-empty') + (p.city ? ' is-city' : '') + (p.group ? ' is-group' : '') + (openVenue === p.v ? ' is-open' : ''), role: 'button', tabindex: '0', 'data-venue': p.v }, svg);
       g.style.setProperty('--pin', p.color);
       var title = el('title', {}, g); title.textContent = (p.group ? p.name + ' — ' + p.group.length + ' venues, ' : p.v + ' — ') + (p.n ? p.n + ' upcoming' : 'nothing upcoming under these filters');
-      if (p.group) p.group.slice(1, 3).reverse().forEach(function (q, i, back) { var o = p.r * .2 * (back.length - i); el('circle', { cx: p.x + o, cy: p.y - o, r: p.r, fill: q.color, 'class': 'lm-stack' }, g); }); // a stack: the next venues' discs peek out behind the first
       el('circle', { cx: p.x, cy: p.y, r: p.r, fill: p.color }, g);
-      if (p.n) { var n = el('text', { x: p.x, y: p.y + p.r * .36, 'font-size': Math.max(9 * u, p.r * .95), 'class': 'lm-n' }, g); n.style.fill = p.ink; n.textContent = p.n; } // inline: the stylesheet's fill would win over an attribute
+      if (p.n) { var nz = Math.min(p.r * .95, 2.6 * p.r / String(p.n).length), n = el('text', { x: p.x, y: p.y + nz * .36, 'font-size': nz, 'class': 'lm-n' }, g); n.textContent = p.n; } // the count fits its dot: a mono digit is about .6 em wide
       if (p.label) { var l = el('text', { x: p.label.tx, y: p.label.ty + fs * .36, 'text-anchor': p.label.anchor, 'font-size': fs, 'class': 'lm-name' }, g); l.textContent = p.name; }
     });
     if (me) { // the visitor: a ring the size of the fix's uncertainty, a dot at its centre
@@ -374,7 +355,6 @@
     }
     svg.appendChild(signLayer); // the signs over everything
     var cap = $('lmCaption'), own = keys.filter(function (v) { return VENUES[v] && t.n[v]; }).length, ownAll = keys.length - CITY_ROOMS.length;
-    var key = $('lmHeatKey'); if (key) key.hidden = !total; // the scale's key, when there is anything to weigh
     if (cap) cap.firstElementChild.textContent = total + ' upcoming at ' + own + ' of ' + ownAll + ' places' + (CITY_ROOMS.length ? ' · ' + cityTotal + ' more across ' + (CITYMAP.city || 'the city') : '');
   }
   function schedule() { if (!rafId) rafId = requestAnimationFrame(function () { rafId = 0; render(); }); }
