@@ -18,7 +18,8 @@ a form POST (the Kings' Shops' EyeOn events call, 2026-10-30). One session
 serves every argument, so a cookie a page sets reaches the calls after it.
 
 Reads nothing else, writes one JSON object to stdout — argument → page text,
-or argument → {"error": "..."} — and paces the calls half a second apart.
+or argument → {"error": "HTTP nnn", "body": its first 500 characters} (or
+{"error": "..."}) — and paces the calls half a second apart.
 """
 import json
 import sys
@@ -37,7 +38,7 @@ for i, arg in enumerate(sys.argv[1:]):
             r = session.post(spec["url"], data=spec["data"], timeout=30)
         else:
             r = session.get(spec["url"], timeout=30)
-        out[arg] = r.text if r.status_code == 200 else {"error": f"HTTP {r.status_code}"}
+        out[arg] = r.text if r.status_code == 200 else {"error": f"HTTP {r.status_code}", "body": r.text[:500]}
     except Exception as e:  # noqa: BLE001 — every failure is reported the same way
         out[arg] = {"error": str(e)}
 json.dump(out, sys.stdout)
