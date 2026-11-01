@@ -2164,8 +2164,8 @@
     var tv = [], stream = [], seen = {};
     // two names for one thing (KHN/Prime, Kraken Hockey Network, KONG — the same set and the same services) show once, under the first
     names.forEach(function (n) {
-      var info = channelInfo(n), set = info && (info.ota || info.directv || info.dish || info.xfinity);
-      var k = set ? JSON.stringify([info.ota, info.directv, info.dish, info.xfinity]) : String(n).toLowerCase();
+      var info = channelInfo(n), set = info && (info.ota || info.directv || info.dish || info.xfinity || payTv(info).length);
+      var k = set ? JSON.stringify([info.ota, info.directv, info.dish, info.xfinity, info.paytv || null]) : String(n).toLowerCase();
       if (seen[k]) return; seen[k] = true;
       if (set || !info) tv.push(n);
       else stream.push({ name: n, ways: (info.stream || []).filter(function (x) { return x.toLowerCase() !== String(n).toLowerCase(); }), apps: info.apps || null, bars: info.bars || null, via: false });
@@ -2175,6 +2175,13 @@
       if (info && (info.stream || []).length && !seen[k]) { seen[k] = true; stream.push({ name: n, ways: info.stream.slice(), apps: null, via: true }); }
     });
     return { tv: tv, stream: stream };
+  }
+  // a row's other pay-TV numbers (channels.json `paytv`: provider → number,
+  // in the order written — Cancún's Izzi, Sky and Totalplay, 2026-11-01), for
+  // the providers the fixed fields (DirecTV, Dish, Xfinity) don't name
+  function payTv(info) {
+    var p = (info && info.paytv) || {};
+    return Object.keys(p).filter(function (k) { return k !== '_' && p[k]; }).map(function (k) { return k + ' ' + p[k]; });
   }
   var TV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 21h8M12 18v3M8 3l4 3 4-3"/></svg>';
   var RADIO_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="2"/><circle cx="8.5" cy="15" r="2.5"/><path d="M14 13h4M14 17h4M6 9l12-6"/></svg>';
@@ -2186,7 +2193,7 @@
     return sec;
   }
   // a list for a section — TV: each network with the ways to a set (the
-  // antenna, DirecTV, Xfinity); radio: the stations. Every entry a link
+  // antenna, DirecTV, Xfinity, a row's `paytv` providers); radio: the stations. Every entry a link
   // where the table has one.
   function buildWatchList(names, radio, kind) {
     var ul = document.createElement('ul'); ul.className = 'tf-channels'; ul.dataset.kind = kind || 'tv';
@@ -2198,6 +2205,7 @@
         if (info.ota) how.push('over the air ' + info.ota);
         if (info.directv) how.push('DirecTV ' + info.directv);
         if (info.xfinity) how.push('Xfinity ' + info.xfinity);
+        payTv(info).forEach(function (h) { how.push(h); });
       }
       how.forEach(function (h) { li.appendChild(watchEntry('span', h)); });
       ul.appendChild(li);
@@ -3539,7 +3547,6 @@
     var v = $('sheetVenueLink'); v.href = VENUE_URL[e.venue] || '#'; v.hidden = !VENUE_URL[e.venue]; v.textContent = 'Venue \u2197'; v.title = 'What\u2019s on at ' + e.venue; // the venue's own calendar (short: the name is the sheet's eyebrow — Steve, 2026-09-21)
     var team = TEAMS.filter(function (t) { return t.re.test(e.title || '') && t.venue === e.venue && t.strip !== false; })[0]; // a home game: the club's season, in the Teams view (a club with no tab there has no Season button)
     var tb = $('sheetTeam'); tb.hidden = !team; if (team) { tb.textContent = 'Season'; tb.title = team.label + ' season, in the Teams view'; tb.dataset.slug = team.slug; }
-    var ht = $('sheetHideTeam'); ht.hidden = !team; if (team) { ht.textContent = 'Hide ' + team.label; ht.title = 'Hide ' + team.label + ' home games'; ht.dataset.slug = team.slug; }
     var phone = matchMedia(sheetTouch).matches;
     var sheet = $('sheet');
     sheetAnchor = anchor || null; sheetPoint = point && (point.x || point.y) ? point : null;
@@ -3560,12 +3567,6 @@
   }
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheetTeam').addEventListener('click', function () { var slug = this.dataset.slug; closeSheet(); setTeamsView(slug, true); });
-  $('sheetHideTeam').addEventListener('click', function () { // this club's home games off (the venue stays), with a way back
-    var t = TEAM_BY_SLUG[this.dataset.slug], snap = filterSnapshot(); closeSheet();
-    if (!t) return;
-    setMode(state.teamMode, t.slug, 'ex'); applyFilters();
-    showToast(t.label + ' games hidden', function () { restoreSnapshot(snap); });
-  });
   $('sheetBack').addEventListener('click', closeSheet);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
   // a click anywhere outside the pop closes it (the opening click never gets
