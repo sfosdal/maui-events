@@ -175,6 +175,70 @@
    "time": "19:30",
    "url": "https://proartsmaui.org/event/the-toxic-avenger-oct-30-2026/",
    "type": "arts"
+  },
+  {
+   "venue": "Pacific Whale Foundation",
+   "title": "October 31st Māʻalaea Harbor Cleanup: Celebrate Halloween with PWF",
+   "date": "2026-10-31",
+   "time": "",
+   "url": "https://pacificwhale.org/event/ma%ca%bbalaea-harbor-cleanup/",
+   "type": "community"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "Sickening Saturday On Halloween!",
+   "date": "2026-10-31",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/sickening-saturday-on-halloween",
+   "type": "concert"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Lahaina Hula Show",
+   "date": "2026-10-31",
+   "time": "11:00",
+   "url": "https://lahainacannerymall.com/event/lahaina-hula-show-3/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Magic Shows",
+   "date": "2026-10-31",
+   "time": "12:00",
+   "url": "https://lahainacannerymall.com/event/magic-shows/",
+   "type": "community"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "The Toxic Avenger (the musical)",
+   "date": "2026-10-31",
+   "time": "16:00",
+   "url": "https://proartsmaui.org/event/the-toxic-avenger-oct-31-2026-4pm/",
+   "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Halloween Spooktacular",
+   "date": "2026-10-31",
+   "time": "16:00",
+   "url": "https://lahainacannerymall.com/event/halloween-spooktacular/",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Roundabouts – Halloween Dance Party",
+   "date": "2026-10-31",
+   "time": "19:00",
+   "url": "https://mulligansontheblue.com/event/roundabouts-halloween-dance-party/",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "The Toxic Avenger (the musical)",
+   "date": "2026-10-31",
+   "time": "20:00",
+   "url": "https://proartsmaui.org/event/the-toxic-avenger-oct-31-2026-8pm/",
+   "type": "arts"
   }
  ]
 }
