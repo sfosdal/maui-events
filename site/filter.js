@@ -139,15 +139,51 @@
   var CODE_LENGTH = CITY.codeLength;
   var REGISTRY = CITY.registry;
   var GROUP_MAP = { venue: 'venueMode', badge: 'badgeMode', team: 'teamMode', cap: 'capMode' };
+  // Exact masks past 53 entries (2026-10-31): a plain number holds 53 exact
+  // bits, so on a city with a longer registry (Seattle 94, Hawaiʻi 66) a code
+  // that set a high bit lost the low ones — a shared link quietly showed
+  // venues it was meant to hide. Masks are BigInts now. A mask under 2^53 is
+  // written exactly as before; a bigger one is written "_" + its exact base-36
+  // digits, because the old float codes were not exact digits (toString(36)
+  // of a big double ends in rounded zeros), so a plain code is still read the
+  // old way — parseInt, then its bits — and every link ever shared opens as it
+  // always did. No BigInt (a browser older than 2020): floats throughout.
+  var BIG = typeof BigInt === 'function';
+  var DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz';
+  var EXACT = '_';
   function maskOf(mode, which) {
-    var mask = 0;
+    var mask = BIG ? BigInt(0) : 0;
     REGISTRY.forEach(function (entry, i) {
       var map = mode[GROUP_MAP[entry[0]]] || {};
-      if (map[entry[1]] === which) mask += Math.pow(2, i);
+      if (map[entry[1]] !== which) return;
+      if (BIG) mask += BigInt(1) << BigInt(i); else mask += Math.pow(2, i);
     });
     var code = mask.toString(36).toUpperCase();
     while (code.length < CODE_LENGTH) code = '0' + code;
-    return code;
+    return BIG && mask > BigInt(Number.MAX_SAFE_INTEGER) ? EXACT + code : code;
+  }
+  // A mask's text → a BigInt (or a number without BigInt), null for no code.
+  // Plain text keeps parseInt(text, 36)'s rules — the leading run of digits,
+  // rounded to a double — so its bits are the old reader's; "_" text is read
+  // digit by digit, exactly.
+  function parseMask(text) {
+    var s = String(text).toLowerCase(), exact = s.charAt(0) === EXACT, i, d, n = 0;
+    if (exact) s = s.slice(1);
+    if (!exact || !BIG) {
+      var f = parseInt(s, 36);
+      if (isNaN(f) || f < 0) return null;
+      return BIG ? BigInt(f) : f; // f is a whole double, so BigInt(f) is exact
+    }
+    var m = BigInt(0), b36 = BigInt(36);
+    for (i = 0; i < s.length; i++) {
+      d = DIGITS.indexOf(s.charAt(i));
+      if (d < 0) break;
+      m = m * b36 + BigInt(d); n++;
+    }
+    return n ? m : null;
+  }
+  function bitOf(mask, i) {
+    return BIG ? ((mask >> BigInt(i)) & BigInt(1)) === BigInt(1) : Math.floor(mask / Math.pow(2, i)) % 2 === 1;
   }
   function encodeFilterCode(mode) {
     var ex = maskOf(mode, 'ex'), inn = maskOf(mode, 'in');
@@ -156,11 +192,11 @@
   function parseFilterCode(code) {
     var mode = { venueMode: {}, badgeMode: {}, teamMode: {}, capMode: {} };
     var parts = String(code).split('.');
-    var masks = [parseInt(parts[0], 36), parts.length > 1 ? parseInt(parts[1], 36) : 0];
-    if (masks.some(function (m) { return isNaN(m) || m < 0; })) return null;
+    var masks = [parseMask(parts[0]), parts.length > 1 ? parseMask(parts[1]) : (BIG ? BigInt(0) : 0)];
+    if (masks[0] === null || masks[1] === null) return null;
     REGISTRY.forEach(function (entry, i) {
-      if (Math.floor(masks[0] / Math.pow(2, i)) % 2 === 1) mode[GROUP_MAP[entry[0]]][entry[1]] = 'ex';
-      else if (Math.floor(masks[1] / Math.pow(2, i)) % 2 === 1) mode[GROUP_MAP[entry[0]]][entry[1]] = 'in';
+      if (bitOf(masks[0], i)) mode[GROUP_MAP[entry[0]]][entry[1]] = 'ex';
+      else if (bitOf(masks[1], i)) mode[GROUP_MAP[entry[0]]][entry[1]] = 'in';
     });
     return mode;
   }
