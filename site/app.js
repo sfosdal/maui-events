@@ -1357,6 +1357,7 @@
     basketball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6c3.5 3.5 3.5 9.3 0 12.8M18.4 5.6c-3.5 3.5-3.5 9.3 0 12.8"/>',
     rugby: '<ellipse cx="12" cy="12" rx="10" ry="6" transform="rotate(-45 12 12)"/><path d="M8.5 15.5l7-7M10 13l1.5 1.5M12 11l1.5 1.5M14 9l1.5 1.5"/>',
     soccer: '<circle cx="12" cy="12" r="9"/><path d="M12 8.2l3.8 2.8-1.5 4.5h-4.6l-1.5-4.5z"/><path d="M12 8.2V3.4M15.8 11l4.2-1.4M14.3 15.5l2.6 3.6M9.7 15.5l-2.6 3.6M8.2 11L4 9.6"/>',
+    volleyball: '<circle cx="12" cy="12" r="9"/><path d="M12 12C14.2 9.6 14.8 6.2 13.6 3.15"/><path d="M12 12C14.2 9.6 14.8 6.2 13.6 3.15" transform="rotate(120 12 12)"/><path d="M12 12C14.2 9.6 14.8 6.2 13.6 3.15" transform="rotate(240 12 12)"/>', // three seams swirling from the centre (Steve, 2026-10-31: "vollyball icon" — Lincoln's Huskers Volleyball showed the crest alone)
   };
   function sportIcon(sport) {
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -4332,5 +4333,9 @@
   }
   // a ?team= link opens the Teams view straight away
   if (new URLSearchParams(location.search).get('team')) setTeamsView(new URLSearchParams(location.search).get('team'), false);
-  window.LQAHooks = { dayItems: dayItems, byDate: function () { return state.byDate; }, boardEntry: boardEntry, closeDayPop: closeDayPop, syncViewSwitch: syncViewSwitch, fitFilterBar: fitFilterBar, todayStr: todayStr, venueColor: venueColor, onlyVenue: onlyVenue }; // what local-map.js borrows
+  window.LQAHooks = { dayItems: dayItems, byDate: function () { return state.byDate; }, boardEntry: boardEntry, closeDayPop: closeDayPop, syncViewSwitch: syncViewSwitch, fitFilterBar: fitFilterBar, todayStr: todayStr, venueColor: venueColor, onlyVenue: onlyVenue,
+    // the Map view's caption offers Reset when the filters leave nothing on the map, and its Cities card ends in the More Cities sheet (Steve, 2026-10-31)
+    isDefaultView: function () { return isDefaultState() && !state.soldOnly; },
+    resetFilters: function () { applyPreset(PRESETS[0]); state.q = ''; $('searchBox').value = ''; applyFilters(); },
+    openCities: function () { if (!CITIES || !CITIES.cities || !CITIES.cities.length) return false; if (!citySheet) citySheet = buildCitySheet(); citySheet.open(); return true; } }; // what local-map.js borrows
 })();
