@@ -239,6 +239,38 @@
    "time": "20:00",
    "url": "https://proartsmaui.org/event/the-toxic-avenger-oct-31-2026-8pm/",
    "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "NFL Watch Parties",
+   "date": "2026-11-01",
+   "time": "08:00",
+   "url": "https://lahainacannerymall.com/event/nfl-watch-parties-3/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Eagles vs. Commanders",
+   "date": "2026-11-01",
+   "time": "15:20",
+   "url": "https://lahainacannerymall.com/event/eagles-vs-commanders/",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Island Soul Band",
+   "date": "2026-11-01",
+   "time": "17:00",
+   "url": "https://mulligansontheblue.com/event/island-soul-band-95/",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Magic in Paradise",
+   "date": "2026-11-01",
+   "time": "19:00",
+   "url": "https://proartsmaui.org/event/magic-in-paradise-nov-1-2026/",
+   "type": "arts"
   }
  ]
 }
