@@ -271,6 +271,30 @@
    "time": "19:00",
    "url": "https://proartsmaui.org/event/magic-in-paradise-nov-1-2026/",
    "type": "arts"
+  },
+  {
+   "venue": "ʻĪao Theater",
+   "title": "November One Night Only",
+   "date": "2026-11-02",
+   "time": "",
+   "url": "https://www.mauionstage.com/",
+   "type": "arts"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-11-02",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=146278",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Bears vs Seahawks",
+   "date": "2026-11-02",
+   "time": "15:15",
+   "url": "https://lahainacannerymall.com/event/bears-vs-seahawks/",
+   "type": "community"
   }
  ]
 }
