@@ -20,6 +20,13 @@
 // JSON was expected) is caught by the build's own "Source failed:" line,
 // written down with the last call made before it.
 import { writeFileSync } from 'node:fs';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+// The build reads its sources side by side (build.mjs), so "the last call before a Source failed line" is
+// kept per source: build.mjs runs each source inside callScope, and a call made inside one notes its URL
+// there; outside any scope it is the build's own last call, as before.
+const scope = new AsyncLocalStorage();
+export const callScope = (fn) => scope.run({ last: '' }, fn);
 
 export const QUIET = Symbol.for('here.events/quiet');
 const RETRY = new Set([408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
@@ -51,7 +58,7 @@ export function makeCallLog({ fetchImpl, sleep = (ms) => new Promise((r) => setT
     if (PASS.some((re) => re.test(u.hostname))) return fetchImpl(input, init);
     const quiet = init?.[QUIET] || String(init?.method || 'GET').toUpperCase() === 'HEAD';
     const clean = `${u.origin}${u.pathname}`; // the query can carry keys and dates — never written down
-    lastUrl = clean;
+    const sc = scope.getStore(); if (sc) sc.last = clean; else lastUrl = clean;
     for (let attempt = 0; ; attempt++) {
       let res, err;
       try { res = await fetchImpl(input, init); } catch (e) { err = e; }
@@ -73,7 +80,7 @@ export function makeCallLog({ fetchImpl, sleep = (ms) => new Promise((r) => setT
     recordFailure: (what, detail = '') => record(`${what} ${detail}`.trim(), { what, ...(detail ? { error: String(detail).slice(0, 160) } : {}) }),
     // a "Source failed: …" line with no HTTP status of its own (a parse error): the last call before it names the source
     // skipped when the call behind it is already written down: Ticketmaster's own (tmFailed), or a fetch that failed
-    noteSourceFailed: (message) => { if (/HTTP \d{3}/.test(message) || /^Ticketmaster /.test(message) || [...failures.values()].some((f) => f.url === lastUrl && (f.error || f.status))) return; record(`source ${message.slice(0, 80)}`, { what: 'Source failed', error: message.slice(0, 160), after: lastUrl }); },
+    noteSourceFailed: (message) => { const last = scope.getStore()?.last ?? lastUrl; if (/HTTP \d{3}/.test(message) || /^Ticketmaster /.test(message) || [...failures.values()].some((f) => f.url === last && (f.error || f.status))) return; record(`source ${message.slice(0, 80)}`, { what: 'Source failed', error: message.slice(0, 160), after: last }); },
     list: () => [...failures.entries()].map(([key, v]) => ({ key, ...v })),
     // did a call to this host fail after its retries? (feeds.mjs: an empty venue calendar is a failed one only then)
     failedHost: (host) => [...failures.entries()].some(([key, v]) => (v.url ? new URL(v.url).hostname === host : key.includes(host))),

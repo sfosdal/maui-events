@@ -11,5 +11,7 @@ site/teams.json
 site/marks/opp/
 # the archive record the build writes for the `archive` branch (the workflow commits it there)
 events-archive.json
+# the ticket-link record, committed to the archive branch beside it
+links-checked.json
 .cache/
 failures.json

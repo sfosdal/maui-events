@@ -38,7 +38,7 @@ jobs:
         run: node scripts/seo.mjs
       - name: Keep the archive branch (every past event ever published)
         # The build read both copies of the archive (live feed + this branch)
-        # and wrote their union to events-archive.json; commit it here when it
+        # and wrote their union to events-archive.json (and links-checked.json, the link record); commit them here when they
         # changed. Pushes to `archive` don't trigger this workflow (main only).
         env:
           REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
@@ -51,8 +51,9 @@ jobs:
             git -C "$dir" remote add origin "$REMOTE"
           fi
           cp events-archive.json "$dir/"
+          if [ -f links-checked.json ]; then cp links-checked.json "$dir/"; fi # the ticket links that answered OK and when (scripts/links.mjs): the next build skips those under two days old
           cd "$dir"
-          git add events-archive.json
+          git add events-archive.json $( [ -f links-checked.json ] && echo links-checked.json )
           if git diff --cached --quiet; then echo "archive unchanged"; exit 0; fi
           n=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("events-archive.json")).events.length)')
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \

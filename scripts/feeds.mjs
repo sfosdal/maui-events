@@ -517,7 +517,15 @@ const plainFetch = async (u) => { // the fallback when uv cannot run: the same r
   return res.text();
 };
 const chromeCache = new Map(); // one fetch of a page per build, however many feed rows ask for it
-export async function chromeFetch(urls, label) {
+// One cffi-fetch.py run at a time (the helper is a blocking spawnSync anyway): venues read side by side that
+// share pages (Ticketera's category listings) then find them cached, as they did when the sources ran in turn.
+let chromeChain = Promise.resolve();
+export function chromeFetch(urls, label) {
+  const p = chromeChain.then(() => chromeFetchNow(urls, label));
+  chromeChain = p.catch(() => {});
+  return p;
+}
+async function chromeFetchNow(urls, label) {
   const out = new Map();
   for (const u of urls) if (chromeCache.has(u)) out.set(u, chromeCache.get(u));
   const want = [...new Set(urls.filter((u) => !chromeCache.has(u)))];
@@ -904,8 +912,15 @@ export function parseMecCards(html, today = new Date()) {
   }
   return out;
 }
+// One read of a Modern Events Calendar listing per build, however many venues take cards from it (Seattle: the
+// Paramount, the Moore, the Neptune and Kerry Hall all read STG's one list — four walks of 22 pages before
+// 2026-11-03). The promise is shared, so venues read side by side wait on the one walk.
+const mecCache = new Map();
 async function fetchMec(url, ua, label, opts) {
-  const { feed = {}, venue, types, defaultType, drop, venues = feed.venues || opts.rooms || feed.rooms } = opts;
+  if (!mecCache.has(url)) mecCache.set(url, mecCards(url, ua, label));
+  return mecRows(await mecCache.get(url), label, opts);
+}
+async function mecCards(url, ua, label) {
   const html = await fetchText(url, ua);
   const init = parseMecInit(html);
   const pages = [html];
@@ -921,7 +936,10 @@ async function fetchMec(url, ua, label, opts) {
     if (data.end_date === endDate && Number(data.offset) === offset) break; // the plugin would loop here too
     endDate = data.end_date; offset = Number(data.offset) || 0;
   }
-  const cards = pages.flatMap((h) => parseMecCards(h));
+  return { cards: pages.flatMap((h) => parseMecCards(h)), pages: pages.length };
+}
+function mecRows({ cards, pages }, label, opts) {
+  const { feed = {}, venue, types, defaultType, drop, venues = feed.venues || opts.rooms || feed.rooms } = opts;
   const evs = [];
   for (const c of cards) {
     if (venues && !venues.test(c.place)) continue;
@@ -932,7 +950,7 @@ async function fetchMec(url, ua, label, opts) {
     if (type && (!types || types.includes(type))) ev.type = type;
     evs.push(ev);
   }
-  console.log(`${label} (MEC): ${evs.length} events from ${cards.length} cards on ${pages.length} pages`);
+  console.log(`${label} (MEC): ${evs.length} events from ${cards.length} cards on ${pages} pages`);
   return evs;
 }
 
@@ -1069,9 +1087,8 @@ export function parseBoldtypeList(html) {
   return out;
 }
 const BOLDTYPE_DATE_ONLY = /^\s*(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?\s*$/i;
-async function fetchBoldtype(url, ua, label, opts) {
-  const { feed = {}, venue, types, defaultType, drop } = opts;
-  const rooms = feed.rooms || opts.rooms; // tested on the Venue cell, room and town ("El Sid at the APEX Everett, WA"): the city buttons are loose (Everett sits under Seattle), so `city: ''` + a town in `rooms` reads by place
+const boldtypeLists = new Map();
+async function boldtypeList(url, ua, feed) {
   const seen = new Map();
   for (let page = 1; page <= (feed.maxPages || 30); page++) {
     const body = new URLSearchParams({ page: String(page), terms: '', city: feed.city || '', date: '', end: '', venue: '' });
@@ -1086,6 +1103,14 @@ async function fetchBoldtype(url, ua, label, opts) {
     if (seen.size === before) break; // past the last page the list repeats
     await new Promise((r) => setTimeout(r, 250));
   }
+  return seen;
+}
+async function fetchBoldtype(url, ua, label, opts) {
+  const { feed = {}, venue, types, defaultType, drop } = opts;
+  const rooms = feed.rooms || opts.rooms; // tested on the Venue cell, room and town ("El Sid at the APEX Everett, WA"): the city buttons are loose (Everett sits under Seattle), so `city: ''` + a town in `rooms` reads by place
+  const key = `${new URL(url).origin}|${feed.city || ''}|${feed.maxPages || 30}`; // one walk of the box office's list per build, however many venues read it
+  if (!boldtypeLists.has(key)) boldtypeLists.set(key, boldtypeList(url, ua, feed));
+  const seen = await boldtypeLists.get(key);
   const keep = [...seen.values()].filter((c) => (!rooms || rooms.test(c.place)) && !(drop && drop.test(c.title)));
   const out = [];
   let pages = 0;

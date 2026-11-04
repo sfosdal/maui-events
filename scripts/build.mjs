@@ -50,6 +50,7 @@ import { applySchedules } from './schedules.mjs';
 import { slugify, BADGE_FEEDS, TEAMS, CITY } from './badges.mjs';
 import { feedSources, emptyListGate, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
 import { tmFetch, tmFailed, keepFailedVenues } from './tm-fetch.mjs';
+import { callScope } from './failures.mjs';
 import { stampFestivals } from './festivals.mjs';
 import { ticketWebId } from './ticketweb.mjs';
 
@@ -60,6 +61,7 @@ const ICS_OUT = new URL('../site/events.ics', import.meta.url);
 // should be kept"). The window only bounds what a source adds.
 export const WINDOW_DAYS = 365;
 const ARCHIVE_OUT = new URL('../events-archive.json', import.meta.url); // repo root, ignored; the workflow commits it to the archive branch
+const LINKS_OUT = new URL('../links-checked.json', import.meta.url); // repo root, ignored; the workflow commits it to the archive branch
 const MAX_EVENTS = 4000; // sanity cap on the UPCOMING rows (merge.mjs capUpcoming): past events are never trimmed
 
 export const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -161,6 +163,23 @@ const dropDateClashes = (rows, all) => { const taken = new Set(all.map((e) => `$
 const SOLD_OUT_SUFFIX = /\s*[-–—]\s*sold out!?\s*$/i;
 const hexDecode = (t) => t.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)));
 
+// Run the sources `limit` at a time; answers come back in the sources' order. Each runs in its own call scope
+// (failures.mjs), so a "Source failed" line is pinned to that source's own last call.
+export async function readAll(fns, limit = 8) {
+  const out = new Array(fns.length).fill(null);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, fns.length) }, async () => {
+    while (next < fns.length) {
+      const i = next++;
+      out[i] = await callScope(async () => {
+        try { return await fns[i](); }
+        catch (err) { console.error('Source failed:', err.message); return null; }
+      });
+    }
+  }));
+  return out;
+}
+
 export async function build(cfg = {}) {
   const isChurch = cfg.church === false ? () => false : citySources.isChurch;
   if (!isChurch) throw new Error('scripts/sources.mjs has no isChurch: pass church: false or add it');
@@ -193,22 +212,23 @@ export async function build(cfg = {}) {
   let churchDropped = 0;
   const noChurch = (rows) => (cfg.church === false ? rows : rows.filter((e) => { if (isChurch(e)) { churchDropped++; return false; } return true; }));
 
+  // Every source is read side by side, SOURCE_CONCURRENCY at a time (Steve, 2026-11-03: "is there anyway to
+  // speed up seattle"), and the answers are then taken in the listed order, so which source wins a clash is
+  // what it was when they ran one after another. Ticketmaster stays one call at a time: every Discovery read
+  // goes through tm-fetch.mjs's single queue. A source that throws counts as failed (null) and adds nothing.
+  const t0 = Date.now();
+  const got = await readAll([...sources, ...secondary], Number(process.env.SOURCE_CONCURRENCY) || 8);
+  console.log(`Sources: ${sources.length + secondary.length} read in ${Math.round((Date.now() - t0) / 1000)} s`);
   let all = [];
-  for (const src of sources) {
-    try { all = all.concat(noChurch(await src())); }
-    catch (err) { console.error('Source failed:', err.message); }
-  }
+  for (const raw of got.slice(0, sources.length)) if (raw) all = all.concat(noChurch(raw));
   if (cfg.afterPrimary) all = (await cfg.afterPrimary(all)) || all;
   all = all.map(norm).filter(keep);
-  for (const src of secondary) {
-    try {
-      const raw = await src();
-      const rows = noChurch(raw).map(norm).filter(keep).map((r) => ({ ...r, type: r.type || CITY.venues[r.venue]?.type || r.type })); // a typeless Ticketmaster row takes its venue's type
-      const kept = secondaryRows(rows, all); // nothing already at that venue on that date with the same clock or title (merge.mjs)
-      if (rows.length) console.log(`  secondary ${rows[0].venue}: ${kept.length} of ${rows.length} rows new`);
-      all = all.concat(kept);
-    }
-    catch (err) { console.error('Source failed:', err.message); }
+  for (const raw of got.slice(sources.length)) {
+    if (!raw) continue;
+    const rows = noChurch(raw).map(norm).filter(keep).map((r) => ({ ...r, type: r.type || CITY.venues[r.venue]?.type || r.type })); // a typeless Ticketmaster row takes its venue's type
+    const kept = secondaryRows(rows, all); // nothing already at that venue on that date with the same clock or title (merge.mjs)
+    if (rows.length) console.log(`  secondary ${rows[0].venue}: ${kept.length} of ${rows.length} rows new`);
+    all = all.concat(kept);
   }
   if (churchDropped) console.log(`Church events dropped: ${churchDropped}`);
   if (cfg.listedVenuesOnly) { const timed = new Set(all.filter((e) => e.time).map((e) => `${e.venue}|${e.url}|${e.date}`)); all = all.filter((e) => e.time || !timed.has(`${e.venue}|${e.url}|${e.date}`)); }
@@ -349,7 +369,16 @@ export async function build(cfg = {}) {
     console.error('teams.json: no season fetched this run, the last one stands');
   }
 
-  await fixLinks(merged, { venues: CITY.venues, today }); // ticket links that reach a real page: no scheme-less or wrapped links, a 404 goes to the venue's page (scripts/links.mjs)
+  // ticket links that reach a real page: no scheme-less or wrapped links, a 404 goes to the venue's page (scripts/links.mjs);
+  // a link that answered OK in the last two days (the record on the archive branch) is not asked again
+  const linksRecordUrl = process.env.LINKS_RECORD_URL || (ARCHIVE_URL ? ARCHIVE_URL.replace(/events-archive\.json$/, 'links-checked.json') : '');
+  let linksRecord = null;
+  if (linksRecordUrl && process.env.LINKS_RECORD !== '0') {
+    try { const r = await fetch(linksRecordUrl, { cache: 'no-store', signal: AbortSignal.timeout(15000), [Symbol.for('here.events/quiet')]: true }) /* a missing record (the first build) is no failure */; if (r.ok) linksRecord = (await r.json()).links || null; else if (r.status !== 404) console.log(`Links record: HTTP ${r.status} — every link checked`); }
+    catch (err) { console.log(`Links record: ${err.message} — every link checked`); }
+  }
+  const links = await fixLinks(merged, { venues: CITY.venues, today, record: linksRecord || {} });
+  writeFileSync(LINKS_OUT, JSON.stringify({ links: Object.fromEntries(Object.entries(links.record).sort()) }, null, 1) + '\n'); // the workflow commits it to the archive branch beside the archive
   writeFileSync(JSON_OUT, JSON.stringify({ generated: new Date().toISOString(), events: merged }, null, 2) + '\n');
   // the archive record: this build's past events on top of everything already recorded, never pruned
   const record = unionArchives(merged.filter((e) => e.date < today), archived.filter((e) => e.date < today));

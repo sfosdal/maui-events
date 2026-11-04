@@ -48,3 +48,20 @@ test('fixLinks sends a dead link to the venue page, drops it when that is dead t
   assert.equal(r.swapped, 2);
   assert.equal(r.dropped, 1);
 });
+
+test('fixLinks trusts a link that answered OK in the last two days and checks the rest (the record)', async () => {
+  const asked = [];
+  const fetchImpl = async (u) => { asked.push(u); return { status: u.includes('gone') ? 404 : 200, ok: !u.includes('gone'), url: u, body: null }; };
+  const events = [
+    { venue: 'A', date: '2026-11-10', url: 'https://a.example/fresh' }, // OK yesterday: trusted
+    { venue: 'A', date: '2026-11-11', url: 'https://a.example/old' }, // OK four days ago: asked again
+    { venue: 'A', date: '2026-11-12', url: 'https://a.example/new' }, // not in the record: asked
+    { venue: 'A', date: '2026-11-13', url: 'https://a.example/gone' }, // dead now: asked, not written down
+  ];
+  const record = { 'https://a.example/fresh': '2026-11-02', 'https://a.example/old': '2026-10-30', 'https://a.example/elsewhere': '2026-11-03' };
+  const r = await fixLinks(events, { today: '2026-11-03', fetchImpl, record, log: () => {} });
+  assert.deepEqual(asked.sort(), ['https://a.example/gone', 'https://a.example/new', 'https://a.example/old']);
+  assert.equal(r.trusted, 1);
+  assert.deepEqual(r.record, { 'https://a.example/fresh': '2026-11-02', 'https://a.example/old': '2026-11-03', 'https://a.example/new': '2026-11-03' });
+  assert.equal(events[3].url, ''); // no venue page in `venues`: the dead link is dropped, as before
+});
