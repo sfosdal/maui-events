@@ -1218,7 +1218,54 @@ async function fetchRss(url, ua, label, opts) {
   return evs;
 }
 
-const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix, mec: fetchMec, rss: fetchRss, aeg: fetchAeg, plot: fetchPlot };
+// ---- DICE (dice.fm): a venue's public page ----
+// Steve, 2026-11-03: "adding dice.fm to every city/neighborhood". DICE has no self-serve key for a listings site (its
+// partner API is for promoters and venues selling on DICE, scoped to their own shows), so this reads the page anyone can
+// open — dice.fm/venue/<id or slug> — and takes the next shows from its own Next.js data (profile.sections, the
+// 'upcoming' one: about thirty shows; the rest load through DICE's API, which needs a key and is left alone). No
+// borrowed widget key. One DICE page at a time, 1.5 s apart, however many venues read side by side. A page without the
+// data (a challenge page, a redesign) throws, so the venue keeps its rows from the last build (feedSources).
+let diceChain = Promise.resolve();
+const diceTurn = (fn) => { const p = diceChain.then(fn); diceChain = p.catch(() => {}).then(() => new Promise((r) => setTimeout(r, 1500))); return p; };
+/**
+ * A dice.fm venue page's HTML → feed rows: the 'upcoming' section's shows, each at its local date and clock (the
+ * event's own time zone), linked to dice.fm/event/<id>, sold out from DICE's status. `drop` leaves out titles it
+ * matches. Throws when the page carries no event data.
+ */
+export function mapDicePage(html, { venue = '', label = '', drop = null, type = '', tz = 'America/Los_Angeles' } = {}) {
+  const m = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(html || '');
+  if (!m) throw new Error(`${label || 'DICE'}: no event data on the page`);
+  const profile = JSON.parse(m[1])?.props?.pageProps?.profile;
+  if (!profile) throw new Error(`${label || 'DICE'}: no venue profile on the page`);
+  const sections = (profile.sections || []).filter((x) => x.key === 'upcoming');
+  const local = (iso, zone) => new Intl.DateTimeFormat('sv-SE', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso)).split(' '); // "2026-11-04 20:00"
+  const out = [];
+  for (const e of sections.flatMap((x) => x.events || [])) {
+    const start = e?.dates?.event_start_date;
+    if (!e?.name || !start || !e.id) continue;
+    const title = decode(e.name).replace(/\s+/g, ' ').trim();
+    if (drop && drop.test(title)) continue;
+    const zone = e.dates.timezone || tz;
+    const [date, time] = local(start, zone);
+    const ev = { venue: venue || e.venues?.[0]?.name || label, title, date, time, url: `https://dice.fm/event/${e.id}` };
+    if (e.dates.event_end_date) { const [d2, t2] = local(e.dates.event_end_date, zone); if (d2 === date && t2 > time) ev.end = t2; } // an end the same night only
+    if (e.status === 'sold-out') ev.soldOut = true;
+    else if (e.status === 'cancelled' || e.status === 'postponed') ev.status = e.status;
+    if (type) ev.type = type;
+    out.push(ev);
+  }
+  return out;
+}
+async function fetchDice(url, ua, label, opts) {
+  const { feed = {}, venue, defaultType, drop, tz } = opts;
+  const res = await diceTurn(() => fetch(url, { headers: { 'User-Agent': ua, Accept: 'text/html' }, signal: AbortSignal.timeout(30000) }));
+  if (!res.ok) throw new Error(`${label} (DICE) HTTP ${res.status}`);
+  const evs = mapDicePage(await res.text(), { venue, label, drop: drop || feed.drop, type: feed.type || defaultType, tz });
+  console.log(`${label} (DICE): ${evs.length} events`);
+  return evs;
+}
+
+const KINDS = { tribe: fetchTribe, ics: fetchIcs, tusboletos: fetchTusboletos, jsonld: fetchJsonLd, ticketera: fetchTicketera, icsfile: fetchIcsFile, linked: fetchLinked, squarespace: fetchSquarespace, cards: fetchCards, nps: fetchNps, localist: fetchLocalist, ludus: fetchLudus, boldtype: fetchBoldtype, spektrix: fetchSpektrix, mec: fetchMec, rss: fetchRss, aeg: fetchAeg, plot: fetchPlot, dice: fetchDice };
 
 /**
  * One source thunk per city.js venue with a `feed` (its listings pinned to that row) and one per

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
+import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents, mapDicePage, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
 
 const room = 'Field Arts &#038; Events Hall &#8211; Donna M. Morris Theater';
 const row = (title, start, extra = {}) => ({ title, start_date: start, status: 'publish', all_day: false, venue: { venue: room }, categories: [], ...extra });
@@ -483,4 +483,28 @@ test('feedSources: a venue calendar that failed is marked for the safety net, le
     assert.deepEqual([...feedQuietVenues], [['B', ['https://www.b.org/events/rss', 'https://www.p.org/rss']]]); // b.org answered (no failed call): quiet, for keepQuietVenues — and the city-wide feed pinned to B
     assert.deepEqual([...feedQuietSites], [['https://www.w.org/rss', 'Wide']]); // a city-wide feed with no venue: its site, for keepQuietVenues
   } finally { globalThis.fetch = realFetch; globalThis[K] = realCheck; console.error = err; feedFailedVenues.clear(); feedQuietVenues.clear(); feedQuietSites.clear(); }
+});
+
+test('mapDicePage: the upcoming section at local clocks, sold out, same-night ends, drop; no data throws', () => {
+  const ev = (id, name, start, end, status, tz = 'America/Los_Angeles') => ({ id, name, status, dates: { timezone: tz, event_start_date: start, event_end_date: end }, venues: [{ name: 'The Sunset Tavern' }] });
+  const page = (sections) => `<html><script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { profile: { venue: { name: 'The Sunset Tavern' }, sections } } } })}</script></html>`;
+  const html = page([
+    { key: 'upcoming', events: [
+      ev('6a6a5bbe760a37000111c4b3', 'Tagua Tagua, Orlas', '2026-11-04T20:00:00-08:00', '2026-11-04T23:00:00-08:00', 'on-sale'),
+      ev('6a6a5bbe760a37000111c4b4', 'Late Set &amp; Friends', '2026-11-05T23:30:00-08:00', '2026-11-06T02:00:00-08:00', 'sold-out'),
+      ev('6a6a5bbe760a37000111c4b5', 'Moved Show', '2026-11-07T19:00:00-08:00', null, 'postponed'),
+      ev('6a6a5bbe760a37000111c4b6', 'Gift Card', '2026-11-08T19:00:00-08:00', null, 'on-sale'),
+      ev('6a6a5bbe760a37000111c4b7', 'Chicago Night', '2026-11-09T21:00:00-06:00', null, 'on-sale', 'America/Chicago'),
+    ] },
+    { key: 'past', events: [ev('6a6a5bbe760a37000111c4b8', 'Old Show', '2026-10-01T20:00:00-07:00', null, 'on-sale')] },
+  ]);
+  const rows = mapDicePage(html, { venue: 'Sunset Tavern', drop: /gift card/i, type: 'concert' });
+  assert.deepEqual(rows, [
+    { venue: 'Sunset Tavern', title: 'Tagua Tagua, Orlas', date: '2026-11-04', time: '20:00', url: 'https://dice.fm/event/6a6a5bbe760a37000111c4b3', end: '23:00', type: 'concert' },
+    { venue: 'Sunset Tavern', title: 'Late Set & Friends', date: '2026-11-05', time: '23:30', url: 'https://dice.fm/event/6a6a5bbe760a37000111c4b4', soldOut: true, type: 'concert' },
+    { venue: 'Sunset Tavern', title: 'Moved Show', date: '2026-11-07', time: '19:00', url: 'https://dice.fm/event/6a6a5bbe760a37000111c4b5', status: 'postponed', type: 'concert' },
+    { venue: 'Sunset Tavern', title: 'Chicago Night', date: '2026-11-09', time: '21:00', url: 'https://dice.fm/event/6a6a5bbe760a37000111c4b7', type: 'concert' },
+  ]);
+  assert.throws(() => mapDicePage('<html>Just a moment...</html>', { label: 'Sunset Tavern' }), /no event data/);
+  assert.deepEqual(mapDicePage(page([{ key: 'upcoming', events: [] }]), { venue: 'X' }), []);
 });
