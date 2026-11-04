@@ -166,17 +166,22 @@ const hexDecode = (t) => t.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCod
 // Run the sources `limit` at a time; answers come back in the sources' order. Each runs in its own call scope
 // (failures.mjs), so a "Source failed" line is pinned to that source's own last call.
 export async function readAll(fns, limit = 8) {
-  const out = new Array(fns.length).fill(null);
+  const out = new Array(fns.length).fill(null), times = [];
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(limit, fns.length) }, async () => {
     while (next < fns.length) {
-      const i = next++;
-      out[i] = await callScope(async () => {
+      const i = next++, t = Date.now();
+      out[i] = await callScope(async (sc) => {
         try { return await fns[i](); }
         catch (err) { console.error('Source failed:', err.message); return null; }
+        finally { // how long each source took, named by its function or the last address it asked
+          let host = ''; try { host = new URL(sc.last).host; } catch {}
+          times.push({ s: (Date.now() - t) / 1000, name: fns[i].name || host || `source ${i + 1}` });
+        }
       });
     }
   }));
+  out.times = times.sort((a, b) => b.s - a.s);
   return out;
 }
 
@@ -218,7 +223,7 @@ export async function build(cfg = {}) {
   // goes through tm-fetch.mjs's single queue. A source that throws counts as failed (null) and adds nothing.
   const t0 = Date.now();
   const got = await readAll([...sources, ...secondary], Number(process.env.SOURCE_CONCURRENCY) || 8);
-  console.log(`Sources: ${sources.length + secondary.length} read in ${Math.round((Date.now() - t0) / 1000)} s`);
+  console.log(`Sources: ${sources.length + secondary.length} read in ${Math.round((Date.now() - t0) / 1000)} s; slowest ${got.times.slice(0, 5).map((x) => `${x.name} ${Math.round(x.s)} s`).join(', ')}; ${Math.round(got.times.reduce((a, x) => a + x.s, 0))} s summed`);
   let all = [];
   for (const raw of got.slice(0, sources.length)) if (raw) all = all.concat(noChurch(raw));
   if (cfg.afterPrimary) all = (await cfg.afterPrimary(all)) || all;

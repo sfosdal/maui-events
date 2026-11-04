@@ -26,7 +26,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 // kept per source: build.mjs runs each source inside callScope, and a call made inside one notes its URL
 // there; outside any scope it is the build's own last call, as before.
 const scope = new AsyncLocalStorage();
-export const callScope = (fn) => scope.run({ last: '' }, fn);
+export const callScope = (fn) => { const store = { last: '' }; return scope.run(store, () => fn(store)); };
 
 export const QUIET = Symbol.for('here.events/quiet');
 const RETRY = new Set([408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
