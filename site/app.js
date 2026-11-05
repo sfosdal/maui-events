@@ -4262,9 +4262,19 @@
     if (state.soldOnly) u += '&so=1';
     return u;
   }
+  // under "Include my filter choices": the filter rides in the feed's address, so a calendar keeps the set it was
+  // added with — say so where the choice is made (Steve, 2026-11-05: "is it clear here"). Made here rather than in
+  // index.html so every city's pop-up gets it through the shared app.js.
+  var subFilterNote = document.createElement('p');
+  subFilterNote.id = 'subFilterNote';
+  subFilterNote.className = 'pop-note pop-filter-note';
+  subFilterNote.hidden = true;
+  subFilterNote.textContent = 'Your calendar keeps the filters set now. To change them later, add it again.';
+  $('subFilterRow').after(subFilterNote);
   function updateSubscribe() {
     if (document.documentElement.classList.contains('teams-open')) { // Teams mode: the club's season (home and away), or every club's
       $('subFilterRow').hidden = true;
+      subFilterNote.hidden = true;
       setSubscribeFile(teamView.slugs.length === 1 ? 'team-' + teamView.slugs[0] + '.ics' : 'teams.ics');
       return;
     }
@@ -4290,6 +4300,7 @@
     var everything = !extra && /^0+$/.test(LQAFilter.encodeFilterCode(currentModes())); // nothing hidden, nothing on Show: the full feed is the filtered feed
     var filtered = filteredFile || (CAL_SERVER && !everything ? liveFeedUrl() : null);
     $('subFilterRow').hidden = !filtered;
+    subFilterNote.hidden = !filtered || !$('subUseFilter').checked;
     setSubscribeFile((filtered && $('subUseFilter').checked) ? filtered : 'events.ics');
   }
   function setSubscribeFile(file) {

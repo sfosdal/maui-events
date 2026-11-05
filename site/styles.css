@@ -862,6 +862,7 @@ button.cal-day:hover { background: color-mix(in srgb, var(--ink) 10%, var(--mist
 .pop-filter { display: flex; justify-content: center; gap: .5em; align-items: center; cursor: pointer; font-weight: 600; font-size: .88rem; margin: 0 0 .8rem; }
 .pop-filter input { accent-color: var(--ink); }
 .pop-filter[hidden] { display: none; } /* an author display beats the hidden attribute: say it outright (Teams mode has no filter to include) */
+.pop-filter-note { margin: -.45rem 0 .9rem; font-size: .68rem; } /* the filter row's footnote: the calendar keeps the filters it was added with (2026-11-05) */
 
 /* ---- share / embed: a <details> in the footer that opens UPWARD, its body
    floating over the list ---- */
