@@ -971,6 +971,7 @@ footer .foot-links { order: 3; display: flex; align-items: center; gap: 1.2rem; 
 footer .foot-link { order: 1; } /* Advertise, Embed, Sources */
 footer #embed { order: 2; }
 footer #sources { order: 3; } /* a page link since 2026-10-29, still last on the row */
+footer #contact { order: 4; } /* the mailto, after Sources (2026-11-05) */
 /* the Advertise link: dressed as the Sources / Embed labels, after them */
 footer .foot-link { position: relative; top: -.5px; display: inline-flex; align-items: center; gap: .4rem; /* measured half a pixel under its neighbours' labels (Steve, 2026-09-15) */ font-family: var(--mono); font-size: .9rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); text-decoration: none; padding: .2rem 0; white-space: nowrap; }
 footer .foot-link:hover { color: var(--ink-soft); }
