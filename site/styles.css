@@ -398,6 +398,10 @@ html.is-scrolled { --titleh: 2.2rem; --barh: calc(var(--barh-base) + var(--title
 .fp-preset { font-size: .8rem; padding: .4em .85em; min-height: 2rem; }
 .fp-preset:hover { border-color: var(--ink-soft); }
 .fp-preset.is-on { background: var(--ink); color: var(--sky); border-color: var(--ink); }
+/* the panel's foot: Apply, pinned to the bottom edge while the panel scrolls (2026-11-05) */
+.fp-foot { position: sticky; bottom: -1rem; z-index: 1; display: flex; justify-content: flex-end; margin: 1.1rem -1.1rem -1rem; padding: .7rem 1.1rem; background: var(--mist); border-top: 1px solid var(--line); }
+.fp-foot .fp-apply { font-size: .9rem; font-weight: 600; padding: .45em 1.6em; min-height: 2.25rem; background: var(--ink); color: var(--sky); border-color: var(--ink); }
+.fp-foot .fp-apply:hover { background: color-mix(in srgb, var(--ink) 85%, var(--sky)); }
 .fp-group h3 {
   white-space: nowrap; /* never wraps (Steve, 2026-09-22) */
   font-family: var(--mono); font-size: .68rem; text-transform: uppercase;

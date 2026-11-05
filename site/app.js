@@ -756,6 +756,14 @@
     if (open) { fitPops(true); presetEdge(); }
   }
   function togglePanel() { setPanelOpen($('filterPanel').hidden); }
+  // Apply (Steve, 2026-11-05: "an ok or done button as [a cue] to the user to make it obvious it's being applied …
+  // I kind of like apply"): every choice already applies as it is made; the button is the visible end of the
+  // panel — it closes it, and the list behind shows the result. Made here so every city's panel gets it.
+  var fpFoot = document.createElement('div');
+  fpFoot.className = 'fp-foot';
+  fpFoot.innerHTML = '<button type="button" class="chip fp-apply" id="filterApply">Apply</button>';
+  $('filterPanel').appendChild(fpFoot);
+  $('filterApply').addEventListener('click', function () { setPanelOpen(false); $('filterToggle').focus({ preventScroll: true }); });
   $('filterToggle').addEventListener('click', togglePanel);
   // a click anywhere outside the panel or its chip closes it
   document.addEventListener('click', function (e) {
