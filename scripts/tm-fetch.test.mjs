@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeTmFetch, tmFailed, keepFailedVenues } from './tm-fetch.mjs';
+import { makeTmFetch, tmFailed, keepFailedVenues, pickVenueRows, reportRenamed } from './tm-fetch.mjs';
 
 const reply = (status, headers = {}) => ({ status, ok: status < 400, headers: { get: (k) => headers[k.toLowerCase()] ?? null } });
 
@@ -73,4 +73,28 @@ test('keepFailedVenues: a failed venue keeps its upcoming rows, not its past one
   assert.deepEqual(keepFailedVenues(archived, fresh, '2026-10-28', new Set()), []);
   keepFailedVenues(archived, fresh, '2026-10-28', failed, (m) => logs.push(m), 'Own calendar');
   assert.match(logs.at(-1), /^Own calendar Moore Theatre: failed — kept 1 upcoming rows/);
+});
+
+const tmRow = (name, venueId, venueName) => ({ name, _embedded: { venues: [{ id: venueId, name: venueName }] } });
+test('pickVenueRows keeps a renamed venue by its id, resale records by name, and drops other venues', () => {
+  const events = [
+    tmRow('Mammoth', 'KovZpaG_ee', 'Skookum Creek Events Center'), // our id, new name (Forks, 2026-11-03)
+    tmRow('Tiffany Haddish', 'KovZpaG_ee', 'Little Creek Casino Resort'), // our id, old name
+    tmRow('Resale show', 'Z7r9jZa7pf', 'Little Creek Casino'), // a resale record: other id, our name
+    tmRow('Elsewhere', 'Z7r9jZzzzz', 'Some Other Hall'), // another venue entirely
+    tmRow('Parking', 'KovZpaG_ee', 'Skookum Creek Events Center'),
+  ];
+  const { rows, renamed } = pickVenueRows(events, { venueIds: ['KovZpaG_ee'], venueMatch: 'little creek', exclude: /parking/i });
+  assert.deepEqual(rows.map((e) => e.name), ['Mammoth', 'Tiffany Haddish', 'Resale show']);
+  assert.deepEqual(renamed, ['Skookum Creek Events Center']);
+  assert.deepEqual(pickVenueRows(events.slice(1, 3), { venueIds: ['KovZpaG_ee'], venueMatch: 'little creek' }).renamed, []); // nothing renamed, nothing reported
+});
+test('reportRenamed writes one line per new name and tells the call log', () => {
+  const lines = [], recorded = [];
+  const key = Symbol.for('here.events/recordFailure'), was = globalThis[key];
+  globalThis[key] = (what, detail) => recorded.push([what, detail]);
+  try { reportRenamed('Little Creek Casino', 'little creek', ['Skookum Creek Events Center'], (l) => lines.push(l)); } finally { globalThis[key] = was; }
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /Ticketmaster Little Creek Casino: venue renamed .*"Skookum Creek Events Center"/);
+  assert.equal(recorded[0][0], 'Ticketmaster Little Creek Casino');
 });

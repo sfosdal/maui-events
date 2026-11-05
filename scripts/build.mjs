@@ -49,7 +49,7 @@ import { calmTitle, isNotice } from './titles.mjs';
 import { applySchedules } from './schedules.mjs';
 import { slugify, BADGE_FEEDS, TEAMS, CITY } from './badges.mjs';
 import { feedSources, emptyListGate, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
-import { tmFetch, tmFailed, keepFailedVenues } from './tm-fetch.mjs';
+import { tmFetch, tmFailed, keepFailedVenues, pickVenueRows, reportRenamed } from './tm-fetch.mjs';
 import { callScope } from './failures.mjs';
 import { stampFestivals } from './festivals.mjs';
 import { ticketWebId } from './ticketweb.mjs';
@@ -124,9 +124,8 @@ export async function tmPages(params, label) {
 export async function ticketmasterVenue({ venueIds, venueMatch, label, fallbackUrl, exclude }) {
   const pages = [];
   for (const venueId of venueIds) pages.push(...await tmPages({ venueId }, label)); // a building that is several Ticketmaster venues (city.js tm.ids) is read id by id
-  const rows = pages
-    .filter((e) => (e._embedded?.venues?.[0]?.name || '').toLowerCase().includes(venueMatch))
-    .filter((e) => !exclude || !exclude.test(e.name || ''));
+  const { rows, renamed } = pickVenueRows(pages, { venueIds, venueMatch, exclude }); // a venue Ticketmaster renamed keeps its shows (tm-fetch.mjs)
+  reportRenamed(label, venueMatch, renamed);
   return keepPrimary(rows).map((e) => tmEvent(e, label, fallbackUrl));
 }
 const tmVenue = ([label, v]) => () => ticketmasterVenue({ venueIds: v.tm.ids || [v.tm.id], venueMatch: v.tm.match, label, fallbackUrl: v.tm.fallbackUrl, exclude: v.tm.exclude });

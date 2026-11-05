@@ -55,6 +55,29 @@ export function tmFailed(label, res) {
   return new Error(`Ticketmaster ${label} failed after retries (${res.status ? 'HTTP ' + res.status : res.statusText || 'no answer'})`);
 }
 
+// A venue's rows from what Ticketmaster returned for its ids (city.js tm.id / tm.ids). A row is the venue's when
+// Ticketmaster's venue name holds tm.match (resale listings carry venue records of their own, different ids,
+// the same name), or when its venue id is one of ours: Ticketmaster renamed the venue (Little Creek → "Skookum
+// Creek Events Center", 2026-11-03). Those rows are kept, and the new name comes back in `renamed` so the build
+// reports it instead of losing the shows (Steve, 2026-11-05).
+export function pickVenueRows(events, { venueIds, venueMatch = '', exclude } = {}) {
+  const renamed = new Set();
+  const rows = events.filter((e) => {
+    const v = e._embedded?.venues?.[0] || {};
+    if ((v.name || '').toLowerCase().includes(venueMatch)) return true;
+    if (v.id && venueIds.includes(v.id)) { renamed.add(v.name || '(no name)'); return true; }
+    return false;
+  }).filter((e) => !exclude || !exclude.test(e.name || ''));
+  return { rows, renamed: [...renamed] };
+}
+export function reportRenamed(label, venueMatch, renamed, log = console.warn) {
+  for (const name of renamed) {
+    const what = `Ticketmaster ${label}`, detail = `venue renamed — Ticketmaster now calls it "${name}" (city.js tm.match '${venueMatch}'); its shows are kept by venue id`;
+    log(`${what}: ${detail}`);
+    globalThis[Symbol.for('here.events/recordFailure')]?.(what, detail); // the failure issue (failures.mjs), when a call log is installed
+  }
+}
+
 // A failed venue's upcoming rows from the previous feed, minus any that
 // clash with what this build already has there (merge.mjs dropClashes: the
 // same clock, or the same show within 90 minutes — a venue's own calendar
