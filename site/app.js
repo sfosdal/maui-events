@@ -223,7 +223,7 @@
         Object.keys(state.venueMode).forEach(function (v) {
           if (state.venues.indexOf(v) === -1) delete state.venueMode[v];
         });
-        renderFilters(); renderCal(); renderAgenda(); renderBoard(); updateSubscribe(); if (window.LQAMap) LQAMap.render(); // a cold ?view=map load drew the map before the feed: again, with the counts (Steve, 2026-10-26: '0 upcoming at 0 of 22 places')
+        renderFilters(); renderCal(); renderAgenda(); renderBoard(); updateSubscribe(); renderEmbedSnippet(); if (window.LQAMap) LQAMap.render(); // the feed is in: the subscribe links and the embed snippet carry the real view; a cold ?view=map load drew the map before the feed: again, with the counts (Steve, 2026-10-26: '0 upcoming at 0 of 22 places')
         if (!$('teamsView').hidden && teamView.slug !== undefined) renderTeams(teamView.slug); // a ?team= open drew the season before the feed arrived: again, with ticket links and counts
       })
       .catch(function (err) {
@@ -623,7 +623,7 @@
     return true;
   }
   // a filter change also rewinds the agenda to its first page
-  function applyFilters() { syncFilters(); renderViewNote(); renderCal(); renderAgenda(); renderBoard(); updateSubscribe(); saveFilters(); if (window.LQAMap) LQAMap.render(); } // the Map view's pins follow the filters (local-map.js, in a city that has one)
+  function applyFilters() { syncFilters(); renderViewNote(); renderCal(); renderAgenda(); renderBoard(); updateSubscribe(); renderEmbedSnippet(); saveFilters(); if (window.LQAMap) LQAMap.render(); } // the Map view's pins follow the filters (local-map.js, in a city that has one)
   // ---- the view note (2026-09-20, for readers who never open the panel) ----
   // One plain line above the list while the view is not the usual one: the
   // preset's name when one matches, else what is hidden or added compared
@@ -3596,6 +3596,27 @@
       ok ? resolve() : reject(new Error('copy failed'));
     });
   }
+  // ---- the Embed panel's snippet follows the filter (2026-10-22) ----
+  // The two lines carry the view set right now — data-filter (the share
+  // code), data-search and data-soldout — which embed.js applies with this
+  // site's own rule, so a widget shows what its maker saw. A view that shows
+  // everything writes the plain snippet. The host and the container id come
+  // from the markup's own snippet, which names this site.
+  var embedSnippet = $('embedSnippet'); // absent from a page whose Embed panel predates it: then only the live feed link follows
+  var embedText = embedSnippet ? embedSnippet.textContent : '';
+  var embedSrc = (/src="([^"]*embed\.js)"/.exec(embedText) || [])[1] || CITY.site + 'embed.js';
+  var embedId = (/id="([^"]+)"/.exec(embedText) || [])[1] || 'lqa-events';
+  function renderEmbedSnippet() {
+    var live = $('liveFeedLink'); // the Data feeds list: the live feed of this view
+    if (live) live.href = CAL_SERVER ? liveFeedUrl() : 'events.ics';
+    if (!embedSnippet) return;
+    var code = LQAFilter.encodeFilterCode(currentModes());
+    var attrs = ' data-max="8"';
+    if (!/^0+$/.test(code)) attrs += ' data-filter="' + code + '"';
+    if (state.q) attrs += ' data-search="' + LQAFilter.encodeSearch(state.q) + '"';
+    if (state.soldOnly) attrs += ' data-soldout';
+    embedSnippet.textContent = '<div id="' + embedId + '"></div>\n<script src="' + embedSrc + '"' + attrs + ' defer></script>';
+  }
   $('copyFilterLink').addEventListener('click', function () {
     var code = LQAFilter.encodeFilterCode(currentModes());
     var url = location.origin + location.pathname + '?f=' + code;
@@ -4225,35 +4246,51 @@
   });
 
   // ---- subscribe popover ----
-  // The feed follows the active filter where a pre-built file exists: the
-  // default no-movies view, one hidden team, or "only" one venue. Anything
-  // else falls back to the full feed.
+  // The feed follows the active filter. A pre-built file where one matches
+  // (the default no-movies view, one hidden team, "only" one venue — the
+  // shapes the build writes), else the live feed at CAL_SERVER (the repo's
+  // lambda/index.mjs, 2026-10-22): it runs this site's own filter rule on
+  // this site's events.json for any filter, search and the sold-out switch
+  // included, so the subscription shows what the page shows and refreshes
+  // with it. With no live server, anything else falls back to the full feed
+  // as before. A view that shows everything is the full feed either way.
+  var CAL_SERVER = 'https://cal.here.events/'; // '' = the pre-built files only
   var icsHref = '';
+  function liveFeedUrl() { // ?site=<this site's host>&f=<share code>[&s=<search>][&so=1] — the same codes Copy Filter Link writes
+    var u = CAL_SERVER + '?site=' + encodeURIComponent(new URL(CITY.site).host) + '&f=' + LQAFilter.encodeFilterCode(currentModes());
+    if (state.q) u += '&s=' + LQAFilter.encodeSearch(state.q);
+    if (state.soldOnly) u += '&so=1';
+    return u;
+  }
   function updateSubscribe() {
     if (document.documentElement.classList.contains('teams-open')) { // Teams mode: the club's season (home and away), or every club's
       $('subFilterRow').hidden = true;
       setSubscribeFile(teamView.slugs.length === 1 ? 'team-' + teamView.slugs[0] + '.ics' : 'teams.ics');
       return;
     }
+    var extra = !!state.q || state.soldOnly; // what no pre-built file carries
     var filteredFile = null;
-    if (anyIncluded() || modeKeys(state.capMode, 'ex').length) { $('subFilterRow').hidden = true; setSubscribeFile('events.ics'); return; } // a checked box or an X'd band: no ready-made feed matches
-    var vEx = modeKeys(state.venueMode, 'ex');
-    var bEx = modeKeys(state.badgeMode, 'ex');
-    var tEx = modeKeys(state.teamMode, 'ex');
-    var vOn = state.venues.filter(function (v) { return state.venueMode[v] !== 'ex'; });
-    var movieOnly = bEx.length === 1 && bEx[0] === 'movie';
-    if (!vEx.length && !tEx.length && movieOnly) {
-      filteredFile = 'events-no-movies.ics'; // the default view
-    } else if (!vEx.length && !bEx.length && tEx.length === 1) {
-      filteredFile = 'events-no-' + tEx[0] + '.ics';
-    } else if (vOn.length === 1 && !tEx.length &&
-        (!bEx.length || (movieOnly && vOn[0] !== CITY.movieVenue))) {
-      // a lone remaining venue is "only that venue"; the baseline movie
-      // exclusion changes nothing unless that venue is the cinema itself
-      filteredFile = 'events-venue-' + slugify(vOn[0]) + '.ics';
+    if (!extra && !anyIncluded() && !modeKeys(state.capMode, 'ex').length) { // a checked box or an X'd band: no ready-made feed matches
+      var vEx = modeKeys(state.venueMode, 'ex');
+      var bEx = modeKeys(state.badgeMode, 'ex');
+      var tEx = modeKeys(state.teamMode, 'ex');
+      var vOn = state.venues.filter(function (v) { return state.venueMode[v] !== 'ex'; });
+      var movieOnly = bEx.length === 1 && bEx[0] === 'movie';
+      if (!vEx.length && !tEx.length && movieOnly) {
+        filteredFile = 'events-no-movies.ics'; // the default view
+      } else if (!vEx.length && !bEx.length && tEx.length === 1) {
+        filteredFile = 'events-no-' + tEx[0] + '.ics';
+      } else if (vOn.length === 1 && !tEx.length &&
+          (!bEx.length || (movieOnly && vOn[0] !== CITY.movieVenue))) {
+        // a lone remaining venue is "only that venue"; the baseline movie
+        // exclusion changes nothing unless that venue is the cinema itself
+        filteredFile = 'events-venue-' + slugify(vOn[0]) + '.ics';
+      }
     }
-    $('subFilterRow').hidden = !filteredFile;
-    setSubscribeFile((filteredFile && $('subUseFilter').checked) ? filteredFile : 'events.ics');
+    var everything = !extra && /^0+$/.test(LQAFilter.encodeFilterCode(currentModes())); // nothing hidden, nothing on Show: the full feed is the filtered feed
+    var filtered = filteredFile || (CAL_SERVER && !everything ? liveFeedUrl() : null);
+    $('subFilterRow').hidden = !filtered;
+    setSubscribeFile((filtered && $('subUseFilter').checked) ? filtered : 'events.ics');
   }
   function setSubscribeFile(file) {
     icsHref = new URL(file, location.href).href;
@@ -4281,6 +4318,7 @@
   });
   $('subUseFilter').addEventListener('change', updateSubscribe);
   updateSubscribe();
+  renderEmbedSnippet(); // the plain snippet until the feed arrives (the init above renders it again)
   // the pop floats over the docked mini calendar and is shorter than it,
   // so while it's open the calendar fades out (styles.css: html.pop-open)
   // rather than showing a strip of days under the pop's bottom edge
