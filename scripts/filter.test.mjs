@@ -4,7 +4,7 @@ import '../site/city.js'; // the city, then the rules — both attach to globalT
 import '../site/filter.js';
 
 const F = globalThis.LQAFilter;
-const LQA = globalThis.LQACity.key === 'lqa' ? false : 'Lower Queen Anne data — skipped for another city'; // the city-dependent cases below
+const TP = globalThis.LQACity.key === 'twinpeaks' ? false : 'Twin Peaks data (here-core) — a real city keeps its own in scripts/city.test.mjs'; // the city-dependent cases below run on here-core's made-up town
 const party = { venue: 'Capitol Hill Block Party', type: 'concert', title: 'MUNA, Magdalena Bay', date: '2026-08-07' };
 const kexp = { venue: 'KEXP', type: 'concert', title: 'Live on KEXP', date: '2026-10-10' };
 const game = { venue: 'T-Mobile Park', type: 'sports', title: 'Mariners vs Astros', date: '2026-04-10' };
@@ -22,9 +22,10 @@ test('a venue on Hide hides its events whatever is Shown among the types', () =>
   assert.equal(F.matchesFilter(party, { venueMode: { KEXP: 'ex' }, badgeMode: { concert: 'in' } }), true);
 });
 
-test('a team row names the game exactly, so it beats its venue either way', { skip: LQA }, () => {
-  assert.equal(F.matchesFilter(game, { teamMode: { mariners: 'in' }, venueMode: { 'T-Mobile Park': 'ex' } }), true);
-  assert.equal(F.matchesFilter(game, { teamMode: { mariners: 'ex' }, venueMode: { 'T-Mobile Park': 'in' } }), false);
+const tpGame = { venue: 'Packard Field', type: 'sports', title: 'Twin Peaks Timbermen vs. Spokane Indians', date: '2026-04-10' };
+test('a team row names the game exactly, so it beats its venue either way', { skip: TP }, () => {
+  assert.equal(F.matchesFilter(tpGame, { teamMode: { timbermen: 'in' }, venueMode: { 'Packard Field': 'ex' } }), true);
+  assert.equal(F.matchesFilter(tpGame, { teamMode: { timbermen: 'ex' }, venueMode: { 'Packard Field': 'in' } }), false);
 });
 
 test('the general rows decide only the events no specific row spoke for', () => {
@@ -43,12 +44,13 @@ test('nothing on Show anywhere: everything but the Hides; the Only Sold switch a
   assert.equal(F.matchesFilter(party, { soldOnly: true, venueMode: { 'Capitol Hill Block Party': 'in' } }), false);
 });
 
-test('share codes: nine digits since the music rooms around town (2026-10-05); the new venues round-trip and an old eight-digit code still parses', { skip: LQA }, () => {
-  const m = { venueMode: { 'The Crocodile': 'ex', 'Paramount Theatre': 'in', 'Showbox SoDo': 'in' }, badgeMode: {}, teamMode: {}, capMode: {} };
+test('share codes: the city\'s length, a round trip, and bit 0 is the first registry entry in every code', { skip: TP }, () => {
+  const m = { venueMode: { 'Miss Twin Peaks': 'ex', 'Roadhouse': 'in', 'Expo Barn': 'in' }, badgeMode: {}, teamMode: {}, capMode: {} };
   const code = F.encodeFilterCode(m);
-  assert.equal(code.split('.')[0].length, 9);
+  assert.equal(code.split('.')[0].length, 6);
   assert.deepEqual(F.parseFilterCode(code).venueMode, m.venueMode);
-  assert.equal(F.parseFilterCode('00000001').venueMode['Climate Pledge Arena'], 'ex'); // bit 0, as every code since the first
+  assert.equal(F.parseFilterCode('000001').venueMode['Timber Arena'], 'ex');
+  assert.equal(F.parseFilterCode('00001').venueMode['Timber Arena'], 'ex'); // a code from before the registry grew a digit still parses
 });
 
 // A 94-entry registry like Seattle's (2026-10-31): filter.js run again in

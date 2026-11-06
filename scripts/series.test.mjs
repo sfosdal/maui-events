@@ -4,7 +4,7 @@ import '../site/city.js'; // the city, then the rules — both attach to globalT
 import '../site/filter.js';
 
 const { findSeries, assignLanes } = globalThis.LQAFilter;
-const LQA = globalThis.LQACity.key === 'lqa' ? false : 'Lower Queen Anne data — skipped for another city'; // the city-dependent cases below
+const TP = globalThis.LQACity.key === 'twinpeaks' ? false : 'Twin Peaks data (here-core) — a real city keeps its own in scripts/city.test.mjs'; // the city-dependent cases below run on here-core's made-up town
 const nights = (title, dates, venue = 'Seattle Center') => dates.map((date) => ({ venue, title, date, time: '19:30:00' }));
 const day = (n) => { const d = new Date(2026, 8, 1 + n); return d.toISOString().slice(0, 10); };
 const range = (n) => Array.from({ length: n }, (_, i) => i);
@@ -42,9 +42,9 @@ test('lanes: first free lane, and past the cap the rest merge into the last lane
   assert.deepEqual(its.map((i) => [i.lane, !!i.merged]), [[0, false], [1, false], [1, true], [0, false], [1, false]]);
 });
 
-test('a festival\'s sets are not a series of their own: the day rows count, the sets carry no n of N', { skip: LQA }, () => {
-  const days = range(3).map((i) => ({ venue: 'Capitol Hill Block Party', title: 'Headliners ' + i, date: day(i), time: '14:35' }));
-  const sets = range(3).flatMap((i) => [{ venue: 'Capitol Hill Block Party', title: 'Act A', date: day(i), time: '15:15', stage: 'Main Stage', set: true }, { venue: 'Capitol Hill Block Party', title: 'Act B', date: day(i), time: '16:15', stage: 'Main Stage', set: true }]);
+test('a festival\'s sets are not a series of their own: the day rows count, the sets carry no n of N', { skip: TP }, () => {
+  const days = range(3).map((i) => ({ venue: 'Packard Mill Days', title: 'Headliners ' + i, date: day(i), time: '14:35' }));
+  const sets = range(3).flatMap((i) => [{ venue: 'Packard Mill Days', title: 'Act A', date: day(i), time: '15:15', stage: 'Main Stage', set: true }, { venue: 'Packard Mill Days', title: 'Act B', date: day(i), time: '16:15', stage: 'Main Stage', set: true }]);
   const s = findSeries([...days, ...sets]);
   assert.equal(s.length, 1);
   assert.deepEqual(days.map((d) => d.series.total), [3, 3, 3]);

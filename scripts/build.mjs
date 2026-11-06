@@ -44,7 +44,8 @@ import { writeFileSync, readFileSync } from 'node:fs';
 import { buildIcs } from './ics.mjs';
 import * as citySources from './sources.mjs'; // each city's own file: isChurch where the city filters church bookings (not lqa, Seattle)
 import { mergeWithArchive, unionArchives, eventKey, dropClashes, keepQuietVenues, capUpcoming } from './merge.mjs';
-import { fixLinks } from './links.mjs';
+import { fixLinks, formerLinks, repointMoved } from './links.mjs';
+import { fileURLToPath } from 'node:url';
 import { calmTitle, isNotice } from './titles.mjs';
 import { applySchedules } from './schedules.mjs';
 import { slugify, BADGE_FEEDS, TEAMS, CITY } from './badges.mjs';
@@ -290,6 +291,10 @@ export async function build(cfg = {}) {
   if (liveArchive === null) console.error('Live feed unreadable — building on the archive branch copy');
   if (branchArchive === null) console.error('Archive branch unreadable — building on the live feed alone');
   const archived = unionArchives(liveArchive || [], branchArchive || []);
+  // rows that still carry a link their venue has since dropped (scripts/links.mjs) — the archive record is rewritten from these
+  const former = formerLinks({ cwd: fileURLToPath(new URL('..', import.meta.url)) });
+  const movedPast = repointMoved(archived, former, CITY);
+  if (movedPast) console.log(`Moved links: ${movedPast} archived rows carried a link their venue no longer has`);
   console.log(`Archive: ${(liveArchive || []).length} events in the live feed, ${(branchArchive || []).length} on the archive branch, ${archived.length} in the union`);
 
   // venues whose read failed keep their upcoming rows: Ticketmaster's (tm-fetch.mjs), then a leading own calendar's (feeds.mjs)
@@ -381,6 +386,8 @@ export async function build(cfg = {}) {
     try { const r = await fetch(linksRecordUrl, { cache: 'no-store', signal: AbortSignal.timeout(15000), [Symbol.for('here.events/quiet')]: true }) /* a missing record (the first build) is no failure */; if (r.ok) linksRecord = (await r.json()).links || null; else if (r.status !== 404) console.log(`Links record: HTTP ${r.status} — every link checked`); }
     catch (err) { console.log(`Links record: ${err.message} — every link checked`); }
   }
+  const moved = movedPast + repointMoved(merged, former, CITY);
+  if (moved) console.log(`Moved links: ${moved} rows given their venue's link now (archive + this build)`);
   const links = await fixLinks(merged, { venues: CITY.venues, today, record: linksRecord || {} });
   writeFileSync(LINKS_OUT, JSON.stringify({ links: Object.fromEntries(Object.entries(links.record).sort()) }, null, 1) + '\n'); // the workflow commits it to the archive branch beside the archive
   writeFileSync(JSON_OUT, JSON.stringify({ generated: new Date().toISOString(), events: merged }, null, 2) + '\n');

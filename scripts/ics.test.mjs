@@ -80,7 +80,7 @@ test('time-less event becomes all-day (DATE value, exclusive DTEND next day)', (
 test('UID is stable across runs and unique per venue|title|date', () => {
   assert.equal(eventUid(timed), eventUid({ ...timed, url: 'https://other.example' }));
   assert.notEqual(eventUid(timed), eventUid({ ...timed, date: '2026-08-29' }));
-  assert.match(eventUid(timed), /^[0-9a-f]{40}@fosdal\.net$/);
+  assert.match(eventUid(timed), new RegExp('^[0-9a-f]{40}@' + globalThis.LQACity.ics.uidDomain.replace(/\./g, '\\.') + '$')); // the city's own domain (fosdal.net on every live site)
 });
 
 test('a second showing on the same day gets its own UID; a lone showing keeps the old one', () => {

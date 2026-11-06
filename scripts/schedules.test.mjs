@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseYoutube, matchYoutube, parseNflPage, titleDate } from './highlights.mjs';
 import { pickMoves, bigMove, shortMove, applyScheduleFlags, pickBroadcasts, normalizeMlb, normalizeNhl, normalizeEspn, normalizePwhl, htRegular, pwhlOdds, hockeytechForm, normalizeGamesheet, gamesheetForm, normalizeDigitalshift, wikiTitle, pickNews, seasonStartYear, espnSeason, pickSplits, pickLeaders, divisionRecord, parseSeawolves, parseSeawolvesNews, parseFeed, mergeNews } from './schedules.mjs';
-const LQA = globalThis.LQACity.key === 'lqa' ? false : 'Lower Queen Anne data — skipped for another city'; // the city-dependent cases below
+const TP = globalThis.LQACity.key === 'twinpeaks' ? false : 'Twin Peaks data (here-core) — a real city keeps its own in scripts/city.test.mjs'; // the city-dependent cases below run on here-core's made-up town
 // The fixtures' expected clocks are written in Seattle wall time; a sister
 // city in another zone (city.js `tz`) reads the same instant on its own clock.
 const TZ = globalThis.LQACity.tz || 'America/Los_Angeles';
@@ -17,15 +17,15 @@ function clock(date, time) {
 }
 
 const feed = () => [
-  { venue: 'Lumen Field', title: 'Seattle Seahawks vs. Dallas Cowboys', date: '2026-12-07', time: '17:15:00' },
-  { venue: 'Lumen Field', title: 'Seattle Seahawks vs. Los Angeles Rams', date: '2026-12-25', time: '17:15:00' },
-  { venue: 'T-Mobile Park', title: 'Seattle Mariners vs. Athletics', date: '2026-12-07', time: '18:40:00' },
-  { venue: 'Climate Pledge Arena', title: 'Tame Impala - The Deadbeat Tour', date: '2026-12-07', time: '19:00:00' },
+  { venue: 'Packard Field', title: 'Twin Peaks Loggers vs. Yakima Fir', date: '2026-12-07', time: '13:00:00' },
+  { venue: 'Packard Field', title: 'Twin Peaks Loggers vs. Ellensburg Pines', date: '2026-12-25', time: '13:00:00' },
+  { venue: 'Timber Arena', title: 'Twin Peaks Steelheads vs. Spokane Chiefs', date: '2026-12-07', time: '19:05:00' },
+  { venue: 'Roadhouse', title: 'Chromatics', date: '2026-12-07', time: '21:00:00' },
 ];
 
-test('a league TBD on the matching home date flags that game only', { skip: LQA }, () => {
+test('a league TBD on the matching home date flags that game only', { skip: TP }, () => {
   const events = feed();
-  const n = applyScheduleFlags(events, { seahawks: [{ date: '2026-12-07', tbd: true }, { date: '2026-12-25', tbd: false }] });
+  const n = applyScheduleFlags(events, { loggers: [{ date: '2026-12-07', tbd: true }, { date: '2026-12-25', tbd: false }] });
   assert.equal(n, 1);
   assert.equal(events[0].dateTbd, true);
   assert.equal(events[1].dateTbd, undefined);
@@ -68,10 +68,10 @@ test('broadcasts: nothing usable means no watch at all, and a missing kind is le
   assert.deepEqual(pickBroadcasts([{ kind: 'tv', name: 'KING 5', home: true, national: false }]), { tv: ['KING 5'] });
 });
 
-test('a game\'s broadcasts land on the matching feed event only', { skip: LQA }, () => {
+test('a game\'s broadcasts land on the matching feed event only', { skip: TP }, () => {
   const events = feed();
-  applyScheduleFlags(events, { mariners: [{ date: '2026-12-07', tbd: false, watch: { tv: ['Mariners.TV'], radio: ['Seattle Sports (710 AM)'] } }] });
-  assert.deepEqual(events[2].watch, { tv: ['Mariners.TV'], radio: ['Seattle Sports (710 AM)'] });
+  applyScheduleFlags(events, { steelheads: [{ date: '2026-12-07', tbd: false, watch: { tv: ['TPTV 4'], radio: ['KTWP 1240 AM'] } }] });
+  assert.deepEqual(events[2].watch, { tv: ['TPTV 4'], radio: ['KTWP 1240 AM'] });
   assert.equal(events[0].watch, undefined, 'same date, other team');
   assert.equal(events[3].watch, undefined, 'same date, not a game');
 });
@@ -239,12 +239,12 @@ test('normalizeDigitalshift: games only, Seattle wall clock from started_at_tz, 
   assert.equal(out[2].res, undefined);
 });
 
-test('wikiTitle: one year for a summer season, en-dash span for one that straddles the new year, null with nothing', { skip: LQA }, () => {
-  assert.equal(wikiTitle('mariners', [{ date: '2026-03-26' }, { date: '2026-09-27' }]), '2026 Seattle Mariners season');
-  assert.equal(wikiTitle('kraken', [{ date: '2026-10-01' }, { date: '2027-04-10' }]), '2026–27 Seattle Kraken season');
-  assert.equal(wikiTitle('torrent', [{ date: '2025-11-21' }, { date: '2026-04-25' }]), '2025–26 Seattle Torrent season');
-  assert.equal(wikiTitle('seahawks', [{ date: '2026-09-09' }, { date: '2027-01-09' }]), '2026 Seattle Seahawks season'); // the NFL names a season by its first year
-  assert.equal(wikiTitle('kraken', []), null);
+test('wikiTitle: one year for a summer season, en-dash span for one that straddles the new year, null with nothing', { skip: TP }, () => {
+  assert.equal(wikiTitle('timbermen', [{ date: '2026-03-26' }, { date: '2026-09-27' }]), '2026 Twin Peaks Timbermen season');
+  assert.equal(wikiTitle('steelheads', [{ date: '2026-10-01' }, { date: '2027-04-10' }]), '2026–27 Twin Peaks Steelheads season');
+  assert.equal(wikiTitle('steelheads', [{ date: '2025-11-21' }, { date: '2026-04-25' }]), '2025–26 Twin Peaks Steelheads season');
+  assert.equal(wikiTitle('loggers', [{ date: '2026-09-09' }, { date: '2027-01-09' }]), '2026 Twin Peaks Loggers season'); // a football season is named by its first year
+  assert.equal(wikiTitle('steelheads', []), null);
 });
 
 test('pickNews: written pieces only, the ones naming the club first, newest first, eight at most', () => {
@@ -271,7 +271,7 @@ test('seasonStartYear: summer leagues take the calendar year; hockey and footbal
 });
 
 
-test('Seawolves: fixtures from Upcoming, results from Previous by date, home = Seawolves first, preseason round 0 kept and flagged', { skip: LQA }, () => {
+test('Seawolves: fixtures from Upcoming, results from Previous by date, home = Seawolves first, preseason round 0 kept and flagged', () => {
   const card = (round, a, b, ground, date, time, extra = '') => `<div class=" relative mb-4 p-4 shadow-sm rounded-md bg-blue-50 "><span>Round <!-- -->${round}</span><img title="${a}" src="/images/teams/${a[0]}.png" alt="${a}" class="w-16"/><p class="mr-2">VS.</p><img title="${b}" src="/images/teams/${b[0]}.png" alt="${b}"/><span class="font-semibold">${ground}</span><span class="font-semibold">${date}</span><span>${time}<!-- --> PT</span>${extra}</div>`;
   const html = '<h1 class="text-3xl font-bold">2026<!-- --> <!-- -->Seawolves<!-- --> Schedule</h1><h2>Upcoming Matches</h2>' +
     card(0, 'Seattle Seawolves', 'Hartford Harpooners', 'Starfire Stadium', 'Sat, Mar 28', '4:00 PM') +
@@ -289,7 +289,6 @@ test('Seawolves: fixtures from Upcoming, results from Previous by date, home = S
   assert.deepEqual({ date: g[2].date, playoff: g[2].playoff, res: g[2].res, opp: g[2].opp.name }, { date: '2026-06-14', playoff: true, res: { us: 34, them: 43, won: false }, opp: 'California Legion' });
   assert.deepEqual(g[0], { date: '2026-04-03', time: '19:30:00', tbd: false, home: true, opp: { name: 'Old Glory DC', short: 'Old Glory', abbrev: 'DC', logo: 'https://www.seawolves.rugby/images/teams/O.png', site: 'https://oldglorydc.com/' }, venue: 'Starfire Stadium', city: 'Tukwila, WA', res: { us: 31, them: 20, won: true } });
   assert.equal(g[1].home, false); assert.equal(g[1].venue, 'Anthem Rugby Carolina'); assert.deepEqual(g[1].res, { us: 24, them: 27, won: false });
-  assert.equal(wikiTitle('seawolves', [{ date: '2026-04-03' }, { date: '2026-06-14' }]), '2026 Seattle Seawolves season');
 });
 
 test('Seawolves news: date, headline and summary per post, newest first, eight at most', () => {

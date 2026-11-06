@@ -15,7 +15,18 @@
  *    Ticketmaster's and AXS's) and timeouts are not proof of anything, so
  *    those links stay as they are; hosts that always wall a script are not
  *    asked at all.
+ *  - formerLinks + repointMoved: a past row keeps the link it was published
+ *    with and is never checked again, so when a venue's link changes in
+ *    city.js (a lapsed or hijacked domain, a calendar that moved) the rows
+ *    that carried the OLD link would point at it forever (Steve, 2026-11-06:
+ *    Cancún's archived Tigres games still linked a domain that had become a
+ *    porn site). formerLinks reads every committed version of site/city.js
+ *    and lists each link a venue has had; repointMoved gives a row whose link
+ *    equals one of those exactly the venue's link now, or none. An event's own
+ *    page never equals a venue's link, so it is never touched.
  */
+import { execFileSync } from 'node:child_process';
+import vm from 'node:vm';
 
 // Box offices whose event pages answer a script with a wall (or a JS shell
 // with "not found" in its template) whatever the page's real state.
@@ -92,4 +103,57 @@ export async function fixLinks(events, { venues = {}, today = '', fetchImpl = gl
   }
   log(`Links: ${seen.size} of ${queue.length} checked${record ? ` (${trusted} answered OK in the last ${maxAgeDays} days, not asked again)` : ''}, ${dead.length} dead${dead.length ? ' (' + dead.slice(0, 8).join(', ') + (dead.length > 8 ? ', …' : '') + ')' : ''}; ${swapped} rows sent to their venue's page, ${dropped} left without a link`);
   return { checked: seen.size, trusted, dead, swapped, dropped, record: next_ };
+}
+
+// ---- venue links that moved (see the head of this file) ----
+// The links city.js gives a venue: its own page, Ticketmaster's fallback, and the
+// schedule / injected-game link of each club that plays there.
+export function venueLinks(city) {
+  const out = new Map();
+  const add = (v, u) => { const c = cleanUrl(u); if (v && c) (out.get(v) || out.set(v, new Set()).get(v)).add(c); };
+  for (const [v, x] of Object.entries((city && (city.venues || city.rooms)) || {})) { add(v, x && x.url); add(v, x && x.tm && x.tm.fallbackUrl); }
+  for (const t of (city && city.teams) || []) { add(t.venue, t.inject && t.inject.url); add(t.venue, t.schedule); }
+  return out;
+}
+
+// Every link each venue has had, from the git history of site/city.js. A shallow
+// checkout (Actions) is deepened first; without git, or on any error, nothing moved.
+export function formerLinks({ cwd = '.', file = 'site/city.js', git = (args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256e6 }), log = console.log } = {}) {
+  const out = new Map();
+  let shas = [];
+  try {
+    if (git(['rev-parse', '--is-shallow-repository']).trim() === 'true') git(['fetch', '--quiet', '--unshallow']);
+    shas = git(['log', '--format=%H', '--', file]).split('\n').filter(Boolean);
+  } catch (err) { log(`Moved links: no git history (${String(err.message || err).split('\n')[0]})`); return out; }
+  let read = 0;
+  for (const sha of shas) {
+    try {
+      const ctx = {}; ctx.globalThis = ctx; ctx.window = ctx; ctx.self = ctx;
+      vm.runInNewContext(git(['show', `${sha}:${file}`]), ctx, { timeout: 2000 });
+      for (const [v, links] of venueLinks(ctx.LQACity)) for (const u of links) (out.get(v) || out.set(v, new Set()).get(v)).add(u);
+      read++;
+    } catch { /* a version that does not load (an early layout) adds nothing */ }
+  }
+  log(`Moved links: ${read} of ${shas.length} versions of ${file} read`);
+  return out;
+}
+
+// A row whose link is one the venue has had but no longer has gets the venue's link
+// now (its own page, else its club's), or none. Rows are changed in place; returns the count.
+// the same page written two ways (host case, a trailing slash) compares equal
+const linkKey = (u) => { const c = cleanUrl(u); try { const x = new URL(c); return x.protocol + '//' + x.host + x.pathname.replace(/\/+$/, '') + x.search; } catch { return c; } }; // URL() lower-cases the host
+
+export function repointMoved(rows, former, city) {
+  if (!former || !former.size) return 0;
+  const keys = (m) => new Map([...m].map(([v, set]) => [v, new Set([...set].map(linkKey))]));
+  const now = keys(venueLinks(city));
+  former = keys(former);
+  const target = (v) => { const x = (city.venues || {})[v] || {}; const club = (city.teams || []).find((t) => t.venue === v); return cleanUrl(x.url) || cleanUrl(club && club.inject && club.inject.url) || cleanUrl(club && club.schedule) || ''; };
+  let n = 0;
+  for (const e of rows) {
+    const u = linkKey(e.url);
+    if (!u || !(former.get(e.venue) || new Set()).has(u) || (now.get(e.venue) || new Set()).has(u)) continue;
+    e.url = target(e.venue); n++;
+  }
+  return n;
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { slugify, endEstimate, isDay, BADGE_FEEDS, TEAMS } from './badges.mjs';
-const LQA = globalThis.LQACity.key === 'lqa' ? false : 'Lower Queen Anne data — skipped for another city'; // the city-dependent cases below
+const TP = globalThis.LQACity.key === 'twinpeaks' ? false : 'Twin Peaks data (here-core) — a real city keeps its own in scripts/city.test.mjs'; // the city-dependent cases below run on here-core's made-up town
 
 test('slugify matches the browser-side rule', () => {
   assert.equal(slugify('The Vera Project'), 'the-vera-project');
@@ -23,17 +23,14 @@ test('isDay means done by 4pm', () => {
   assert.equal(isDay({ time: '' }), false);                 // all-day: unknown
 });
 
-test('team matchers hit real game titles, not concerts', { skip: LQA }, () => {
+test('team matchers hit real game titles, not concerts', { skip: TP }, () => {
   const match = (title) => TEAMS.filter((t) => t.re.test(title)).map((t) => t.slug);
-  assert.deepEqual(match('Seattle Kraken vs. Vancouver Canucks'), ['kraken']);
-  assert.deepEqual(match('Seattle Mariners vs. Houston Astros'), ['mariners']);
-  assert.deepEqual(match('Seattle Storm vs. Las Vegas Aces'), ['storm']);
-  assert.deepEqual(match('Seattle Reign FC vs. Portland Thorns'), ['reign']);
-  assert.deepEqual(match('Seattle Sounders FC vs. LAFC'), ['sounders']);
-  assert.deepEqual(match('Seattle Seahawks vs. San Francisco 49ers'), ['seahawks']);
-  // bare "storm"/"reign" in a show title must not match
-  assert.deepEqual(match('Storm Large: Holiday Ordeal'), []);
-  assert.deepEqual(match('Purple Reign — The Prince Tribute Show'), []);
+  assert.deepEqual(match('Twin Peaks Steelheads vs. Spokane Chiefs'), ['steelheads']);
+  assert.deepEqual(match('Twin Peaks Timbermen vs. Spokane Indians'), ['timbermen']);
+  assert.deepEqual(match('Twin Peaks Loggers vs. Yakima Fir'), ['loggers']);
+  assert.deepEqual(match('Twin Peaks Owls vs. Tacoma Defiance'), ['owls']);
+  // a bare "owls" in a show title must not match
+  assert.deepEqual(match('The Owls Are Not What They Seem'), []);
 });
 
 test('badge predicates', () => {
