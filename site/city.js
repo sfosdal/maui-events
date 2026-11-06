@@ -176,7 +176,7 @@
       type: 'community',
       cssVar: '--v-cannery',
       color: '#a786ea',
-      url: 'https://lahainacannerymall.com/',
+      url: 'https://lahainacannerymall.com/entertainment/',
       icon: 'https://www.google.com/s2/favicons?domain=lahainacannerymall.com&sz=128',
       feed: { kind: 'tribe', url: 'https://lahainacannerymall.com/wp-json/tribe/events/v1/events', maxRepeat: 30 },
       alias: /lahaina cannery/i,
