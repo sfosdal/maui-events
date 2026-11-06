@@ -1,0 +1,4 @@
+# Big Island and Maui keep the island map files from before the neighbourhood-line work (2026-11-03): the shared versions draw a city line an island map has no use for
+site/local-map.js
+scripts/build-local-map.mjs
+site/styles.css drop ^\.lm-boundary 
