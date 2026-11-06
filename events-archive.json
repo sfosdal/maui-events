@@ -311,6 +311,46 @@
    "time": "17:30",
    "url": "https://www.alohawailealuau.com",
    "type": "concert"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "Country Night!",
+   "date": "2026-11-05",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/country-night-16",
+   "type": "concert"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-11-05",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=146280",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Hula Lessons",
+   "date": "2026-11-05",
+   "time": "13:00",
+   "url": "https://lahainacannerymall.com/event/hula-lessons/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Jaguars vs Ravens",
+   "date": "2026-11-05",
+   "time": "15:15",
+   "url": "https://lahainacannerymall.com/event/jaguars-vs-ravens/",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Mulligans Magic Show",
+   "date": "2026-11-05",
+   "time": "18:30",
+   "url": "https://mulligansontheblue.com/event/mulligans-magic-show-98/",
+   "type": "concert"
   }
  ]
 }
