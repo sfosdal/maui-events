@@ -244,7 +244,7 @@
     concert: '--t-concert', sports: '--t-sports', arts: '--t-arts',
     movie: '--t-movie', community: '--t-community', expo: '--t-expo', bar: '--t-bar',
   };
-  function typeColor(k) { return 'var(' + TYPE_VARS[k] + ')'; }
+  function typeColor(k) { var own = TYPE_LIST.filter(function (t) { return t.key === k && t.color; })[0]; return own ? own.color : 'var(' + TYPE_VARS[k] + ')'; } // a city's own type may carry its colour (tango-events, 2026-10-30)
   var TYPE_KEYS = {};
   TYPE_LIST.forEach(function (t) { TYPE_KEYS[t.key] = true; });
   // The baseline every visitor starts from (and "Reset filters" returns to):

@@ -83,37 +83,50 @@ export function icsBuilder(CITY) {
     'Pacific/Honolulu': ['-1000', null, 'HST', null],
     'America/Cancun': ['-0500', null, 'EST', null],
     'America/Puerto_Rico': ['-0400', null, 'AST', null],
+    // Canada's zones, same rules as the US (tango-events, 2026-10-30), and Detroit
+    'America/Toronto': ['-0500', '-0400', 'EST', 'EDT'],
+    'America/Vancouver': ['-0800', '-0700', 'PST', 'PDT'],
+    'America/Edmonton': ['-0700', '-0600', 'MST', 'MDT'],
+    'America/Winnipeg': ['-0600', '-0500', 'CST', 'CDT'],
+    'America/Halifax': ['-0400', '-0300', 'AST', 'ADT'],
+    'America/Detroit': ['-0500', '-0400', 'EST', 'EDT'],
   };
-  const [STD_OFF, DST_OFF, STD_NAME, DST_NAME] = US_ZONES[TZID] || US_ZONES['America/Los_Angeles'];
-  const VTIMEZONE = DST_OFF ? [
-    'BEGIN:VTIMEZONE',
-    `TZID:${TZID}`,
-    'BEGIN:DAYLIGHT',
-    `TZOFFSETFROM:${STD_OFF}`,
-    `TZOFFSETTO:${DST_OFF}`,
-    `TZNAME:${DST_NAME}`,
-    'DTSTART:19700308T020000',
-    'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
-    'END:DAYLIGHT',
-    'BEGIN:STANDARD',
-    `TZOFFSETFROM:${DST_OFF}`,
-    `TZOFFSETTO:${STD_OFF}`,
-    `TZNAME:${STD_NAME}`,
-    'DTSTART:19701101T020000',
-    'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
-    'END:STANDARD',
-    'END:VTIMEZONE',
-  ] : [ // a zone without daylight time: one standard block, no rule
-    'BEGIN:VTIMEZONE',
-    `TZID:${TZID}`,
-    'BEGIN:STANDARD',
-    `TZOFFSETFROM:${STD_OFF}`,
-    `TZOFFSETTO:${STD_OFF}`,
-    `TZNAME:${STD_NAME}`,
-    'DTSTART:19700101T000000',
-    'END:STANDARD',
-    'END:VTIMEZONE',
-  ];
+  // One block per zone. An event may carry its own zone (`e.tz` — tango-events, 2026-10-30: a Toronto milonga at 21:00
+  // stays 21:00 Toronto time on a continent-wide site), so the feed carries a block for every zone its events use; a
+  // city whose events carry none gets exactly the one block it always had.
+  function vtimezone(tz) {
+    const [STD_OFF, DST_OFF, STD_NAME, DST_NAME] = US_ZONES[tz] || US_ZONES['America/Los_Angeles'];
+    return DST_OFF ? [
+      'BEGIN:VTIMEZONE',
+      `TZID:${tz}`,
+      'BEGIN:DAYLIGHT',
+      `TZOFFSETFROM:${STD_OFF}`,
+      `TZOFFSETTO:${DST_OFF}`,
+      `TZNAME:${DST_NAME}`,
+      'DTSTART:19700308T020000',
+      'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
+      'END:DAYLIGHT',
+      'BEGIN:STANDARD',
+      `TZOFFSETFROM:${DST_OFF}`,
+      `TZOFFSETTO:${STD_OFF}`,
+      `TZNAME:${STD_NAME}`,
+      'DTSTART:19701101T020000',
+      'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
+      'END:STANDARD',
+      'END:VTIMEZONE',
+    ] : [ // a zone without daylight time: one standard block, no rule
+      'BEGIN:VTIMEZONE',
+      `TZID:${tz}`,
+      'BEGIN:STANDARD',
+      `TZOFFSETFROM:${STD_OFF}`,
+      `TZOFFSETTO:${STD_OFF}`,
+      `TZNAME:${STD_NAME}`,
+      'DTSTART:19700101T000000',
+      'END:STANDARD',
+      'END:VTIMEZONE',
+    ];
+  }
+  const zoneOf = (e) => (e.tz && US_ZONES[e.tz] ? e.tz : TZID);
 
   // The UID hashes venue|title|date (stable across runs, so a subscribed calendar keeps its entries). When two showings
   // of one show share a day (the de-dupe key carries the clock since 2026-10-14) every one of them hashes the clock in
@@ -128,6 +141,7 @@ export function icsBuilder(CITY) {
   function eventLines(e, dtstamp, twice) {
     const lines = ['BEGIN:VEVENT', `UID:${eventUid(e, twice)}`, `DTSTAMP:${dtstamp}`];
     if (e.time) {
+      const TZID = zoneOf(e); // the event's own zone, else the city's
       const [h, m] = e.time.split(':');
       lines.push(`DTSTART;TZID=${TZID}:${dateDigits(e.date)}T${pad(h)}${pad(m)}00`);
       if (e.end && e.end > e.time) {
@@ -178,7 +192,7 @@ export function icsBuilder(CITY) {
       `X-WR-TIMEZONE:${TZID}`,
       'REFRESH-INTERVAL;VALUE=DURATION:P1D', // the feed is rebuilt once a day at noon (Steve, 2026-10-11)
       'X-PUBLISHED-TTL:P1D',
-      ...VTIMEZONE,
+      ...[...new Set([TZID, ...events.filter((e) => e.time).map(zoneOf)])].flatMap(vtimezone),
       ...events.flatMap((e) => eventLines(e, dtstamp, showings.get(dayKey(e)) > 1)),
       'END:VCALENDAR',
     ];

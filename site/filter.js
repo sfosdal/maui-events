@@ -30,6 +30,7 @@
 
   var TYPE_VENUE_DEFAULT = venueTable('type'); // the type when the title decides nothing
   var TYPE_KEYS_OK = { concert: 1, sports: 1, arts: 1, movie: 1, community: 1, expo: 1, bar: 1 };
+  (CITY.types || []).forEach(function (t) { TYPE_KEYS_OK[t.key] = 1; }); // a city's own type keys (tango-events, 2026-10-30: milonga, practica, …) are trusted too
   // Order: the movie flag and a home team / "vs" are certain. Then the
   // source's own classification (feed `type`: Ticketmaster segment, DICE
   // type tags, Seattle Center facility/type tags — scripts/sources.mjs),
