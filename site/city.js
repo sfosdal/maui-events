@@ -93,7 +93,6 @@
       cssVar: '--v-iao',
       color: '#eac086',
       url: 'https://www.mauionstage.com/',
-      icon: 'marks/venues/mauionstage.com.png',
       tm: { id: 'KovZ917AVGO', match: '', fallbackUrl: 'https://www.mauionstage.com/', exclude: TM_EXCLUDE, secondary: true },
       alias: /iao theater|maui onstage/i,
     },
