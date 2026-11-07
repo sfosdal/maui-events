@@ -105,3 +105,14 @@ test('share codes without BigInt (a pre-2020 browser): the float arithmetic, as 
   const code = F.encodeFilterCode(m);
   assert.deepEqual({ ...F.parseFilterCode(code).venueMode }, m.venueMode);
 });
+
+// Venue marks are files in this repo, never loaded from another site at view time (Steve, 2026-11-06, after the
+// hijacked tigresqr.com: a lapsed domain can serve anything). tools/venue-marks.mjs in here-core vendors them.
+test('every venue mark is a file in this repo, not a link to another site', async () => {
+  const { existsSync } = await import('node:fs');
+  for (const [venue, icon] of Object.entries(F.VENUE_ICON || {})) {
+    if (!icon) continue;
+    assert.doesNotMatch(icon, /^(https?:)?\/\//i, `${venue}: ${icon}`);
+    assert.ok(existsSync(new URL('../site/' + icon, import.meta.url)), `${venue}: ${icon} is missing`);
+  }
+});
