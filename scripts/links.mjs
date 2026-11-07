@@ -157,3 +157,98 @@ export function repointMoved(rows, former, city) {
   }
   return n;
 }
+
+// ---- hijacked links (Steve, 2026-11-06: "block porn like tigresqr.com I don't mind strip clubs showing up, but
+// the core requirement is that they need to be local events") ----
+// A venue's or club's domain that lapses can be bought and turned into porn or gambling spam while still answering
+// 200, so fixLinks never sees it. guardLinks reads each link's page and blocks it only on a strong signal: the page's
+// TITLE reads as porn or gambling spam, or the link now lands on ANOTHER domain whose page does. A venue's own page
+// that mentions a "porn star feature" night or an "XXX" tribute, or a casino's "online casino", is kept; a page that
+// cannot be read (a wall, a timeout) is kept too. The same patterns drive the monthly audit (tools/link-audit), which
+// reads them from here.
+export const HIJACK = {
+  porn: String.raw`\b(porn\w*|hentai|xvideos|xhamster|sex (videos?|cams?|chat)|cam ?girls|adult videos?)\b|порн|порево`,
+  gambling: String.raw`\b(slot ?gacor|gacor|togel|judi (online|bola|slot)|situs (slot|judi|toto)|maxwin|rtp (live|slot)|sbobet|bandar (togel|judi)|slot ?(online|88|777)|casino online|1xbet|mostbet)\b`,
+  parked: String.raw`(this domain (is|may be) for sale|buy this domain|domain is for sale|hugedomains|afternic|sedoparking|parkingcrew|bodis\.com|is parked free)`, // the audit reports these; the build does not block them
+};
+const BLOCK = new RegExp(`${HIJACK.porn}|${HIJACK.gambling}`, 'i');
+const SLD = new Set(['co', 'com', 'org', 'net', 'gov', 'gob', 'edu', 'ac']);
+// the registrable domain: www.tigresqr.com → tigresqr.com, teatro.gob.mx → teatro.gob.mx (two-letter country codes)
+export function siteOf(url) {
+  let host = '';
+  try { host = new URL(url).hostname.toLowerCase(); } catch { return ''; }
+  const p = host.split('.');
+  return p.slice(-(p.length >= 3 && SLD.has(p[p.length - 2]) && p[p.length - 1].length === 2 ? 3 : 2)).join('.');
+}
+const textOf = (html) => html.replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+// one page: { blocked: 'why' } | { blocked: '' } (clean) | null (not read)
+export function hijackVerdict(url, { status, final, html }) {
+  if (!status || status >= 400) return null;
+  const title = ((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '').replace(/\s+/g, ' ').trim();
+  const refresh = html.slice(0, 20000).match(/<meta[^>]+http-equiv=["']?refresh["']?[^>]+content=["']?\s*\d+\s*;\s*url=([^"'>\s]+)/i);
+  let lands = final || url;
+  if (refresh) { try { lands = new URL(refresh[1], lands).href; } catch {} }
+  if (BLOCK.test(title)) return { blocked: `its title reads “${title.slice(0, 80)}”` };
+  if (siteOf(lands) !== siteOf(url) && BLOCK.test(title + ' ' + textOf(html.slice(0, 300000)))) return { blocked: `it now lands on ${siteOf(lands)}, a ${BLOCK.exec(title + ' ' + textOf(html.slice(0, 300000)))[0]} page` };
+  return { blocked: '' };
+}
+
+// Checks every venue and club link city.js gives, and each other site the rows link to (its home page), skipping the
+// walled box offices. A clean answer is trusted for `trustDays` (record: { url-or-host: 'YYYY-MM-DD' }, kept on the
+// archive branch in links-checked.json). For each blocked domain: the city's venue and club links on it are blanked
+// (in memory — build.mjs blanks the published site/city.js too), and every row linking there gets its venue's page
+// when that is clean, else no link. Returns { blocked: [{ url, why, uses }], record }.
+export async function guardLinks({ city, rows = [], fetchImpl = globalThis.fetch, record = {}, today = new Date().toISOString().slice(0, 10), trustDays = 3, budgetMs = 90000, timeoutMs = 15000, concurrency = 10, log = console.log, report = globalThis[Symbol.for('here.events/recordFailure')] } = {}) {
+  const uses = new Map(); // url → ['venue X (url)', …]
+  const use = (u, what) => { const c = cleanUrl(u); if (c) (uses.get(c) || uses.set(c, []).get(c)).push(what); };
+  for (const [v, x] of Object.entries(city.venues || {})) { use(x && x.url, `${v} (venue page)`); use(x && x.tm && x.tm.fallbackUrl, `${v} (Ticketmaster fallback)`); }
+  for (const t of city.teams || []) { use(t.schedule, `${t.label || t.slug} (schedule)`); use(t.inject && t.inject.url, `${t.label || t.slug} (game link)`); }
+  const configSites = new Set([...uses.keys()].map(siteOf));
+  const hosts = new Map(); // a site only the rows link to → its home page
+  for (const list of rows) for (const e of list) {
+    const u = cleanUrl(e.url); if (!u) continue;
+    let h; try { h = new URL(u); } catch { continue; }
+    if (SKIP_HOSTS.test(h.hostname) || configSites.has(siteOf(u)) || hosts.has(siteOf(u))) continue;
+    hosts.set(siteOf(u), `${h.protocol}//${h.host}/`);
+  }
+  const queue = [...uses.keys(), ...hosts.values()].filter((u) => { try { return !SKIP_HOSTS.test(new URL(u).hostname); } catch { return false; } });
+  const since = new Date(Date.parse(today) - trustDays * 86400e3).toISOString().slice(0, 10);
+  const next_ = {}, verdicts = new Map();
+  let trusted = 0, unread = 0, i = 0;
+  for (const u of queue) if (record[u] && record[u] >= since) { next_[u] = record[u]; verdicts.set(u, ''); trusted++; }
+  const stop = Date.now() + budgetMs;
+  await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (i < queue.length && Date.now() < stop) {
+      const u = queue[i++];
+      if (verdicts.has(u)) continue;
+      let v = null;
+      try {
+        const r = await fetchImpl(u, { redirect: 'follow', signal: AbortSignal.timeout(timeoutMs), headers: { 'user-agent': UA, accept: 'text/html,*/*' }, [Symbol.for('here.events/quiet')]: true });
+        const type = r.headers && r.headers.get ? r.headers.get('content-type') || '' : 'text/html';
+        const html = /html|text/i.test(type) && r.text ? await r.text() : '';
+        v = hijackVerdict(u, { status: r.status, final: r.url, html });
+      } catch { v = null; }
+      if (v === null) { unread++; continue; }
+      verdicts.set(u, v.blocked);
+      if (!v.blocked) next_[u] = today;
+    }
+  }));
+  const blocked = [...verdicts].filter(([, why]) => why).map(([url, why]) => ({ url, why, uses: uses.get(url) || ['links in the listings'] }));
+  const bad = new Set(blocked.map((b) => siteOf(b.url)));
+  if (bad.size) {
+    const off = (u) => u && bad.has(siteOf(cleanUrl(u)));
+    for (const x of Object.values(city.venues || {})) { if (!x) continue; if (off(x.url)) x.url = ''; if (x.tm && off(x.tm.fallbackUrl)) x.tm.fallbackUrl = ''; }
+    for (const t of city.teams || []) { if (off(t.schedule)) t.schedule = ''; if (t.inject && off(t.inject.url)) t.inject.url = ''; }
+    let swapped = 0, dropped = 0;
+    for (const list of rows) for (const e of list) {
+      if (!off(e.url)) continue;
+      const v = cleanUrl(city.venues && city.venues[e.venue] && city.venues[e.venue].url);
+      if (v) { e.url = v; swapped++; } else { e.url = ''; dropped++; }
+    }
+    for (const b of blocked) { log(`BLOCKED link: ${b.url} — ${b.why}; used by ${b.uses.join(', ')}`); if (report) report(`Blocked link ${b.url} (${b.uses.join(', ')})`, `hijacked: ${b.why}`); }
+    log(`Blocked links: ${blocked.length} (${[...bad].join(', ')}); ${swapped} rows sent to their venue's page, ${dropped} left without a link`);
+  }
+  log(`Link guard: ${queue.length} pages (${trusted} clean in the last ${trustDays} days, not asked again), ${unread} not read, ${blocked.length} blocked`);
+  return { blocked, record: next_ };
+}

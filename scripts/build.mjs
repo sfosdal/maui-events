@@ -44,7 +44,7 @@ import { writeFileSync, readFileSync } from 'node:fs';
 import { buildIcs } from './ics.mjs';
 import * as citySources from './sources.mjs'; // each city's own file: isChurch where the city filters church bookings (not lqa, Seattle)
 import { mergeWithArchive, unionArchives, eventKey, dropClashes, keepQuietVenues, capUpcoming } from './merge.mjs';
-import { fixLinks, formerLinks, repointMoved } from './links.mjs';
+import { fixLinks, formerLinks, repointMoved, guardLinks } from './links.mjs';
 import { fileURLToPath } from 'node:url';
 import { calmTitle, isNotice } from './titles.mjs';
 import { applySchedules } from './schedules.mjs';
@@ -381,15 +381,26 @@ export async function build(cfg = {}) {
   // ticket links that reach a real page: no scheme-less or wrapped links, a 404 goes to the venue's page (scripts/links.mjs);
   // a link that answered OK in the last two days (the record on the archive branch) is not asked again
   const linksRecordUrl = process.env.LINKS_RECORD_URL || (ARCHIVE_URL ? ARCHIVE_URL.replace(/events-archive\.json$/, 'links-checked.json') : '');
-  let linksRecord = null;
+  let linksRecord = null, guardRecord = null;
   if (linksRecordUrl && process.env.LINKS_RECORD !== '0') {
-    try { const r = await fetch(linksRecordUrl, { cache: 'no-store', signal: AbortSignal.timeout(15000), [Symbol.for('here.events/quiet')]: true }) /* a missing record (the first build) is no failure */; if (r.ok) linksRecord = (await r.json()).links || null; else if (r.status !== 404) console.log(`Links record: HTTP ${r.status} — every link checked`); }
+    try { const r = await fetch(linksRecordUrl, { cache: 'no-store', signal: AbortSignal.timeout(15000), [Symbol.for('here.events/quiet')]: true }) /* a missing record (the first build) is no failure */; if (r.ok) { const j = await r.json(); linksRecord = j.links || null; guardRecord = j.guard || null; } else if (r.status !== 404) console.log(`Links record: HTTP ${r.status} — every link checked`); }
     catch (err) { console.log(`Links record: ${err.message} — every link checked`); }
   }
   const moved = movedPast + repointMoved(merged, former, CITY);
   if (moved) console.log(`Moved links: ${moved} rows given their venue's link now (archive + this build)`);
+  // links whose page turned porn or gambling spam (a lapsed domain bought by a spammer) are blocked before anything
+  // else uses them: venue and club links in CITY, every row on that domain, past ones too (scripts/links.mjs guardLinks)
+  const guard = await guardLinks({ city: CITY, rows: [merged, archived], today, record: guardRecord || {} });
+  if (guard.blocked.length && process.env.GITHUB_ACTIONS === 'true') {
+    // the page reads venue and club links from site/city.js itself: the published copy goes out without them
+    // (the repo's copy is untouched — fix it there; until then every build blocks it again)
+    const cityFile = new URL('../site/city.js', import.meta.url);
+    let src = readFileSync(cityFile, 'utf8');
+    for (const b of guard.blocked) for (const q of ["'", '"']) src = src.split(q + b.url + q).join(q + q);
+    writeFileSync(cityFile, src);
+  }
   const links = await fixLinks(merged, { venues: CITY.venues, today, record: linksRecord || {} });
-  writeFileSync(LINKS_OUT, JSON.stringify({ links: Object.fromEntries(Object.entries(links.record).sort()) }, null, 1) + '\n'); // the workflow commits it to the archive branch beside the archive
+  writeFileSync(LINKS_OUT, JSON.stringify({ links: Object.fromEntries(Object.entries(links.record).sort()), guard: Object.fromEntries(Object.entries(guard.record).sort()) }, null, 1) + '\n'); // the workflow commits it to the archive branch beside the archive
   writeFileSync(JSON_OUT, JSON.stringify({ generated: new Date().toISOString(), events: merged }, null, 2) + '\n');
   // the archive record: this build's past events on top of everything already recorded, never pruned
   const record = unionArchives(merged.filter((e) => e.date < today), archived.filter((e) => e.date < today));

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanUrl, fixLinks, formerLinks, repointMoved, venueLinks } from './links.mjs';
+import { cleanUrl, fixLinks, formerLinks, repointMoved, venueLinks, guardLinks, hijackVerdict, siteOf, HIJACK } from './links.mjs';
 
 test('cleanUrl gives a bare host a scheme, unwraps urldefense and drops what is not a web link', () => {
   assert.equal(cleanUrl('purchase.chautauqua.com/EventAvailability?WebEventId=CCH102426'), 'https://purchase.chautauqua.com/EventAvailability?WebEventId=CCH102426');
@@ -122,4 +122,59 @@ test("venueLinks reads this city's city.js: each venue its page, each club its s
   const links = venueLinks(city);
   for (const [v, x] of Object.entries(city.venues || {})) if (cleanUrl(x.url)) assert.ok(links.get(v).has(cleanUrl(x.url)), v);
   for (const t of (city.teams || []).filter((t) => t.venue && cleanUrl(t.schedule))) assert.ok(links.get(t.venue).has(cleanUrl(t.schedule)), t.slug || t.key);
+});
+
+// ---- the hijacked-link guard ----
+const page = (title, body = '', final) => ({ status: 200, final, html: `<html><head><title>${title}</title></head><body>${body}</body></html>` });
+test('hijackVerdict blocks a porn or gambling title, or another domain with such a page; keeps venues, strip clubs and casinos', () => {
+  const blocked = (u, p) => !!(hijackVerdict(u, p) || {}).blocked;
+  assert.ok(blocked('https://www.tigresqr.com/', page('Как выбрать идеальное порно видео', '', 'https://tigresqr.com/')), 'Cyrillic porn title, same domain');
+  assert.ok(blocked('https://www.hall.example/', page('Best Porn Videos')), 'porn title');
+  assert.ok(blocked('https://www.jeffcofairgrounds.com/', page('Guitars and more', 'RINGBET88 situs slot gacor malam ini', 'https://www.degeorgebrosguitars.com/about')), 'another domain + gambling body');
+  assert.ok(blocked('https://www.matthewknightarena.com/events', page('3DBET: Tempat Main Slot Online yang Bikin Auto Cuan', '', 'https://3dbet777.com/')));
+  assert.ok(blocked('https://old.example/', { status: 200, final: 'https://old.example/', html: '<meta http-equiv="refresh" content="0;url=https://spam.example/"><title>x</title><body>judi online togel</body>' }), 'meta refresh to a gambling page');
+  assert.ok(!blocked('https://club.example/events', page('Club Z — Events', 'Porn star feature dancer this weekend! XXX tribute night, fully nude revue')), 'a strip club’s own page');
+  assert.ok(!blocked('https://muckleshootcasino.com/', page('Muckleshoot Casino Resort | Slots, Table Games, Shows', 'Play our online casino for fun')), 'a casino');
+  assert.ok(!blocked('https://hall.example/', page('Hall', 'judi online', 'https://www.hall.example/')), 'a gambling word in the body on its own domain is kept');
+  assert.ok(!blocked('https://moved.example/', page('New Hall — calendar', 'concerts', 'https://newhall.example/')), 'a plain move to another domain is fixLinks’ business, not a block');
+  assert.equal(hijackVerdict('https://walled.example/', { status: 403, html: '' }), null, 'a wall is not read');
+  assert.equal(siteOf('https://www.teatro.gob.mx/x'), 'teatro.gob.mx');
+  assert.equal(siteOf('https://shop.bbc.co.uk/'), 'bbc.co.uk');
+  assert.ok(new RegExp(HIJACK.porn, 'i').test('порно') && !new RegExp(HIJACK.porn, 'i').test('nude'));
+});
+
+test('guardLinks blanks a hijacked venue link and every row on that domain, past ones too, and keeps what it cannot read', async () => {
+  const pages = {
+    'https://www.tigres.example/': page('Порно видео онлайн'),
+    'https://hall.example/events': page('Hall — events'),
+    'https://walled.example/': { status: 403 },
+    'https://other.example/': page('Other'),
+    'https://spamhost.example/': page('Slot Gacor Maxwin Hari Ini'),
+  };
+  const calls = [];
+  const fetchImpl = async (u) => { calls.push(u); const p = pages[u] || { status: 404 }; return { status: p.status, url: p.final || u, headers: { get: () => 'text/html' }, text: async () => p.html || '' }; };
+  const city = { venues: { Stadium: { url: 'https://www.tigres.example/', tm: { fallbackUrl: 'https://www.tigres.example/' } }, Hall: { url: 'https://hall.example/events' }, Walled: { url: 'https://walled.example/' } }, teams: [{ slug: 'tigres', label: 'Tigres', venue: 'Stadium', schedule: 'https://www.tigres.example/', inject: { url: 'https://www.tigres.example/' } }] };
+  const merged = [
+    { venue: 'Stadium', date: '2026-12-01', url: 'https://www.tigres.example/' },
+    { venue: 'Hall', date: '2026-12-02', url: 'https://www.tigres.example/game/9' },
+    { venue: 'Hall', date: '2026-12-03', url: 'https://spamhost.example/e/1' },
+    { venue: 'Hall', date: '2026-12-04', url: 'https://other.example/e/2' },
+    { venue: 'Walled', date: '2026-12-05', url: 'https://walled.example/e/3' },
+    { venue: 'Hall', date: '2026-12-06', url: 'https://www.ticketmaster.com/event/1' },
+  ];
+  const archived = [{ venue: 'Stadium', date: '2025-06-01', url: 'https://www.tigres.example/' }];
+  const reported = [];
+  const out = await guardLinks({ city, rows: [merged, archived], fetchImpl, today: '2026-11-07', log: () => {}, report: (what, why) => reported.push(what) });
+  assert.deepEqual(out.blocked.map((b) => b.url).sort(), ['https://spamhost.example/', 'https://www.tigres.example/']);
+  assert.equal(city.venues.Stadium.url, ''); assert.equal(city.venues.Stadium.tm.fallbackUrl, ''); assert.equal(city.teams[0].schedule, ''); assert.equal(city.teams[0].inject.url, '');
+  assert.equal(city.venues.Walled.url, 'https://walled.example/');
+  assert.deepEqual(merged.map((e) => e.url), ['', 'https://hall.example/events', 'https://hall.example/events', 'https://other.example/e/2', 'https://walled.example/e/3', 'https://www.ticketmaster.com/event/1']);
+  assert.equal(archived[0].url, '');
+  assert.ok(!calls.some((u) => /ticketmaster/.test(u)), 'walled box offices are never asked');
+  assert.equal(reported.length, 2);
+  assert.equal(out.record['https://hall.example/events'], '2026-11-07'); assert.ok(!('https://walled.example/' in out.record));
+  // a clean answer is trusted for three days
+  calls.length = 0;
+  await guardLinks({ city: { venues: { Hall: { url: 'https://hall.example/events' } } }, rows: [], fetchImpl, today: '2026-11-09', record: out.record, log: () => {} });
+  assert.deepEqual(calls, []);
 });
