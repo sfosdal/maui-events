@@ -351,6 +351,46 @@
    "time": "18:30",
    "url": "https://mulligansontheblue.com/event/mulligans-magic-show-98/",
    "type": "concert"
+  },
+  {
+   "venue": "ʻĪao Theater",
+   "title": "Wailuku First Friday",
+   "date": "2026-11-06",
+   "time": "",
+   "url": "https://www.mauionstage.com/",
+   "type": "arts"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "Anuhea + Friends",
+   "date": "2026-11-06",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/anuhea-friends",
+   "type": "concert"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-11-06",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=146281",
+   "type": "community"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "2026 Hawaiian Airlines Made In Maui County Festival",
+   "date": "2026-11-06",
+   "time": "13:30",
+   "url": "https://mauiarts.org/show-details/2026-hawaiian-airlines-made-in-maui-county-festival",
+   "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Kihei Sons",
+   "date": "2026-11-06",
+   "time": "18:00",
+   "url": "https://lahainacannerymall.com/event/mondokane/",
+   "type": "concert"
   }
  ]
 }

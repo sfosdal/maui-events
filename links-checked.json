@@ -1,6 +1,6 @@
 {
  "links": {
-  "https://lahainacannerymall.com/": "2026-11-05",
+  "https://lahainacannerymall.com/entertainment/": "2026-11-07",
   "https://lahainacannerymall.com/event/avi-ronen/": "2026-11-05",
   "https://lahainacannerymall.com/event/bills-vs-vikings/": "2026-11-05",
   "https://lahainacannerymall.com/event/broncos-vs-steelers/": "2026-11-05",
@@ -9,7 +9,6 @@
   "https://lahainacannerymall.com/event/commanders-vs-giants/": "2026-11-05",
   "https://lahainacannerymall.com/event/lahaina-hula-show-3/": "2026-11-05",
   "https://lahainacannerymall.com/event/magic-shows/": "2026-11-05",
-  "https://lahainacannerymall.com/event/mondokane/": "2026-11-05",
   "https://lahainacannerymall.com/event/nfl-watch-parties-3/": "2026-11-05",
   "https://lahainacannerymall.com/event/nfl-watch-parties-4/": "2026-11-05",
   "https://lahainacannerymall.com/event/nfl-watch-parties/": "2026-11-05",
@@ -126,7 +125,6 @@
   "https://www.daplaygroundmaui.com/collections/tickets": "2026-11-05",
   "https://www.daplaygroundmaui.com/products/2000s-decades-party-3": "2026-11-05",
   "https://www.daplaygroundmaui.com/products/alborosie-shengen-clan": "2026-11-05",
-  "https://www.daplaygroundmaui.com/products/anuhea-friends": "2026-11-05",
   "https://www.daplaygroundmaui.com/products/baddies-pretty-in-pink": "2026-11-05",
   "https://www.daplaygroundmaui.com/products/corbin-glover-electro-house-party": "2026-11-05",
   "https://www.daplaygroundmaui.com/products/fiesta-saturdays-dia-de-los-muertos-2": "2026-11-05",
@@ -156,8 +154,26 @@
   "https://www.nps.gov/planyourvisit/event-details.htm?id=138300": "2026-11-05",
   "https://www.nps.gov/planyourvisit/event-details.htm?id=138301": "2026-11-05",
   "https://www.nps.gov/planyourvisit/event-details.htm?id=145525": "2026-11-05",
-  "https://www.nps.gov/planyourvisit/event-details.htm?id=146281": "2026-11-05",
-  "https://www.nps.gov/planyourvisit/event-details.htm?id=146283": "2026-11-05",
-  "https://www.nps.gov/planyourvisit/event-details.htm?id=146285": "2026-11-05"
+  "https://www.nps.gov/planyourvisit/event-details.htm?id=146283": "2026-11-05"
+ },
+ "guard": {
+  "https://hawaiiathletics.com/sports/football/schedule": "2026-11-07",
+  "https://hawaiiathletics.com/sports/mens-basketball/schedule": "2026-11-07",
+  "https://hawaiiathletics.com/sports/womens-volleyball/schedule": "2026-11-07",
+  "https://lahainacannerymall.com/entertainment/": "2026-11-07",
+  "https://lanaichc.org/our-events/": "2026-11-07",
+  "https://mauiarts.org/events": "2026-11-07",
+  "https://mauiinvitational.com/": "2026-11-07",
+  "https://mauiinvitational.webflow.io/": "2026-11-07",
+  "https://mauimuseum.org/events": "2026-11-07",
+  "https://mauionstage.thundertix.com/": "2026-11-07",
+  "https://mulligansontheblue.com/events/": "2026-11-07",
+  "https://pacificwhale.org/how-you-can-help/events/": "2026-11-07",
+  "https://proartsmaui.org/events/": "2026-11-07",
+  "https://www.alohawailealuau.com/": "2026-11-07",
+  "https://www.daplaygroundmaui.com/collections/tickets": "2026-11-07",
+  "https://www.huinoeau.com/exhibitions": "2026-11-07",
+  "https://www.mauionstage.com/": "2026-11-07",
+  "https://www.nps.gov/hale/planyourvisit/calendar.htm": "2026-11-07"
  }
 }
