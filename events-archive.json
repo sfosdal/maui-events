@@ -391,6 +391,78 @@
    "time": "18:00",
    "url": "https://lahainacannerymall.com/event/mondokane/",
    "type": "concert"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "SoDown - Scenes of Consciousness Tour",
+   "date": "2026-11-07",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/sodown",
+   "type": "concert"
+  },
+  {
+   "venue": "Lānaʻi Culture & Heritage Center",
+   "title": "Volunteer Day: Kānepu‘u Preserve",
+   "date": "2026-11-07",
+   "time": "08:30",
+   "url": "https://lanaichc.org/event/volunteer-day-kanepu%ca%bbu-preserve/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Lahaina Hula Show",
+   "date": "2026-11-07",
+   "time": "11:00",
+   "url": "https://lahainacannerymall.com/event/lahaina-hula-show-3/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Magic Shows",
+   "date": "2026-11-07",
+   "time": "12:00",
+   "url": "https://lahainacannerymall.com/event/magic-shows/",
+   "type": "community"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "2026 Hawaiian Airlines Made In Maui County Festival",
+   "date": "2026-11-07",
+   "time": "13:30",
+   "url": "https://mauiarts.org/show-details/2026-hawaiian-airlines-made-in-maui-county-festival",
+   "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Avi Ronen",
+   "date": "2026-11-07",
+   "time": "18:00",
+   "url": "https://lahainacannerymall.com/event/avi-ronen/",
+   "type": "concert"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Jamie Lawrence",
+   "date": "2026-11-07",
+   "time": "19:00",
+   "url": "https://mulligansontheblue.com/event/jamie-lawrence-3/",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Steve Grimes: Greatest Hits",
+   "date": "2026-11-07",
+   "time": "19:30",
+   "url": "https://proartsmaui.org/event/steve-grimes-greatest-hits/",
+   "type": "concert"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "AMERICA",
+   "date": "2026-11-07",
+   "time": "19:30",
+   "url": "https://mauiarts.org/show-details/america2026",
+   "type": "arts"
   }
  ]
 }
