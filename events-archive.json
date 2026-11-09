@@ -463,6 +463,62 @@
    "time": "19:30",
    "url": "https://mauiarts.org/show-details/america2026",
    "type": "arts"
+  },
+  {
+   "venue": "Pacific Whale Foundation",
+   "title": "Papahānaumokuākea Talk Story Session",
+   "date": "2026-11-08",
+   "time": "",
+   "url": "https://pacificwhale.org/event/papahanaumokuakea-talk-story-session/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "NFL Watch Parties",
+   "date": "2026-11-08",
+   "time": "08:00",
+   "url": "https://lahainacannerymall.com/event/nfl-watch-parties/",
+   "type": "community"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Magic in Paradise",
+   "date": "2026-11-08",
+   "time": "14:00",
+   "url": "https://proartsmaui.org/event/magic-in-paradise-nov-8-2026/",
+   "type": "arts"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Island Soul Band",
+   "date": "2026-11-08",
+   "time": "17:00",
+   "url": "https://mulligansontheblue.com/event/island-soul-band-97/",
+   "type": "concert"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "Justin Kawika Young",
+   "date": "2026-11-08",
+   "time": "17:00",
+   "url": "https://mauiarts.org/show-details/justin-kawika-young2026",
+   "type": "arts"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Shrek the Musical (A Concert Reading)",
+   "date": "2026-11-08",
+   "time": "18:00",
+   "url": "https://proartsmaui.org/event/shrek-the-musical-a-concert-reading-nov-8-2026/",
+   "type": "arts"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Night Sky Program",
+   "date": "2026-11-08",
+   "time": "18:30",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=145525",
+   "type": "community"
   }
  ]
 }
