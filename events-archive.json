@@ -535,6 +535,22 @@
    "time": "09:00",
    "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=138291",
    "type": "community"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "OG Camo - Mcxi Live",
+   "date": "2026-11-11",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/og-camo-mcxi-live",
+   "type": "concert"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Aloha Wailea Luau",
+   "date": "2026-11-11",
+   "time": "17:30",
+   "url": "https://www.alohawailealuau.com",
+   "type": "concert"
   }
  ]
 }
