@@ -551,6 +551,46 @@
    "time": "17:30",
    "url": "https://www.alohawailealuau.com",
    "type": "concert"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-11-12",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=146283",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Hula Lessons",
+   "date": "2026-11-12",
+   "time": "13:00",
+   "url": "https://lahainacannerymall.com/event/hula-lessons-2/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Commanders vs. Giants",
+   "date": "2026-11-12",
+   "time": "15:15",
+   "url": "https://lahainacannerymall.com/event/commanders-vs-giants/",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Mulligans Magic Show",
+   "date": "2026-11-12",
+   "time": "18:30",
+   "url": "https://mulligansontheblue.com/event/mulligans-magic-show-94/",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Standup Comedy Showcase",
+   "date": "2026-11-12",
+   "time": "19:30",
+   "url": "https://proartsmaui.org/event/standup-comedy-showcase-nov-12-2026/",
+   "type": "arts"
   }
  ]
 }
