@@ -591,6 +591,38 @@
    "time": "19:30",
    "url": "https://proartsmaui.org/event/standup-comedy-showcase-nov-12-2026/",
    "type": "arts"
+  },
+  {
+   "venue": "Pacific Whale Foundation",
+   "title": "Kapukaulua Dunes Restoration",
+   "date": "2026-11-13",
+   "time": "",
+   "url": "https://pacificwhale.org/event/kapukaulua-dunes-restoration/",
+   "type": "community"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "Pretty In Pink Baddies",
+   "date": "2026-11-13",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/baddies-pretty-in-pink",
+   "type": "concert"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Weather or Not",
+   "date": "2026-11-13",
+   "time": "17:30",
+   "url": "https://lahainacannerymall.com/event/weather-or-not-2/",
+   "type": "concert"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "Anthony Pfluke with special guests NĀMAKA Cosma & Kevin Brown",
+   "date": "2026-11-13",
+   "time": "19:30",
+   "url": "https://mauiarts.org/show-details/anthony-pfluke-with-special-guests-namaka-cosma-kevin-brown",
+   "type": "arts"
   }
  ]
 }
