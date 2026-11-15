@@ -728,29 +728,47 @@ async function wikiSummary(title) {
   return { title, text: d.extract, url: d.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` };
 }
 
-// The Seawolves' news page (Next.js, server-rendered): each post is an
-// <a href="/news/…"> holding a tag, "SEP 1, 2026", an <h2> headline and a
-// line of summary. The latest eight, newest first.
+// The Seawolves' news page (seawolves.rugby/news, on Envorso Sports since
+// 2026-11, server-rendered): each post is an <a … href="/news/…"> card
+// holding <time dateTime="…">Nov 4, 2026</time>, a tag, an <h2> headline and
+// a line of summary. The date is the page's own (the dateTime is UTC, a day
+// ahead for an evening post), the dateTime only when the text won't read.
+// The latest eight, newest first, one entry a link (the page lists some
+// posts twice).
+const NEWS_MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
 export function parseSeawolvesNews(html, n = 8) {
   const out = [];
-  for (const m of String(html).replace(/<!--\s*-->/g, '').matchAll(/<a href="(\/news\/[^"]+)">([\s\S]*?)<\/a>/g)) {
+  const clean = (x) => x.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#x27;|&#39;|’/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
+  for (const m of String(html).replace(/<!--[\s\S]*?-->/g, '').matchAll(/<a\b[^>]*\shref="(\/news\/[^"#?]+)"[^>]*>([\s\S]*?)<\/a>/g)) {
     const inner = m[2];
     const headline = (inner.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || [])[1];
-    const date = (inner.match(/>\s*([A-Z]{3} \d{1,2}, \d{4})\s*</) || [])[1];
+    if (!headline || out.some((o) => o.url.endsWith(m[1]))) continue;
+    const time = inner.match(/<time[^>]*dateTime="(\d{4}-\d{2}-\d{2})[^"]*"[^>]*>([^<]*)<\/time>/i);
+    const shown = time && time[2].trim().match(/^([A-Za-z]{3})[a-z]* (\d{1,2}), (\d{4})$/);
+    const date = shown && NEWS_MONTHS[shown[1].toLowerCase()] != null
+      ? `${shown[3]}-${String(NEWS_MONTHS[shown[1].toLowerCase()] + 1).padStart(2, '0')}-${String(shown[2]).padStart(2, '0')}`
+      : (time && time[1]) || '';
     const text = (inner.match(/<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/) || [])[1] || '';
-    if (!headline) continue;
-    const d = date ? new Date(date.replace(/^(\w{3})/, (x) => x[0] + x.slice(1).toLowerCase()) + ' UTC') : null;
-    const clean = (x) => x.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#x27;|&#39;|’/g, "'").replace(/\s+/g, ' ').trim();
-    if (out.some((o) => o.url.endsWith(m[1]))) continue;
-    out.push({ date: d && !isNaN(d) ? d.toISOString().slice(0, 10) : '', headline: clean(headline), text: clean(text), url: 'https://www.seawolves.rugby' + m[1], source: 'Seawolves' });
+    out.push({ date, headline: clean(headline), text: clean(text), url: 'https://seawolves.rugby' + m[1], source: 'Seawolves' });
   }
   return out.sort((a, b) => b.date.localeCompare(a.date)).slice(0, n);
 }
+// The club's name for the form block: the page's og:site_name ("Seattle
+// Seawolves Rugby") less "Rugby", else the old site's "Seattle Seawolves
+// Rugby Club | …" title; none when neither is there (the page title alone,
+// "News | Seawolves", is not a club name).
+export function seawolvesClubName(html) {
+  const h = String(html);
+  const site = (h.match(/<meta[^>]*property="og:site_name"[^>]*content="([^"]+)"/i) || h.match(/<meta[^>]*content="([^"]+)"[^>]*property="og:site_name"/i) || [])[1];
+  if (site) return site.replace(/&amp;/g, '&').replace(/\s+Rugby(\s+Club)?\s*$/i, '').trim();
+  const title = (h.match(/<title>([^<]*)<\/title>/i) || [])[1] || '';
+  const old = title.match(/^\s*([^|]+?)\s+Rugby Club\b/i);
+  return old ? old[1].trim() : '';
+}
 async function seawolvesForm() {
-  const r = await fetch('https://www.seawolves.rugby/news', { headers: { 'user-agent': UA, accept: 'text/html' } });
+  const r = await fetch('https://seawolves.rugby/news', { headers: { 'user-agent': UA, accept: 'text/html' } });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const html = await r.text(), news = parseSeawolvesNews(html);
-  const title = (html.match(/<title>([^<|]+)/) || [])[1] || '', name = title.replace(/\s+Rugby Club.*$/i, '').trim(); // "Seattle Seawolves Rugby Club | …" → Seattle Seawolves
+  const html = await r.text(), news = parseSeawolvesNews(html), name = seawolvesClubName(html);
   return { ...(news.length ? { news } : {}), ...(name ? { club: { name } } : {}) };
 }
 
@@ -767,86 +785,98 @@ const FORM_KINDS = {
 };
 export const FORM = CITY.teams.filter((t) => t.form && FORM_KINDS[t.form.kind]).map((t) => ({ slug: t.slug, fetch: () => FORM_KINDS[t.form.kind](t) }));
 
-// Seattle Seawolves (Major League Rugby, seawolves.rugby): the schedule
-// page is server-rendered — an "Upcoming Matches" list of the season's
-// fixtures (one card each: Round N, the two clubs' crests with title="…",
-// the ground or "Away", "Sat, Mar 28", "4:00 PM PT") and a "Previous
-// Matches" list of results ("34 - 43", Win/Loss). The home side's crest
-// comes first. Round 0 is the preseason friendly, kept and flagged pre
-// like every other league's preseason. The year is the page's heading.
-const SEAWOLVES_URL = 'https://www.seawolves.rugby/schedule';
+// Seattle Seawolves (Major League Rugby, seawolves.rugby). Since 2026-11 the
+// club's site runs on Envorso Sports: /schedule lists what is still to come
+// and /schedule?when=past what is done, each event an <li> card under a month
+// heading ("April 2026", the only place the year is) — a Home/Away badge, the
+// day ("Apr 12"), the clock ("1:00 PM PDT", Pacific even for away games), the
+// ground, each side's crest + name (the home side first), "Round N" and a
+// "34 – 25" score once played. A home match is listed twice, a ticket card
+// ("Result to come", no round) and the match card: one game a date. Cards
+// with no Home/Away badge (Community, Other, the army match at Starfire) are
+// not Seawolves games. Preseason and playoff games are told apart only by the
+// page's own ?type= filters, which seawolves() reads into flags.
+const SEAWOLVES_URL = 'https://seawolves.rugby/schedule';
 const SEAWOLVES_HOME = 'Starfire Stadium';
 const SEAWOLVES_CITY = 'Tukwila, WA'; // Starfire Sports is in Tukwila, on the Green River just south of Seattle (en.wikipedia.org/wiki/Starfire_Sports, checked 2026-09-14)
 const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-// The MLR clubs of 2026 — six — each with its own site and the crest the
-// Seawolves' site carries for it; the names the schedule page uses vary
-// ("CA Legion" / "California Legion"), so they are matched loosely.
+// The MLR clubs of 2026 — six — each with its own site and its crest, kept in
+// the city repo under site/marks/mlr/ (the club sites' files have moved
+// before); the names the schedule page uses vary ("Anthem RC" / "Anthem
+// Rugby Carolina", "California Legion Rugby"), so they are matched loosely.
 const MLR_CLUBS = [
-  { match: /legion/i, name: 'California Legion', short: 'Legion', abbrev: 'CAL', site: 'https://legion.rugby/', logo: 'https://www.seawolves.rugby/images/teams/legions.png' },
-  { match: /hounds/i, name: 'Chicago Hounds', short: 'Hounds', abbrev: 'CHI', site: 'https://chicagohounds.com/', logo: 'https://www.seawolves.rugby/images/teams/Hounds.png' },
-  { match: /free jacks|freejacks/i, name: 'New England Free Jacks', short: 'Free Jacks', abbrev: 'NE', site: 'https://freejacks.com/', logo: 'https://www.seawolves.rugby/images/teams/freejacks.png' },
-  { match: /old glory/i, name: 'Old Glory DC', short: 'Old Glory', abbrev: 'DC', site: 'https://oldglorydc.com/', logo: 'https://www.seawolves.rugby/images/teams/og.png' },
-  { match: /anthem/i, name: 'Anthem Rugby Carolina', short: 'Anthem', abbrev: 'ANT', site: 'https://anthemrc.com/', logo: 'https://www.seawolves.rugby/images/teams/anthem.webp' },
+  { match: /legion/i, name: 'California Legion', short: 'Legion', abbrev: 'CAL', site: 'https://legion.rugby/', logo: 'marks/mlr/legion.png' },
+  { match: /hounds/i, name: 'Chicago Hounds', short: 'Hounds', abbrev: 'CHI', site: 'https://chicagohounds.com/', logo: 'marks/mlr/hounds.png' },
+  { match: /free jacks|freejacks/i, name: 'New England Free Jacks', short: 'Free Jacks', abbrev: 'NE', site: 'https://freejacks.com/', logo: 'marks/mlr/freejacks.png' },
+  { match: /old glory/i, name: 'Old Glory DC', short: 'Old Glory', abbrev: 'DC', site: 'https://oldglorydc.com/', logo: 'marks/mlr/oldglory.png' },
+  { match: /anthem/i, name: 'Anthem Rugby Carolina', short: 'Anthem', abbrev: 'ANT', site: 'https://anthemrc.com/', logo: 'marks/mlr/anthem.png' },
 ];
-export function mlrOpp(name, logo) { // the club for a name the schedule page prints, or a best effort for one not on the list
+export function mlrOpp(name, logo) { // the club for a name the schedule page prints (its kept crest first), or a best effort for one not on the list
   const c = MLR_CLUBS.find((x) => x.match.test(name || ''));
-  if (c) return { name: c.name, short: c.short, abbrev: c.abbrev, logo: logo || c.logo, site: c.site };
-  const opp = String(name || '');
-  return { name: opp, short: opp.replace(/^(New England|Old Glory|Anthem Rugby|Anthem|Chicago|California|CA|Hartford)\s+/, '') || opp, abbrev: opp.replace(/[^A-Za-z ]/g, '').split(/\s+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase(), ...(logo ? { logo } : {}), site: `https://www.majorleague.rugby/teams/${mlrSlug(opp)}` };
+  if (c) return { name: c.name, short: c.short, abbrev: c.abbrev, logo: c.logo || logo, site: c.site };
+  const opp = String(name || '').replace(/\s+Rugby$/i, '');
+  return { name: opp, short: opp.replace(/^(New England|Old Glory|Anthem Rugby|Anthem|Chicago|California|CA|Hartford)\s+/, '') || opp, abbrev: opp.replace(/[^A-Za-z ]/g, '').split(/\s+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase(), ...(logo ? { logo } : {}) };
 }
-const mlrSlug = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-export function parseSeawolves(html) {
-  const h = String(html).replace(/<!--\s*-->/g, '');
-  const year = Number((h.match(/<h1[^>]*>\s*(\d{4})\s*Seawolves/) || [])[1]) || new Date().getFullYear();
-  const cards = h.split(/<div class="\s*relative mb-4 p-4 shadow-sm rounded-md[^"]*"/).slice(1);
-  // the page carries each section twice (once more for hydration): a card
-  // belongs to the nearest heading above it, and fixtures are de-duplicated
-  const heads = [...h.matchAll(/(Upcoming|Previous) Matches/g)].map((m) => [m.index, m[1]]);
-  const sectionAt = (p) => { let t = 'Upcoming'; for (const [i, k] of heads) { if (i < p) t = k; else break; } return t; };
-  const dateOf = (l) => { const m = l.match(/^[A-Z][a-z]{2}, ([A-Z][a-z]{2}) (\d{1,2})$/); if (!m || MONTHS[m[1].toLowerCase()] == null) return null; return `${year}-${String(MONTHS[m[1].toLowerCase()] + 1).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`; };
-  const timeOf = (l) => { const m = l.match(/^(\d{1,2}):(\d{2}) ([AP])M/); if (!m) return null; let hr = Number(m[1]) % 12; if (m[3] === 'P') hr += 12; return `${String(hr).padStart(2, '0')}:${m[2]}:00`; };
-  let pos = 0;
-  const games = [], results = {}, played = [];
-  for (const c of cards) {
-    pos = h.indexOf(c, pos); const previous = sectionAt(pos) === 'Previous';
-    const round = Number((c.match(/Round\s*(\d+)/) || [])[1]);
-    const teams = [...c.matchAll(/<img title="([^"]+)"/g)].map((m) => m[1].trim());
-    const spans = [...c.matchAll(/<(?:span|p)[^>]*>([^<]+)<\/(?:span|p)>/g)].map((m) => m[1].trim()).filter(Boolean);
-    const date = spans.map(dateOf).find(Boolean), time = spans.map(timeOf).find(Boolean);
-    if (teams.length < 2 || !date) continue;
-    const home = /seawolves/i.test(teams[0]);
-    const opp = teams.find((t) => !/seawolves/i.test(t)) || '?';
-    const venue = spans.find((x) => x !== 'Away' && !/^VS\.?$/i.test(x) && !dateOf(x) && !timeOf(x) && !/^Round/.test(x) && !/^(Win|Loss|Draw)$/.test(x) && !/^\d+ - \d+$/.test(x)) || (home ? SEAWOLVES_HOME : opp);
-    if (previous) { // a result: the score reads home - away
-      const sc = spans.find((x) => /^\d+ - \d+$/.test(x));
-      if (sc) { const [a, b] = sc.split(' - ').map(Number); results[date] = { us: home ? a : b, them: home ? b : a, won: (home ? a : b) > (home ? b : a) }; }
-      if (!played.some((p) => p.date === date)) played.push({ date, time: time || null, home, opp, venue, round });
-      continue;
-    }
-    if (games.some((g) => g.date === date && g.opp.name === opp)) continue; // the hydration copy
-    games.push({
-      date, time: time || null, tbd: !time, home, ...(round === 0 ? { pre: true } : {}),
-      opp: mlrOpp(opp, (c.match(/<img title="(?:[^"]+)" src="([^"]+)"[^>]*>\s*<p[^>]*>VS\.<\/p>\s*<img title="[^"]+" src="([^"]+)"/) || [])[home ? 2 : 1]),
-      venue, ...(home && venue === SEAWOLVES_HOME ? { city: SEAWOLVES_CITY } : {}),
+const swText = (x) => x.replace(/&amp;/g, '&').replace(/&#x27;|&#39;|’/g, "'").replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+const swSrc = (src) => { // a crest's own URL, out of Next's /_next/image?url=… wrapper when it has one
+  const u = swText(src), m = u.match(/^\/_next\/image\?url=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : u.startsWith('/') ? 'https://seawolves.rugby' + u : u;
+};
+// html: one or more schedule pages run together; flags: { pre, playoff } —
+// Sets of 'YYYY-MM-DD' from the ?type= filters
+export function parseSeawolves(html, flags = {}) {
+  const h = String(html).replace(/<!--[\s\S]*?-->/g, '').replace(/<script[\s\S]*?<\/script>/g, '').replace(/<svg[\s\S]*?<\/svg>/g, '');
+  const heads = [...h.matchAll(/<h3[^>]*>\s*([A-Z][a-z]+) (\d{4})\s*<\/h3>/g)].map((m) => [m.index, Number(m[2])]);
+  const yearAt = (p) => { let y = new Date().getFullYear(); for (const [i, yr] of heads) { if (i < p) y = yr; else break; } return y; };
+  const byDate = new Map();
+  for (const m of h.matchAll(/<li class="grid overflow-hidden[\s\S]*?<\/li>/g)) {
+    const toks = [...m[0].matchAll(/<img[^>]*\ssrc="([^"]+)"[^>]*>|>([^<]+)</g)]
+      .map((t) => (t[1] ? { img: swSrc(t[1]) } : { text: swText(t[2]) })).filter((t) => t.img || t.text);
+    const texts = toks.filter((t) => t.text).map((t) => t.text);
+    const side = texts.find((x) => x === 'Home' || x === 'Away');
+    const day = texts.map((x) => x.match(/^([A-Z][a-z]{2}) (\d{1,2})$/)).find((x) => x && MONTHS[x[1].toLowerCase()] != null);
+    const ti = texts.findIndex((x) => /^\d{1,2}:\d{2} [AP]M\b/.test(x));
+    const teams = [];
+    toks.forEach((t, k) => { if (t.img && toks[k + 1]?.text && teams.length < 2) teams.push({ logo: t.img, name: toks[k + 1].text }); });
+    if (!side || !day || teams.length < 2 || !teams.some((t) => /seawolves/i.test(t.name))) continue;
+    const date = `${yearAt(m.index)}-${String(MONTHS[day[1].toLowerCase()] + 1).padStart(2, '0')}-${String(day[2]).padStart(2, '0')}`;
+    let time = null;
+    if (ti >= 0) { const c = texts[ti].match(/^(\d{1,2}):(\d{2}) ([AP])M/); let hr = Number(c[1]) % 12; if (c[3] === 'P') hr += 12; time = `${String(hr).padStart(2, '0')}:${c[2]}:00`; }
+    const ground = ti >= 0 ? texts[ti + 1] || '' : '';
+    const home = side === 'Home', opp = teams.find((t) => !/seawolves/i.test(t.name));
+    const round = Number((texts.find((x) => /^Round \d+$/.test(x)) || '').replace('Round ', '')) || null;
+    const score = texts.map((x) => x.match(/^(\d+) [–-] (\d+)$/)).find(Boolean); // the home side's points first
+    const g = byDate.get(date) || {};
+    const isMatch = round != null || score; // the match card's names, ground and score win over the ticket card's
+    byDate.set(date, {
+      time: g.time || time, home, round: g.round ?? round, oppName: isMatch || !g.oppName ? opp.name : g.oppName, logo: g.logo || opp.logo,
+      ground: isMatch || !g.ground ? ground : g.ground, score: score ? [Number(score[1]), Number(score[2])] : g.score,
     });
   }
-  // a played match with no fixture in the list (the playoffs are only ever
-  // in the results) is a game too, flagged as a playoff when it follows the
-  // last listed fixture
-  const lastFixture = games.map((g) => g.date).sort().pop() || '';
-  played.filter((p) => !games.some((g) => g.date === p.date)).forEach((p) => games.push({
-    date: p.date, time: p.time, tbd: !p.time, home: p.home, ...(p.round === 0 ? { pre: true } : p.date > lastFixture ? { playoff: true } : {}),
-    opp: mlrOpp(p.opp, p.logo),
-    venue: p.venue,
-  }));
-  games.forEach((g) => { if (results[g.date]) g.res = results[g.date]; });
-  games.forEach((g) => { if (g.opp.logo && g.opp.logo.startsWith('/')) g.opp.logo = 'https://www.seawolves.rugby' + g.opp.logo; });
-  return games.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+  const pre = flags.pre || new Set(), playoff = flags.playoff || new Set();
+  return [...byDate].map(([date, x]) => {
+    const venue = x.home && /starfire/i.test(x.ground) ? SEAWOLVES_HOME : x.ground || (x.home ? SEAWOLVES_HOME : x.oppName);
+    const res = x.score && { us: x.home ? x.score[0] : x.score[1], them: x.home ? x.score[1] : x.score[0] };
+    return {
+      date, time: x.time, tbd: !x.time, home: x.home, ...(pre.has(date) || x.round === 0 ? { pre: true } : playoff.has(date) ? { playoff: true } : {}),
+      opp: mlrOpp(x.oppName, x.logo), venue, ...(venue === SEAWOLVES_HOME ? { city: SEAWOLVES_CITY } : {}),
+      ...(res ? { res: { ...res, won: res.us > res.them } } : {}),
+    };
+  }).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 }
 async function seawolves() {
-  const r = await fetch(SEAWOLVES_URL, { headers: { 'user-agent': UA, accept: 'text/html' } });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const games = parseSeawolves(await r.text());
+  const get = async (q) => {
+    const r = await fetch(SEAWOLVES_URL + q, { headers: { 'user-agent': UA, accept: 'text/html' } });
+    if (!r.ok) throw new Error(`HTTP ${r.status} for ${q || '/schedule'}`);
+    return r.text();
+  };
+  // the two lists, then the type filters (a filter that fails only loses its flags)
+  const [lists, ...filters] = await Promise.all([
+    Promise.all([get(''), get('?when=past')]),
+    ...['pre-season', 'playoffs'].map((t) => Promise.allSettled([get(`?type=${t}`), get(`?when=past&type=${t}`)])),
+  ]);
+  const dates = (settled) => new Set(settled.filter((r) => r.status === 'fulfilled').flatMap((r) => parseSeawolves(r.value).map((g) => g.date)));
+  const games = parseSeawolves(lists.join('\n'), { pre: dates(filters[0]), playoff: dates(filters[1]) });
   if (!games.length) throw new Error('no matches parsed');
   return games;
 }

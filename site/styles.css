@@ -991,6 +991,11 @@ footer .share summary .chev { color: var(--ink-bright); }
 .ad-page p, .ad-page li { color: var(--ink-soft); line-height: 1.55; }
 .ad-page ul { padding-left: 1.2rem; }
 .ad-page .ad-lead { font-size: 1.1rem; color: var(--ink); }
+.updated { margin: 1rem 0 -.6rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.updated a { color: var(--ink); }
+body:has(#mapView:not([hidden])) .updated { display: none; }
+.ad-page .ad-revised { margin-top: 2rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.ad-page .ad-revised + .ad-back { margin-top: .6rem; }
 .ad-page .ad-back { display: inline-block; margin-top: 2rem; font-family: var(--mono); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
 footer .share summary { font-size: .9rem; white-space: nowrap; }
 .foot-inner.is-tight .share summary span, .foot-inner.is-tighter .gw-credit {

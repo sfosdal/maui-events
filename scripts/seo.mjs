@@ -2,7 +2,14 @@
  * Search plumbing for a city site, written at build time after fetch-events
  * (Steve, 2026-10-16: "queue site maps and structured data"):
  *   site/robots.txt   — allow everything, name the sitemap
- *   site/sitemap.xml  — the page (and advertise.html / about.html / faq.html / sources.html when the city has them)
+ *   site/sitemap.xml  — the page (and advertise.html / about.html / faq.html / sources.html / how.html when the city
+ *                       has them). lastmod is the truth: the feed's own build time for the calendar, each
+ *                       other page's "Last revised" date (its <p class="ad-revised"><time datetime>), none
+ *                       for a page that carries no date
+ *   site/index.html   — a visible "Updated <date>" line under the toolbar, the date the feed was built, with a
+ *                       link to how.html where the city has that page; the same instant is the WebPage's
+ *                       dateModified in the JSON-LD (Steve, 2026-11-15, after Google asked for "ongoing
+ *                       curation and structural maintenance" to show)
  *   site/index.html   — one <script type="application/ld+json"> block at the end
  *                       of <body> (parsers reach the visible page first; Google
  *                       reads it anywhere): the WebSite plus an Event per upcoming row
@@ -79,16 +86,18 @@ export function pickEvents(events, today) {
     .slice(0, EVENT_CAP);
 }
 
-export function jsonLd(events, place, { today, tz = CITY.tz, site = CITY.site, name = CITY.name } = {}) {
+export function jsonLd(events, place, { today, tz = CITY.tz, site = CITY.site, name = CITY.name, modified } = {}) {
   const graph = [
     { '@type': 'WebSite', name: `${name} Events`, url: site, inLanguage: 'en', publisher: { '@type': 'Organization', name: 'Ghostwood Sites', url: 'https://here.events/' } },
+    ...(modified ? [{ '@type': 'WebPage', url: site, name: `${name} Events`, isPartOf: { '@type': 'WebSite', url: site }, dateModified: modified }] : []),
     ...pickEvents(events, today).map((e) => eventLd(e, place, tz)),
   ];
   return { '@context': 'https://schema.org', '@graph': graph };
 }
 
 export function sitemapXml(site, pages, today) {
-  const url = (p) => `  <url><loc>${site}${p.path}</loc><lastmod>${today}</lastmod><changefreq>${p.freq}</changefreq></url>`;
+  const mod = (p) => (p.lastmod === undefined ? today : p.lastmod);
+  const url = (p) => `  <url><loc>${site}${p.path}</loc>${mod(p) ? `<lastmod>${mod(p)}</lastmod>` : ''}<changefreq>${p.freq}</changefreq></url>`;
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map(url).join('\n')}\n</urlset>\n`;
 }
 
@@ -110,6 +119,41 @@ export function injectMapLink(html) {
   return stripped.replace(m[0], `${m[0]}  ${MAP_LINK}\n`);
 }
 
+/** '2026-11-15T12:03:11-08:00' — an instant written as the city's own local time. */
+export function localIso(instant, tz = CITY.tz) {
+  const d = new Date(instant);
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(d).map((x) => [x.type, x.value]));
+  const date = `${p.year}-${p.month}-${p.day}`, time = `${p.hour}:${p.minute}:${p.second}`;
+  return `${date}T${time}${utcOffset(date, time, tz)}`;
+}
+
+/** 'November 15, 2026' — the day of that instant in the city. */
+export function longDate(instant, tz = CITY.tz) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(instant));
+}
+
+/** The visible Updated line: one paragraph between the toolbar and the list, replaced on every run (found by its
+ *  id). Not at the page's foot: the list runs to 100,000 px and nobody reaches its end. */
+export function injectUpdated(html, instant, { tz = CITY.tz, how = false } = {}) {
+  const stripped = html.replace(/<p class="updated" id="updated">[\s\S]*?<\/p>\n?/, '');
+  if (!instant || !/\n<section class="agenda"/.test(stripped)) return stripped;
+  const line = `<p class="updated" id="updated">Updated <time datetime="${localIso(instant, tz)}">${longDate(instant, tz)}</time>${how ? ' · <a href="how.html">How it’s made</a>' : ''}</p>`;
+  return stripped.replace(/\n<section class="agenda"/, `\n${line}\n<section class="agenda"`);
+}
+
+/** A page's own "Last revised" date ('2026-11-14'), '' when it carries none. */
+export function revisedDate(html) {
+  const m = html.match(/<p class="ad-revised">[^<]*<time datetime="(\d{4}-\d\d-\d\d)"/);
+  return m ? m[1] : '';
+}
+
+/** Where a page says its one true copy lives ('' when it names none). A page shared word for word by every city
+ *  (how.html) names one copy, so the others stay out of their city's sitemap. */
+export function canonicalOf(html) {
+  const m = html.match(/<link rel="canonical" href="([^"]+)"/);
+  return m ? m[1] : '';
+}
+
 /** Put (or replace) the ld+json block right before </body>. */
 export function injectLd(html, ld) {
   const tag = `<script type="application/ld+json" id="events-ld">${JSON.stringify(ld).replace(/<\//g, '<\\/')}</script>`;
@@ -129,17 +173,21 @@ export function main(siteDir = new URL('../site/', import.meta.url), today = new
   const read = (f) => readFileSync(new URL(f, siteDir), 'utf8');
   const site = CITY.site.endsWith('/') ? CITY.site : CITY.site + '/';
   const place = existsSync(new URL('cities.js', siteDir)) ? placeFor(read('cities.js'), CITY.key, { city: CITY.name, state: '' }) : { city: CITY.name, state: '' };
-  const { events } = JSON.parse(read('events.json'));
-  const ld = jsonLd(events, place, { today, site });
-  writeFileSync(new URL('index.html', siteDir), injectLd(injectMapLink(read('index.html')), ld));
-  const pages = [{ path: '', freq: 'daily' }];
-  if (existsSync(new URL('advertise.html', siteDir))) pages.push({ path: 'advertise.html', freq: 'monthly' });
-  for (const page of ['about.html', 'faq.html', 'sources.html']) {
-    if (existsSync(new URL(page, siteDir))) pages.push({ path: page, freq: 'monthly' });
+  const { events, generated } = JSON.parse(read('events.json'));
+  const built = generated && !Number.isNaN(Date.parse(generated)) ? generated : '';
+  const ld = jsonLd(events, place, { today, site, modified: built ? localIso(built) : undefined });
+  const how = existsSync(new URL('how.html', siteDir));
+  writeFileSync(new URL('index.html', siteDir), injectLd(injectUpdated(injectMapLink(read('index.html')), built, { how }), ld));
+  const pages = [{ path: '', freq: 'daily', lastmod: built ? localIso(built).slice(0, 10) : today }];
+  for (const page of ['advertise.html', 'about.html', 'faq.html', 'sources.html', 'how.html']) {
+    if (!existsSync(new URL(page, siteDir))) continue;
+    const canon = canonicalOf(read(page));
+    if (canon && canon !== site + page) continue;
+    pages.push({ path: page, freq: 'monthly', lastmod: revisedDate(read(page)) });
   }
   writeFileSync(new URL('sitemap.xml', siteDir), sitemapXml(site, pages, today));
   writeFileSync(new URL('robots.txt', siteDir), robotsTxt(site));
-  console.log(`seo: ${ld['@graph'].length - 1} events as JSON-LD (${place.city}, ${place.state}), More Cities link in the footer, sitemap ${pages.length} url(s), robots.txt → ${site}`);
+  console.log(`seo: ${ld['@graph'].filter((x) => x['@type'] === 'Event').length} events as JSON-LD (${place.city}, ${place.state}), More Cities link in the footer, Updated ${built ? longDate(built) : 'line off (the feed has no build time)'}, sitemap ${pages.length} url(s), robots.txt → ${site}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main(process.env.SITE_DIR ? new URL(process.env.SITE_DIR.replace(/\/?$/, '/'), `file://${process.cwd()}/`) : undefined);

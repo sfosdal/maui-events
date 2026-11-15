@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP } from './seo.mjs';
+import { utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf } from './seo.mjs';
 
 const SEA = { city: 'Seattle', state: 'WA' };
 
@@ -95,4 +95,47 @@ test('injectMapLink: one static More Cities link to the map as the first footer 
   const old = html.replace('<footer>', '<nav class="city-links" id="city-links" aria-label="x"><a href="https://here.events/">All</a></nav>\n<footer>');
   assert.equal(injectMapLink(old), once, 'the 2026-10-18 nav row is removed');
   assert.throws(() => injectMapLink('<body></body>'), /no <div class="foot-links">/);
+});
+
+test('jsonLd: with a build time, a WebPage with dateModified sits after the WebSite', () => {
+  const ld = jsonLd([{ venue: 'V', title: 'A', date: '2026-10-17', time: '19:00:00', url: 'u' }], SEA, { today: '2026-10-16', tz: 'America/Los_Angeles', site: 'https://x.here.events/', name: 'X', modified: '2026-10-16T12:03:11-07:00' });
+  assert.deepEqual(ld['@graph'].map((x) => x['@type']), ['WebSite', 'WebPage', 'Event']);
+  assert.equal(ld['@graph'][1].dateModified, '2026-10-16T12:03:11-07:00');
+  assert.equal(ld['@graph'][1].url, 'https://x.here.events/');
+});
+
+test('sitemap lastmod: a page\'s own date, none for a page without one, today only when unset', () => {
+  const xml = sitemapXml('https://x.here.events/', [{ path: '', freq: 'daily', lastmod: '2026-11-15' }, { path: 'about.html', freq: 'monthly', lastmod: '2026-11-14' }, { path: 'faq.html', freq: 'monthly', lastmod: '' }, { path: 'old.html', freq: 'monthly' }], '2026-11-16');
+  assert.match(xml, /<loc>https:\/\/x\.here\.events\/<\/loc><lastmod>2026-11-15<\/lastmod>/);
+  assert.match(xml, /about\.html<\/loc><lastmod>2026-11-14<\/lastmod>/);
+  assert.match(xml, /faq\.html<\/loc><changefreq>monthly/);
+  assert.match(xml, /old\.html<\/loc><lastmod>2026-11-16<\/lastmod>/);
+});
+
+test('localIso and longDate write an instant in the city\'s own time', () => {
+  assert.equal(localIso('2026-11-15T20:03:11.000Z', 'America/Los_Angeles'), '2026-11-15T12:03:11-08:00');
+  assert.equal(localIso('2026-07-02T03:30:00Z', 'America/Chicago'), '2026-07-01T22:30:00-05:00');
+  assert.equal(localIso('2026-11-15T22:00:00Z', 'Pacific/Honolulu'), '2026-11-15T12:00:00-10:00');
+  assert.equal(longDate('2026-07-02T03:30:00Z', 'America/Chicago'), 'July 1, 2026');
+});
+
+test('injectUpdated: one line before the list, replaced on a rerun, off without a build time', () => {
+  const html = '<body><nav></nav>\n<section class="agenda" aria-label="x">\n</section>\n</body>';
+  const once = injectUpdated(html, '2026-11-15T20:03:11.000Z', { tz: 'America/Los_Angeles', how: true });
+  assert.equal(once, '<body><nav></nav>\n<p class="updated" id="updated">Updated <time datetime="2026-11-15T12:03:11-08:00">November 15, 2026</time> · <a href="how.html">How it’s made</a></p>\n<section class="agenda" aria-label="x">\n</section>\n</body>');
+  const next = injectUpdated(once, '2026-11-16T20:00:00.000Z', { tz: 'America/Los_Angeles' });
+  assert.equal((next.match(/id="updated"/g) || []).length, 1);
+  assert.match(next, /November 16, 2026<\/time><\/p>\n<section class="agenda"/);
+  assert.equal(injectUpdated(once, '', {}), html, 'no build time: the old line goes, none is written');
+  assert.equal(injectUpdated('<body></body>', '2026-11-15T20:03:11.000Z', { tz: 'UTC' }), '<body></body>', 'no list: left alone');
+});
+
+test('revisedDate reads a page\'s Last revised date', () => {
+  assert.equal(revisedDate('<main><p class="ad-revised">Last revised <time datetime="2026-11-14">November 14, 2026</time></p></main>'), '2026-11-14');
+  assert.equal(revisedDate('<main><p>x</p></main>'), '');
+});
+
+test('canonicalOf reads the page\'s one true address', () => {
+  assert.equal(canonicalOf('<head><link rel="canonical" href="https://seattle.here.events/how.html"></head>'), 'https://seattle.here.events/how.html');
+  assert.equal(canonicalOf('<head></head>'), '');
 });
