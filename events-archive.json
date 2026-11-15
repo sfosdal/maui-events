@@ -623,6 +623,86 @@
    "time": "19:30",
    "url": "https://mauiarts.org/show-details/anthony-pfluke-with-special-guests-namaka-cosma-kevin-brown",
    "type": "arts"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "Alborosie & Shengen Clan",
+   "date": "2026-11-14",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/alborosie-shengen-clan",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Maui OnStage Education & Youth Program presents “The Enchanted Bookshop”",
+   "date": "2026-11-14",
+   "time": "11:00",
+   "url": "https://proartsmaui.org/event/maui-onstage-education-youth-program-presents-the-enchanted-bookshop-nov-14-2026-11am/",
+   "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Lahaina Hula Show",
+   "date": "2026-11-14",
+   "time": "11:00",
+   "url": "https://lahainacannerymall.com/event/lahaina-hula-show-4/",
+   "type": "community"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "46th Annual HAWAIʻI International Film Festival (Hiff)",
+   "date": "2026-11-14",
+   "time": "13:00",
+   "url": "https://mauiarts.org/show-details/46th-annual-hawaii-international-film-festival-hiff",
+   "type": "arts"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Maui OnStage Education & Youth Program presents “The Enchanted Bookshop”",
+   "date": "2026-11-14",
+   "time": "14:00",
+   "url": "https://proartsmaui.org/event/maui-onstage-education-youth-program-presents-the-enchanted-bookshop-nov-14-2pm/",
+   "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Friday Night Art Night",
+   "date": "2026-11-14",
+   "time": "16:00",
+   "url": "https://lahainacannerymall.com/event/friday-night-art-night-2/",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "In Between",
+   "date": "2026-11-14",
+   "time": "17:30",
+   "url": "https://lahainacannerymall.com/event/in-between-2/",
+   "type": "concert"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Tempa and Naor with Keith Cochrane",
+   "date": "2026-11-14",
+   "time": "19:00",
+   "url": "https://mulligansontheblue.com/event/tempa-and-naor/",
+   "type": "concert"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "Home In The Islands",
+   "date": "2026-11-14",
+   "time": "19:00",
+   "url": "https://mauiarts.org/show-details/home-in-the-islands",
+   "type": "arts"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Kellen Erskine: Stand Up Comedy",
+   "date": "2026-11-14",
+   "time": "19:30",
+   "url": "https://proartsmaui.org/event/kellen-erskine-nov-14-2026/",
+   "type": "arts"
   }
  ]
 }
