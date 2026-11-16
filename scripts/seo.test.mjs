@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf } from './seo.mjs';
+import { utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf, noindexOf } from './seo.mjs';
 
 const SEA = { city: 'Seattle', state: 'WA' };
 
@@ -138,4 +138,10 @@ test('revisedDate reads a page\'s Last revised date', () => {
 test('canonicalOf reads the page\'s one true address', () => {
   assert.equal(canonicalOf('<head><link rel="canonical" href="https://seattle.here.events/how.html"></head>'), 'https://seattle.here.events/how.html');
   assert.equal(canonicalOf('<head></head>'), '');
+});
+
+test('a noindex page is recognised, an ordinary one is not', () => {
+  assert.equal(noindexOf('<head><meta name="robots" content="noindex"></head>'), true);
+  assert.equal(noindexOf('<head><meta name="robots" content="noindex, follow"></head>'), true);
+  assert.equal(noindexOf('<head><meta name="description" content="x"></head>'), false);
 });

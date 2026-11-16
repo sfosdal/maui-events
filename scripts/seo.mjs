@@ -154,6 +154,11 @@ export function canonicalOf(html) {
   return m ? m[1] : '';
 }
 
+/** True when a page asks search engines to leave it out (advertise.html): such a page stays out of the sitemap. */
+export function noindexOf(html) {
+  return /<meta name="robots" content="[^"]*noindex/.test(html);
+}
+
 /** Put (or replace) the ld+json block right before </body>. */
 export function injectLd(html, ld) {
   const tag = `<script type="application/ld+json" id="events-ld">${JSON.stringify(ld).replace(/<\//g, '<\\/')}</script>`;
@@ -183,6 +188,7 @@ export function main(siteDir = new URL('../site/', import.meta.url), today = new
     if (!existsSync(new URL(page, siteDir))) continue;
     const canon = canonicalOf(read(page));
     if (canon && canon !== site + page) continue;
+    if (noindexOf(read(page))) continue;
     pages.push({ path: page, freq: 'monthly', lastmod: revisedDate(read(page)) });
   }
   writeFileSync(new URL('sitemap.xml', siteDir), sitemapXml(site, pages, today));
