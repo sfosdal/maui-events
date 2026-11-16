@@ -1,14 +1,14 @@
 // Festivals no single venue names (Steve, 2026-10-30: "once a week, good" + "the github link is fine"): a
 // festival or promoter series spread over several venues — Baba Obscura's six stages — shows up in a city's
-// feed only as unrelated rows. scripts/festival-finder.mjs (lqa, Mondays) reads every site's live feed, finds
+// feed only as unrelated rows. scripts/festival-finder.mjs (here-core, Mondays) reads every site's live feed, finds
 // the same phrase at two or more venues within ten days, and lists the finds as a checklist in one GitHub
-// issue in sfosdal/lqa-events (label `festival-finder`), which GitHub mails to Steve. A box he ticks there is
+// issue in sfosdal/here-core (label `festival-finder`), which GitHub mails to Steve. A box he ticks there is
 // a yes; a box still unticked when the issue is closed (by the next Monday's) is a no, never proposed again.
 // Every city's build (stampFestivals) reads those answers and gives each event of an approved find its
 // festival's name — a line on the row and a word the search matches; a filter row of its own is a city.js
 // venue and a registry slot, added by hand when Steve asks. Shared: byte-for-byte in every city.
 
-const REPO = 'sfosdal/lqa-events', LABEL = 'festival-finder';
+const REPO = 'sfosdal/here-core', LABEL = 'festival-finder';
 const STOP = new Set('the a an and of at in on with for to from by vs live night tour presents feat ft featuring show concert music party special guest guests tickets event edition day days part vol volume'.split(' '));
 const NOISE = /\b(mon|tue|wed|thu|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|sold|out|new year'?s|christmas|halloween|nye|thanksgiving|anniversary|mens|womens|men's|women's|basketball|football|soccer|hockey|volleyball|baseball|university|state|college|vs|ice|tour)\b|\d/i;
 const FEST = /\b(fest(ival)?|crawl|showcase|block party|takeover|art walk|week|weekend|series)\b/i;

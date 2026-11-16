@@ -21,6 +21,12 @@
 //   node scripts/soldout-check.mjs --limit 5  # a quick run
 //   node scripts/soldout-check.mjs --ticketweb # just the TicketWeb rooms, no browser
 //   CDP_URL=http://127.0.0.1:9222 node scripts/soldout-check.mjs
+//   SOLDOUT_FEEDS=https://bend.here.events/,https://denver.here.events/ SOLDOUT_OUT=/path/soldout.json node scripts/soldout-check.mjs
+//       # every site at once (tools/soldout/run.sh in here-core): the events come from each site's live
+//       # events.json (its Ticketmaster and TicketWeb links in the next SOLDOUT_DAYS days, 45 by default), not
+//       # from city.js and Discovery, so no key is needed; one file keyed by event id answers for every site.
+//       # SOLDOUT_BUDGET_MIN stops the browser after that many minutes: the events longest unasked go first,
+//       # so run after run works round the whole list, and the rest keep their last answers. No away games.
 //       # drive a Chrome that is already running with --remote-debugging-port
 //       # (e.g. the Chromium-on-Xvfb container in docker/soldout-browser/)
 //       # instead of launching one here
@@ -37,7 +43,10 @@ import { CITY } from './badges.mjs';
 import { tmFetch } from './tm-fetch.mjs'; // paced, and a 429, 5xx or dropped connection retried (Steve, 2026-10-28: "I want ticketmaster calls to not fail")
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(ROOT, 'scripts', 'data', 'soldout.json'); // committed — the build (fetch-events.mjs) stamps it onto the feed
+const FEEDS = (process.env.SOLDOUT_FEEDS || '').split(',').map((s) => s.trim()).filter(Boolean).map((s) => s.replace(/\/?$/, '/')); // feed mode: these sites' live feeds are the list
+const FEED_DAYS = Number(process.env.SOLDOUT_DAYS) || 45;
+const BUDGET_MS = (Number(process.env.SOLDOUT_BUDGET_MIN) || 0) * 60000;
+const OUT = process.env.SOLDOUT_OUT ? path.resolve(process.env.SOLDOUT_OUT) : path.join(ROOT, 'scripts', 'data', 'soldout.json'); // committed — the build (fetch-events.mjs) stamps it onto the feed
 // The venues checked (city.js): soldOut 'tm' = Ticketmaster event pages
 // read in Chrome; 'ticketweb' = Discovery lists the room with
 // ticketweb.com links, read with a plain fetch, keyed TW<id> (the
@@ -67,7 +76,7 @@ if (!process.env.TICKETMASTER_API_KEY) {
   try { const m = fs.readFileSync(path.join(ROOT, '.env'), 'utf8').match(/^TICKETMASTER_API_KEY=(.+)$/m); if (m) process.env.TICKETMASTER_API_KEY = m[1].trim(); } catch { /* no .env */ }
 }
 const KEY = process.env.TICKETMASTER_API_KEY;
-if (!KEY) { console.error('No TICKETMASTER_API_KEY'); process.exit(1); }
+if (!KEY && !FEEDS.length) { console.error('No TICKETMASTER_API_KEY'); process.exit(1); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- the events to check: on sale now, by the public (Discovery) ----
@@ -241,7 +250,39 @@ async function checkTicketWeb(ev) {
   return readTicketWeb(await res.text());
 }
 
-const home = await listEvents(), tw = await listEvents(TICKETWEB, (url) => { const id = ticketWebId(url); return id && 'TW' + id; }), away = await listAwayGames();
+// ---- feed mode: every site's own list, as published ----
+async function listFeedEvents() {
+  const out = new Map();
+  const today = new Date().toISOString().slice(0, 10), last = new Date(Date.now() + FEED_DAYS * 864e5).toISOString().slice(0, 10);
+  for (const site of FEEDS) {
+    try {
+      const r = await fetch(site + 'events.json', { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const feed = await r.json();
+      let n = 0;
+      for (const e of feed.events || []) {
+        if (!e.url || !e.date || e.date < today || e.date > last || SKIP.test(e.title || '')) continue;
+        const m = e.url.match(/(?:ticketmaster|livenation)\.[a-z.]+\/.*\/event\/([0-9A-F]{16})/i), twId = ticketWebId(e.url);
+        const id = m ? m[1].toUpperCase() : twId ? 'TW' + twId : null;
+        if (!id || out.has(id)) continue;
+        out.set(id, { id, url: e.url, name: e.title || '', date: e.date, venue: e.venue || '', status: 'onsale', onsale: true }); n++;
+      }
+      console.log(`${site} ${n} events`);
+    } catch (err) { console.warn(site, 'feed not read:', err.message); listFailed = true; }
+  }
+  // events another checker already answers for (lqa-events' own job: its file's ids), left to it
+  if (process.env.SOLDOUT_SKIP_URL) {
+    try {
+      const theirs = (await (await fetch(process.env.SOLDOUT_SKIP_URL, { cache: 'no-store', signal: AbortSignal.timeout(30000) })).json()).events || {};
+      let n = 0; for (const id of Object.keys(theirs)) if (out.delete(id)) n++;
+      console.log(`${n} events left to ${process.env.SOLDOUT_SKIP_URL}`);
+    } catch (err) { console.warn('skip list not read:', err.message); }
+  }
+  return [...out.values()];
+}
+
+const feedEvents = FEEDS.length ? await listFeedEvents() : null;
+const home = feedEvents ? feedEvents.filter((e) => !/^TW/.test(e.id)) : await listEvents(), tw = feedEvents ? feedEvents.filter((e) => /^TW/.test(e.id)) : await listEvents(TICKETWEB, (url) => { const id = ticketWebId(url); return id && 'TW' + id; }), away = feedEvents ? [] : await listAwayGames();
 const events = home.concat(tw, away.filter((a) => !home.some((h) => h.id === a.id)));
 if (process.argv.includes('--list')) { // just the list, no browser: what a run would check
   for (const e of events) console.log(`${e.date}  ${e.away ? 'AWAY ' + e.club.padEnd(9) : 'home '.padEnd(14)} ${e.onsale ? 'onsale ' : (e.status || '?').padEnd(7)} ${e.name.slice(0, 50).padEnd(50)} ${e.venue}`);
@@ -253,6 +294,8 @@ const todo = onlyTw ? [] : events.filter((e) => e.onsale && !isTw(e) && (!onlyAw
 const todoTw = onlyAway ? [] : events.filter((e) => e.onsale && isTw(e));
 console.log(`${home.length} events at ${VENUES.length} venues + ${tw.length} at ${TICKETWEB.length} TicketWeb room${TICKETWEB.length === 1 ? '' : 's'} + ${away.length} away games, ${events.filter((e) => e.onsale).length} on sale, checking ${todo.length} in the browser and ${todoTw.length} by fetch`);
 const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')).events || {} : {};
+const asked = (e) => (prev[e.id] && (prev[e.id].tried || prev[e.id].checked)) || '';
+if (feedEvents) todo.sort((a, b) => asked(a).localeCompare(asked(b)) || a.date.localeCompare(b.date)); // never asked first, then the longest unasked; the soonest first among equals
 const results = {};
 function record(ev, res, t0) {
   // a run that saw nothing (the page gave no answer, or nothing either way)
@@ -261,27 +304,35 @@ function record(ev, res, t0) {
   const last = prev[ev.id];
   if (/^(none|unknown)$/.test(res.status) && last && /^(available|soldout)$/.test(last.status)) {
     res = { ...last, note: `kept from ${last.checked.slice(0, 10)}: this run ${res.status}${res.note ? ' (' + res.note + ')' : ''}` };
-    results[ev.id] = { ...res, name: ev.name, date: ev.date, venue: ev.venue, ...(ev.away ? { club: ev.club, away: true } : {}) };
+    results[ev.id] = { ...res, name: ev.name, date: ev.date, venue: ev.venue, ...(ev.away ? { club: ev.club, away: true } : {}), ...(feedEvents ? { tried: new Date().toISOString() } : {}) };
   } else {
     results[ev.id] = { ...res, name: ev.name, date: ev.date, venue: ev.venue, ...(ev.away ? { club: ev.club, away: true } : {}), checked: new Date().toISOString() };
   }
   console.log(`${ev.date}  ${ev.name.slice(0, 44).padEnd(44)}  ${res.status.padEnd(9)} primary ${String(res.primary ?? '-').padStart(5)}  resale ${String(res.resale ?? '-').padStart(5)}  ${res.note || ''}  (${Date.now() - t0}ms)`);
 }
+if (feedEvents) todoTw.sort((a, b) => asked(a).localeCompare(asked(b)) || a.date.localeCompare(b.date));
+let twRefused = 0; // TicketWeb answers 403 to everything after a hundred or so quick reads (2026-11-16): slower in feed mode, and stop at five refusals running
 for (const ev of todoTw) { // the fetch-only rooms first: no browser to keep waiting
+  if (twRefused >= 5) { console.log('TicketWeb is refusing — the rest of its pages keep their last answers and go first next run'); break; }
   const t0 = Date.now();
   let res;
   try { res = await checkTicketWeb(ev); } catch (e) { res = { status: 'unknown', note: String(e).slice(0, 80) }; }
+  twRefused = /^HTTP 4(03|29)/.test(res.note || '') ? twRefused + 1 : 0;
+  if (twRefused && feedEvents) continue; // a refusal is not an answer: not recorded, so the page is asked again first
   record(ev, res, t0);
-  await sleep(400);
+  await sleep(feedEvents ? 1500 : 400);
 }
 const EVENT_TIMEOUT_MS = 90000; // the slowest honest page answers in ~20 s; one silent for this long is given up, not waited on
 const giveUp = (ms) => new Promise((r) => setTimeout(r, ms).unref()); // unref: the losing timer must not keep the process alive after the run
 const chrome = todo.length && !CDP_URL ? launchChrome() : null;
+let budgetHit = false; // feed mode: the run's minutes are used up
 let aborted = false; // the browser stopped answering: the rest of the list keeps the last run's answers
 try {
   const cdp = todo.length ? await connect() : null;
   let stalls = 0;
+  const runStart = Date.now();
   for (const ev of todo) {
+    if (BUDGET_MS && Date.now() - runStart > BUDGET_MS) { budgetHit = true; console.log(`budget of ${BUDGET_MS / 60000} min used after ${Object.keys(results).length} events — the rest keep their last answers and go first next run`); break; }
     const t0 = Date.now();
     let res;
     try { res = await Promise.race([checkEvent(cdp, ev), giveUp(EVENT_TIMEOUT_MS).then(() => ({ status: 'unknown', note: `no answer in ${EVENT_TIMEOUT_MS / 1000} s`, stalled: true }))]); } catch (e) { res = { status: 'unknown', note: String(e).slice(0, 80) }; }
@@ -295,7 +346,10 @@ try {
 }
 for (const ev of events) if (!ev.onsale) results[ev.id] = { status: 'presale', name: ev.name, date: ev.date, venue: ev.venue, ...(ev.away ? { club: ev.club, away: true } : {}), checked: new Date().toISOString() }; // not yet on public sale: nothing to be sold out of
 if (listFailed) console.log('a Discovery list read failed — the events it could not list keep the last run\'s answers');
-if (limit || onlyAway || onlyTw || aborted || listFailed) for (const k of Object.keys(prev)) if (!results[k]) results[k] = prev[k]; // a partial run keeps the rest of the last one
+if (limit || onlyAway || onlyTw || aborted || listFailed || budgetHit || feedEvents) { // a partial run keeps the rest of the last one; feed mode always does, and lets go of the days gone by
+  const today = new Date().toISOString().slice(0, 10);
+  for (const k of Object.keys(prev)) if (!results[k] && !(feedEvents && prev[k].date && prev[k].date < today)) results[k] = prev[k];
+}
 fs.writeFileSync(OUT, JSON.stringify({ generated: new Date().toISOString(), _: 'scripts/soldout-check.mjs (a local run — Ticketmaster inventory as a real Chrome sees it, TicketWeb pages (TW… keys, the Crocodile) by plain fetch; committed by scripts/soldout-run.sh). status: available = box-office tickets on sale; soldout = only resale left; none = the inventory call and the page both showed nothing (not treated as sold out); presale = public sale not started; unknown = the page gave no answer; a none/unknown run keeps the last real answer, its own checked time, note says so.', events: results }, null, 1) + '\n');
 const tally = {}; for (const r of Object.values(results)) tally[r.status] = (tally[r.status] || 0) + 1;
 console.log('wrote', path.relative(ROOT, OUT), JSON.stringify(tally));

@@ -37,7 +37,9 @@
  *   afterInject(merged, ctx)  → runs after the teams' home games are written in
  *   injectVenue(t, g)   → a home game's ground (default t.inject.venue || t.venue || g.venue)
  *   feedUrlOld          the live feed's address before here.events, read when the current one fails
- *   soldoutUrl          read the sold-out checker's soldout.json from here instead of scripts/data/ (Seattle reads lqa's)
+ *   soldoutUrl          a second soldout.json laid over the one every site shares (SOLDOUT_URL below, written by
+ *                       here-core's tools/soldout/run.sh): a URL (Seattle reads lqa's, for the clubs' away
+ *                       games), or '' for this repo's own scripts/data/soldout.json (lqa)
  *   moreFeeds(merged)   → [[file, rows, calname], …]: extra subscribe feeds written beside the filtered ones (lqa's no-movies)
  */
 import { writeFileSync, readFileSync } from 'node:fs';
@@ -63,6 +65,7 @@ const ICS_OUT = new URL('../site/events.ics', import.meta.url);
 export const WINDOW_DAYS = 365;
 const ARCHIVE_OUT = new URL('../events-archive.json', import.meta.url); // repo root, ignored; the workflow commits it to the archive branch
 const LINKS_OUT = new URL('../links-checked.json', import.meta.url); // repo root, ignored; the workflow commits it to the archive branch
+const SOLDOUT_URL = 'https://raw.githubusercontent.com/sfosdal/here-core/soldout/soldout.json'; // the sold-out checker's answers for every site (tools/soldout/run.sh)
 const MAX_EVENTS = 4000; // sanity cap on the UPCOMING rows (merge.mjs capUpcoming): past events are never trimmed
 
 export const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -325,21 +328,31 @@ export async function build(cfg = {}) {
   }
   if (cfg.afterInject) merged = (await cfg.afterInject(merged, ctx)) || merged;
 
-  // Ticket availability for the Ticketmaster venues, from the sold-out checker (scripts/soldout-check.mjs →
-  // scripts/data/soldout.json, which only lqa-events' launchd job writes; empty elsewhere unless `soldoutUrl`
-  // reads lqa's): each on-sale event's box-office and resale counts and lowest price, and soldOut when the box
-  // office has nothing left.
+  // Ticket availability for the Ticketmaster and TicketWeb links, from the sold-out checker
+  // (scripts/soldout-check.mjs): each on-sale event's box-office and resale counts and lowest price, and soldOut
+  // when the box office has nothing left. One file for every site (SOLDOUT_URL: here-core's `soldout` branch,
+  // written from a Mac by tools/soldout/run.sh, keyed by event id).
   try {
-    let so = null;
-    if (cfg.soldoutUrl) { // never a copy here, which froze on 2026-10-15 and kept calling games sold out (Kraken–Red Wings, 2026-10-20)
-      for (let tries = 1; !so; tries++) {
+    // the shared file first, then the city's own on top (its answers win): `soldoutUrl` a URL (Seattle: lqa's file,
+    // for the clubs' away games), or '' for this repo's scripts/data/soldout.json (lqa). A file that cannot be
+    // read says nothing; the other still counts. Never a copy here, which froze on 2026-10-15 and kept calling
+    // games sold out (Kraken–Red Wings, 2026-10-20).
+    const readUrl = async (url) => {
+      for (let tries = 1; ; tries++) {
         try {
-          const r = await fetch(cfg.soldoutUrl, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+          const r = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          so = await r.json();
+          return await r.json();
         } catch (err) { if (tries >= 3) throw err; await new Promise((r) => setTimeout(r, tries * 5000)); }
       }
-    } else so = JSON.parse(readFileSync(new URL('./data/soldout.json', import.meta.url), 'utf8'));
+    };
+    const so = { generated: '', events: {} };
+    const layers = [() => readUrl(SOLDOUT_URL)];
+    if (cfg.soldoutUrl) layers.push(() => readUrl(cfg.soldoutUrl));
+    else if (cfg.soldoutUrl === '') layers.push(() => JSON.parse(readFileSync(new URL('./data/soldout.json', import.meta.url), 'utf8')));
+    for (const layer of layers) {
+      try { const d = await layer(); Object.assign(so.events, d.events || {}); if ((d.generated || '') > so.generated) so.generated = d.generated; } catch (err) { console.error('soldout.json:', err.message); }
+    }
     let n = 0, s = 0;
     for (const e of merged) {
       const m = (e.url || '').match(/\/event\/([0-9A-F]{16})/i), tw = ticketWebId(e.url); // Ticketmaster's 16-hex id, or TW<id> for a TicketWeb page (the Crocodile)
