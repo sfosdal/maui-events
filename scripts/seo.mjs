@@ -4,7 +4,8 @@
  *   site/robots.txt   — allow everything, name the sitemap
  *   site/sitemap.xml  — the page (and advertise.html / about.html / faq.html / sources.html / how.html when the city
  *                       has them). lastmod is the truth: the feed's own build time for the calendar, each
- *                       other page's "Last revised" date (its <p class="ad-revised"><time datetime>), none
+ *                       other page's "Last revised" date (its <p class="ad-revised"><time datetime>; in the Action that
+ *                       line is first set to the day git last saw the page change), none
  *                       for a page that carries no date
  *   site/index.html   — a visible "Updated <date>" line under the toolbar, the date the feed was built, with a
  *                       link to how.html where the city has that page; the same instant is the WebPage's
@@ -27,6 +28,7 @@
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import '../site/city.js';
 
 const CITY = globalThis.LQACity;
@@ -141,6 +143,24 @@ export function injectUpdated(html, instant, { tz = CITY.tz, how = false } = {})
   return stripped.replace(/\n<section class="agenda"/, `\n${line}\n<section class="agenda"`);
 }
 
+/** The day a file was last changed in git ('2026-11-14'), '' when git cannot say: no repository, no commit for the
+ *  file, or a shallow clone (there every file looks as new as the one commit fetched). */
+export function gitDate(dir, file) {
+  try {
+    const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (git('rev-parse', '--is-shallow-repository') !== 'false') return '';
+    const day = git('log', '-1', '--format=%cs', '--', file);
+    return /^\d{4}-\d\d-\d\d$/.test(day) ? day : '';
+  } catch { return ''; }
+}
+
+/** A page with its "Last revised" line set to a day ('2026-11-14' → November 14, 2026); unchanged when it has no such line. */
+export function stampRevised(html, day) {
+  const [y, m, d] = day.split('-').map(Number);
+  const long = `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1]} ${d}, ${y}`;
+  return html.replace(/(<p class="ad-revised">[^<]*<time datetime=")\d{4}-\d\d-\d\d(">)[^<]*(<\/time>)/, `$1${day}$2${long}$3`);
+}
+
 /** A page's own "Last revised" date ('2026-11-14'), '' when it carries none. */
 export function revisedDate(html) {
   const m = html.match(/<p class="ad-revised">[^<]*<time datetime="(\d{4}-\d\d-\d\d)"/);
@@ -183,13 +203,16 @@ export function main(siteDir = new URL('../site/', import.meta.url), today = new
   const ld = jsonLd(events, place, { today, site, modified: built ? localIso(built) : undefined });
   const how = existsSync(new URL('how.html', siteDir));
   writeFileSync(new URL('index.html', siteDir), injectLd(injectUpdated(injectMapLink(read('index.html')), built, { how }), ld));
+  const stamp = process.env.GITHUB_ACTIONS === 'true' || process.env.STAMP_REVISED === '1';
   const pages = [{ path: '', freq: 'daily', lastmod: built ? localIso(built).slice(0, 10) : today }];
   for (const page of ['advertise.html', 'about.html', 'faq.html', 'sources.html', 'how.html']) {
     if (!existsSync(new URL(page, siteDir))) continue;
     const canon = canonicalOf(read(page));
     if (canon && canon !== site + page) continue;
     if (noindexOf(read(page))) continue;
-    pages.push({ path: page, freq: 'monthly', lastmod: revisedDate(read(page)) });
+    const changed = stamp ? gitDate(fileURLToPath(siteDir), page) : '';
+    if (changed && revisedDate(read(page)) && revisedDate(read(page)) !== changed) writeFileSync(new URL(page, siteDir), stampRevised(read(page), changed));
+    pages.push({ path: page, freq: 'monthly', lastmod: changed || revisedDate(read(page)) });
   }
   writeFileSync(new URL('sitemap.xml', siteDir), sitemapXml(site, pages, today));
   writeFileSync(new URL('robots.txt', siteDir), robotsTxt(site));

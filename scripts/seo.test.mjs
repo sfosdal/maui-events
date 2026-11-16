@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf, noindexOf } from './seo.mjs';
+import { utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf, noindexOf, stampRevised, gitDate } from './seo.mjs';
 
 const SEA = { city: 'Seattle', state: 'WA' };
 
@@ -144,4 +144,15 @@ test('a noindex page is recognised, an ordinary one is not', () => {
   assert.equal(noindexOf('<head><meta name="robots" content="noindex"></head>'), true);
   assert.equal(noindexOf('<head><meta name="robots" content="noindex, follow"></head>'), true);
   assert.equal(noindexOf('<head><meta name="description" content="x"></head>'), false);
+});
+
+test('stampRevised sets the Last revised line, and leaves a page without one alone', () => {
+  const page = '<main><p class="ad-revised">Last revised <time datetime="2026-10-29">October 29, 2026</time></p></main>';
+  assert.equal(stampRevised(page, '2026-11-06'), '<main><p class="ad-revised">Last revised <time datetime="2026-11-06">November 6, 2026</time></p></main>');
+  assert.equal(revisedDate(stampRevised(page, '2026-12-31')), '2026-12-31');
+  assert.equal(stampRevised('<main><p>x</p></main>', '2026-11-06'), '<main><p>x</p></main>');
+});
+
+test('gitDate is empty where git has nothing to say', () => {
+  assert.equal(gitDate('/', 'no-such-file.html'), '');
 });
