@@ -703,6 +703,54 @@
    "time": "19:30",
    "url": "https://proartsmaui.org/event/kellen-erskine-nov-14-2026/",
    "type": "arts"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "NFL Watch Parties",
+   "date": "2026-11-15",
+   "time": "08:00",
+   "url": "https://lahainacannerymall.com/event/nfl-watch-parties-4/",
+   "type": "community"
+  },
+  {
+   "venue": "Maui Arts & Cultural Center",
+   "title": "46th Annual HAWAIʻI International Film Festival (Hiff)",
+   "date": "2026-11-15",
+   "time": "13:00",
+   "url": "https://mauiarts.org/show-details/46th-annual-hawaii-international-film-festival-hiff",
+   "type": "arts"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Maui OnStage Education & Youth Program presents “The Enchanted Bookshop”",
+   "date": "2026-11-15",
+   "time": "14:00",
+   "url": "https://proartsmaui.org/event/maui-onstage-education-youth-program-presents-the-enchanted-bookshop-nov-15-2026-2pm/",
+   "type": "arts"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Island Soul Band",
+   "date": "2026-11-15",
+   "time": "17:00",
+   "url": "https://mulligansontheblue.com/event/island-soul-band-87/",
+   "type": "concert"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Night Sky Program",
+   "date": "2026-11-15",
+   "time": "18:30",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=146594",
+   "type": "community"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Steve Grimes: Greatest Hits Encore Performance",
+   "date": "2026-11-15",
+   "time": "19:00",
+   "url": "https://proartsmaui.org/event/steve-grimes-greatest-hits/",
+   "type": "concert"
   }
  ]
 }
