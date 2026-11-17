@@ -751,6 +751,14 @@
    "time": "19:00",
    "url": "https://proartsmaui.org/event/steve-grimes-greatest-hits/",
    "type": "concert"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Chargers vs Ravens",
+   "date": "2026-11-16",
+   "time": "15:15",
+   "url": "https://lahainacannerymall.com/event/chargers-vs-ravens/",
+   "type": "community"
   }
  ]
 }
