@@ -775,6 +775,30 @@
    "time": "18:30",
    "url": "https://proartsmaui.org/event/kihei-community-association-nov-17-2026/",
    "type": "arts"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Forest Bird Hike",
+   "date": "2026-11-18",
+   "time": "09:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=138293",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Aloha Wailea Luau",
+   "date": "2026-11-18",
+   "time": "17:30",
+   "url": "https://www.alohawailealuau.com",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "John Cruz Island Style Series",
+   "date": "2026-11-18",
+   "time": "19:00",
+   "url": "https://proartsmaui.org/event/john-cruz-island-style-series-nov-18-2026/",
+   "type": "concert"
   }
  ]
 }
