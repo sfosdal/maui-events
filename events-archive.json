@@ -799,6 +799,30 @@
    "time": "19:00",
    "url": "https://proartsmaui.org/event/john-cruz-island-style-series-nov-18-2026/",
    "type": "concert"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Colts vs. Texans",
+   "date": "2026-11-19",
+   "time": "15:15",
+   "url": "https://lahainacannerymall.com/event/colts-vs-texans/",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Mulligans Magic Show",
+   "date": "2026-11-19",
+   "time": "18:30",
+   "url": "https://mulligansontheblue.com/event/mulligans-magic-show-93/",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Ho’ike: Halau Nā Leilehua ‘O Emalia",
+   "date": "2026-11-19",
+   "time": "19:00",
+   "url": "https://proartsmaui.org/event/hoike-halau-na-leilehua-o-emalia-nov-19-2026/",
+   "type": "concert"
   }
  ]
 }
