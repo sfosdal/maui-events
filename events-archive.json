@@ -823,6 +823,46 @@
    "time": "19:00",
    "url": "https://proartsmaui.org/event/hoike-halau-na-leilehua-o-emalia-nov-19-2026/",
    "type": "concert"
+  },
+  {
+   "venue": "Pacific Whale Foundation",
+   "title": "Enchantress & Freeborne Gallery Art Night",
+   "date": "2026-11-20",
+   "time": "",
+   "url": "https://pacificwhale.org/event/art-fundraiser/",
+   "type": "community"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "2000s Decades Party",
+   "date": "2026-11-20",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/2000s-decades-party-3",
+   "type": "concert"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Hosmer Hike",
+   "date": "2026-11-20",
+   "time": "10:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=146715",
+   "type": "community"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Trans Day of Remembrance",
+   "date": "2026-11-20",
+   "time": "17:00",
+   "url": "https://proartsmaui.org/event/trans-day-of-remembrance-nov-15-2026/",
+   "type": "arts"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Storyland Jazz Band -Swing Dance!",
+   "date": "2026-11-20",
+   "time": "18:00",
+   "url": "https://mulligansontheblue.com/event/storyland-jazz-band-swing-dance/",
+   "type": "concert"
   }
  ]
 }
