@@ -863,6 +863,54 @@
    "time": "18:00",
    "url": "https://mulligansontheblue.com/event/storyland-jazz-band-swing-dance/",
    "type": "concert"
+  },
+  {
+   "venue": "ʻĪao Theater",
+   "title": "Raise the Roof Fundraiser",
+   "date": "2026-11-21",
+   "time": "",
+   "url": "https://www.mauionstage.com/",
+   "type": "arts"
+  },
+  {
+   "venue": "Da Playground",
+   "title": "Fiesta Saturdays - Dia De Los Muertos",
+   "date": "2026-11-21",
+   "time": "",
+   "url": "https://www.daplaygroundmaui.com/products/fiesta-saturdays-dia-de-los-muertos-2",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Maui OnStage Education & Youth Program presents “The Enchanted Bookshop”",
+   "date": "2026-11-21",
+   "time": "11:00",
+   "url": "https://proartsmaui.org/event/maui-onstage-education-youth-program-presents-the-enchanted-bookshop-nov-21-2026-11am/",
+   "type": "arts"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Maui OnStage Education & Youth Program presents “The Enchanted Bookshop”",
+   "date": "2026-11-21",
+   "time": "14:00",
+   "url": "https://proartsmaui.org/event/maui-onstage-education-youth-program-presents-the-enchanted-bookshop-nov-21-2026-2pm/",
+   "type": "arts"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Tempa + Naor with Michael Ferenci",
+   "date": "2026-11-21",
+   "time": "19:00",
+   "url": "https://mulligansontheblue.com/event/tempa-naor-with-keith-cochrane/",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Maui Bellydance Company presents Zoe Jakes and Jillina Carlano",
+   "date": "2026-11-21",
+   "time": "19:30",
+   "url": "https://proartsmaui.org/event/maui-bellydance-company-presents-zoe-jakes-and-jillina-carlano/",
+   "type": "arts"
   }
  ]
 }
