@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { STATIC_PER_VENUE, clock, staticAgenda, injectAgenda, injectVenuesLink, VENUES_LINK, buildPages, STATIC_ROWS,
+import { tagsOf, STATIC_PER_VENUE, clock, staticAgenda, injectAgenda, injectVenuesLink, VENUES_LINK, buildPages, STATIC_ROWS,
   utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf, noindexOf, stampRevised, gitDate } from './seo.mjs';
 
 const SEA = { city: 'Seattle', state: 'WA' };
@@ -235,4 +235,13 @@ test('buildPages: an index, a page per venue (the empty one too) and per team, e
   assert.equal(soloTeam.count, 0);
   assert.ok(soloTeam.html.includes('<link rel="canonical" href="https://twinpeaks.here.events/venues/timber-arena/">') && soloTeam.html.includes('Visiting: &lt;Owls&gt;, Owls.') && soloTeam.html.includes('href="../../about.html"'));
   assert.ok(pages[0].html.includes('href="../venues/timber-arena/"') && pages[0].html.includes('nothing listed now') && pages[0].html.includes('href="../teams/steelheads/"'));
+});
+
+test('tagsOf: the home page\'s Analytics and AdSense tags, carried onto every generated page', () => {
+  const head = '<script>var t;</script>\n<script async src="https://www.googletagmanager.com/gtag/js?id=G-TEST12345"></script>\n<script>\n  gtag(\'config\', \'G-TEST12345\');\n</script>\n<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-123" crossorigin="anonymous"></script>\n<title>x</title>';
+  const tags = tagsOf(head);
+  assert.ok(tags.startsWith('<script async src="https://www.googletagmanager.com') && tags.includes("gtag('config', 'G-TEST12345');") && tags.endsWith('crossorigin="anonymous"></script>') && !tags.includes('var t;'));
+  assert.equal(tagsOf('<title>x</title>'), '');
+  const pages = buildPages(ROWS, { city: 'Twin Peaks', state: 'WA' }, { today: '2026-11-20', city: TP, site: 'https://twinpeaks.here.events/', tags });
+  assert.ok(pages.every((p) => p.html.includes('adsbygoogle.js?client=ca-pub-123') && p.html.indexOf('G-TEST12345') < p.html.indexOf('<title>')));
 });

@@ -251,7 +251,15 @@ export function injectVenuesLink(html, on) {
 
 export const PAGE_ROWS = 150;
 
-function shell({ title, desc, canonical, eyebrow, h1, body, ld, up, v, foot = '', noindex = false }) {
+/** The Google Analytics and AdSense tags of a site's own home page, for the generated pages to carry too (Steve,
+ *  2026-11-23, "g1-3"): read from index.html so a site's ids live in one place. '' when the page has none. */
+export function tagsOf(html) {
+  const ga = /<script async src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=[\w-]+"><\/script>\s*<script>[\s\S]*?<\/script>/.exec(html);
+  const ads = /<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-\d+"[^>]*><\/script>/.exec(html);
+  return [ga, ads].filter(Boolean).map((m) => m[0]).join('\n');
+}
+
+function shell({ title, desc, canonical, eyebrow, h1, body, ld, up, v, foot = '', noindex = false, tags = '' }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -266,7 +274,7 @@ function shell({ title, desc, canonical, eyebrow, h1, body, ld, up, v, foot = ''
     if ((t === 'light' || t === 'dark') && !matchMedia(PHONE).matches) document.documentElement.dataset.theme = t;
   } catch (e) {}
 </script>
-<title>${esc(title)}</title>
+${tags ? `${tags}\n` : ''}<title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${esc(canonical)}">
 ${noindex ? '<meta name="robots" content="noindex">\n' : ''}<meta property="og:type" content="website">
@@ -320,7 +328,7 @@ const pageLd = (name, url, rows, place, built) => ({
  *  and per home team, each with its upcoming list in plain HTML, so a search for "<venue> events" has a page to
  *  land on). guides = { venues: { '<name>': 'your own words' }, teams: { '<slug>': '…' }, skip: ['<venue name>'] }, all optional.
  *  Returns [{ path, html, count }]; path is relative to site/ and ends in '/'. */
-export function buildPages(events, place, { today, guides = {}, built = '', has = () => false, city = CITY, site = CITY.site } = {}) {
+export function buildPages(events, place, { today, guides = {}, built = '', has = () => false, city = CITY, site = CITY.site, tags = '' } = {}) {
   const base = site.endsWith('/') ? site : `${site}/`;
   const up2 = '../../', where = [place.city, place.state].filter(Boolean).join(', ');
   const v = (built || today).replace(/\D/g, '').slice(0, 12);
@@ -350,7 +358,7 @@ export function buildPages(events, place, { today, guides = {}, built = '', has 
     const body = `  <p class="ad-lead">${lead}</p>\n${paras((guides.venues || {})[x.name])}${x.info.capacity ? `  <p>It holds about ${Number(x.info.capacity).toLocaleString('en-US')} people.</p>\n` : ''}  <p class="vp-links">${tools}</p>\n${rowsHtml(shown)}${x.rows.length > shown.length ? `  <p>And ${count(x.rows.length - shown.length, 'more', 'more')} on <a href="${up2}">the full calendar</a>.</p>\n` : ''}${more(x, up2)}${updated}  <a class="ad-back" href="${up2}">← The full ${esc(city.name)} calendar</a>`;
     const title = `${x.name} Events and Schedule — ${where}`;
     const desc = x.rows.length ? `Upcoming events at ${x.name} in ${where}, updated daily. Next: ${x.rows.slice(0, 2).map((e) => `${e.title} (${fmtDay(e.date, { month: 'short', day: 'numeric' })})`).join('; ')}.` : `Events at ${x.name} in ${where}, updated daily.`;
-    pages.push({ path: x.path, count: x.rows.length, html: shell({ title, desc, canonical: base + x.path, eyebrow: `${city.name} Events`, h1: x.name, body, ld: x.rows.length ? pageLd(title, base + x.path, x.rows, place, built) : null, up: up2, v, foot: foot(up2), noindex: !x.rows.length }) });
+    pages.push({ path: x.path, count: x.rows.length, html: shell({ title, desc, canonical: base + x.path, eyebrow: `${city.name} Events`, h1: x.name, body, ld: x.rows.length ? pageLd(title, base + x.path, x.rows, place, built) : null, up: up2, v, tags, foot: foot(up2), noindex: !x.rows.length }) });
   }
 
   for (const t of teams) {
@@ -368,12 +376,12 @@ export function buildPages(events, place, { today, guides = {}, built = '', has 
     const body = `  <p class="ad-lead">${lead}</p>\n${paras((guides.teams || {})[t.slug])}${opp.length > 1 ? `  <p>Visiting: ${opp.map(([n, c]) => `${esc(n)}${c > 1 ? ` (${c})` : ''}`).join(', ')}.</p>\n` : ''}  <p class="vp-links">${tools}</p>\n${rowsHtml(shown, { venue: true })}${more(t, up2)}${updated}  <a class="ad-back" href="${up2}">← The full ${esc(city.name)} calendar</a>`;
     const title = `${t.name} Home Schedule${t.venue ? ` — ${t.venue}` : ''}`;
     const desc = t.rows.length ? `${t.name} home games${t.venue ? ` at ${t.venue}` : ''} in ${where}, updated daily. Next: ${t.rows.slice(0, 2).map((e) => `${e.title} (${fmtDay(e.date, { month: 'short', day: 'numeric' })})`).join('; ')}.` : `${t.name} home games in ${where}, updated daily.`;
-    pages.push({ path: t.path, count: same ? 0 : t.rows.length, html: shell({ title, desc, canonical: base + (same ? home.path : t.path), eyebrow: `${city.name} Events`, h1: t.name, body, ld: t.rows.length && !same ? pageLd(title, base + t.path, t.rows, place, built) : null, up: up2, v, foot: foot(up2), noindex: !t.rows.length }) });
+    pages.push({ path: t.path, count: same ? 0 : t.rows.length, html: shell({ title, desc, canonical: base + (same ? home.path : t.path), eyebrow: `${city.name} Events`, h1: t.name, body, ld: t.rows.length && !same ? pageLd(title, base + t.path, t.rows, place, built) : null, up: up2, v, tags, foot: foot(up2), noindex: !t.rows.length }) });
   }
 
   const li = (x, up, word) => `    <li><a href="${up}${x.path}">${esc(x.name)}</a><span>${x.rows.length ? count(x.rows.length, word, `${word}s`) : 'nothing listed now'}</span></li>\n`;
   const body = `  <p class="ad-lead">Every venue on the ${esc(city.name)} calendar has a page of its own, with what is on there next.</p>\n  <h2>Venues</h2>\n  <ul class="vp-list vp-index">\n${[...venues].sort((a, b) => b.rows.length - a.rows.length || a.name.localeCompare(b.name)).map((x) => li(x, '../', 'event')).join('')}  </ul>\n${teams.length ? `  <h2>Home teams</h2>\n  <ul class="vp-list vp-index">\n${teams.map((t) => li(t, '../', 'home game')).join('')}  </ul>\n` : ''}${updated}  <a class="ad-back" href="../">← The full ${esc(city.name)} calendar</a>`;
-  pages.unshift({ path: 'venues/', count: all.length, html: shell({ title: `${city.name} Venues and Home Teams — ${where}`, desc: `Every venue and home team on the ${city.name} events calendar, each with its upcoming events, updated daily.`, canonical: `${base}venues/`, eyebrow: `${city.name} Events`, h1: 'Venues', body, ld: null, up: '../', v, foot: foot('../') }) });
+  pages.unshift({ path: 'venues/', count: all.length, html: shell({ title: `${city.name} Venues and Home Teams — ${where}`, desc: `Every venue and home team on the ${city.name} events calendar, each with its upcoming events, updated daily.`, canonical: `${base}venues/`, eyebrow: `${city.name} Events`, h1: 'Venues', body, ld: null, up: '../', v, tags, foot: foot('../') }) });
   return pages;
 }
 
@@ -386,7 +394,7 @@ export function main(siteDir = new URL('../site/', import.meta.url), today = new
   const ld = jsonLd(events, place, { today, site, modified: built ? localIso(built) : undefined });
   const how = existsSync(new URL('how.html', siteDir));
   const guidesFile = new URL('../guides.json', siteDir);
-  const made = existsSync(guidesFile) ? buildPages(events, place, { today, guides: JSON.parse(readFileSync(guidesFile, 'utf8')), built: built ? localIso(built) : '', has: (f) => existsSync(new URL(f, siteDir)), site }) : [];
+  const made = existsSync(guidesFile) ? buildPages(events, place, { today, guides: JSON.parse(readFileSync(guidesFile, 'utf8')), built: built ? localIso(built) : '', has: (f) => existsSync(new URL(f, siteDir)), site, tags: tagsOf(read('index.html')) }) : [];
   for (const pg of made) { mkdirSync(new URL(pg.path, siteDir), { recursive: true }); writeFileSync(new URL(`${pg.path}index.html`, siteDir), pg.html); }
   const home = injectVenuesLink(injectUpdated(injectMapLink(read('index.html')), built, { how }), made.length > 0);
   writeFileSync(new URL('index.html', siteDir), injectLd(injectAgenda(home, staticAgenda(events, today, CITY.defaultOff || [])), ld));
