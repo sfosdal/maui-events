@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calmTitle, isNotice } from './titles.mjs';
+import { calmTitle, isNotice, dropAddOns } from './titles.mjs';
 
 test('two or more shouted words come down to Title Case', () => {
   assert.equal(calmTitle('ANDREA BOCELLI'), 'Andrea Bocelli');
@@ -37,4 +37,11 @@ test('a shouted Spanish title comes down whole: its articles and prepositions ar
   assert.equal(calmTitle('EL MUNDO DE FEDE VIGEVANI'), 'El Mundo De Fede Vigevani');
   assert.equal(calmTitle('YURIDIA - LAS CARTAS SOBRE LA MESA TOUR'), 'Yuridia - Las Cartas Sobre La Mesa Tour');
   assert.equal(calmTitle('PANTEÓN ROCOCÓ'), 'Panteón Rococó');
+});
+
+test('dropAddOns: a show\'s extras go when the venue has a real event that day, and stay when they are all there is', () => {
+  const r = (venue, date, title) => ({ venue, date, title });
+  const rows = [r('Arena', '2027-01-30', 'Harlem Globetrotters: Rivalry Tour'), r('Arena', '2027-01-30', 'Limited Edition Rivals Replica Game Ball From Spalding'), r('Arena', '2027-01-30', 'MVP Court Pass (Check In By 1:30PM)'), r('Arena', '2027-01-30', 'Ultimate Fan Pass: 30-min Exclusive On-Court Access'),
+    r('Arena', '2027-02-19', 'PBR Two-Day Package - Ticket Includes Access to all days'), r('Arena', '2027-02-19', 'PBR Everett'), r('Hall', '2027-02-19', 'VIP Package: An Evening Alone'), r('Arena', '2027-03-01', 'Parking Lot Party')];
+  assert.deepEqual(dropAddOns(rows).map((e) => e.title), ['Harlem Globetrotters: Rivalry Tour', 'PBR Everett', 'VIP Package: An Evening Alone', 'Parking Lot Party']);
 });

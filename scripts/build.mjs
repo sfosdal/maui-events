@@ -48,7 +48,7 @@ import * as citySources from './sources.mjs'; // each city's own file: isChurch 
 import { mergeWithArchive, unionArchives, eventKey, dropClashes, keepQuietVenues, capUpcoming } from './merge.mjs';
 import { fixLinks, formerLinks, repointMoved, guardLinks } from './links.mjs';
 import { fileURLToPath } from 'node:url';
-import { calmTitle, isNotice } from './titles.mjs';
+import { calmTitle, isNotice, dropAddOns } from './titles.mjs';
 import { applySchedules } from './schedules.mjs';
 import { slugify, BADGE_FEEDS, TEAMS, CITY } from './badges.mjs';
 import { feedSources, emptyListGate, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
@@ -248,12 +248,12 @@ export async function build(cfg = {}) {
   const horizon = new Date(Date.now() + WINDOW_DAYS * 86400e3).toISOString().slice(0, 10);
   const cutoff = new Date(Date.now() - WINDOW_DAYS * 86400e3).toISOString().slice(0, 10);
   const seen = new Set();
-  const fresh = all
+  const fresh = dropAddOns(all
     .filter((e) => e.date && e.date >= cutoff && e.date <= horizon)
     .filter((e) => !isNotice(e.title)) // a closure or construction notice is information, not an event
     .map((e) => ({ ...e, title: calmTitle(hexDecode(fixTitle(e.title))) }))
     .map((e) => (SOLD_OUT_SUFFIX.test(e.title) ? { ...e, title: e.title.replace(SOLD_OUT_SUFFIX, ''), soldOut: true } : e))
-    .filter((e) => { const k = eventKey(e); if (seen.has(k)) return false; seen.add(k); return true; }); // venue|title|date|clock (merge.mjs): a second showing on one day is kept
+    .filter((e) => { const k = eventKey(e); if (seen.has(k)) return false; seen.add(k); return true; })); // venue|title|date|clock (merge.mjs): a second showing on one day is kept
 
   // the empty-list gate (feeds.mjs): nothing upcoming in this build's own pull means a venue was missed in
   // scouting or every source is down — not a fact about the town. ALLOW_EMPTY_LIST=1 overrides.
@@ -264,12 +264,12 @@ export async function build(cfg = {}) {
   // (every past event ever published; the workflow rewrites it after each build). Each is fetched with three
   // tries; the build goes on with the union of whatever it got and stops only when it got neither. Since the
   // union can only grow, a publish that lost history can no longer shrink the record.
-  const cleanArchive = (d) => (Array.isArray(d) ? d : (d.events || []))
+  const cleanArchive = (d) => dropAddOns((Array.isArray(d) ? d : (d.events || []))
     .map((e) => (cfg.archiveRow ? cfg.archiveRow(e) : e))
     .filter((e) => cfg.church === false || !isChurch(e)) // past church events leave the record too
     .map(norm) // past events published under other spellings fold onto the one name
     .filter(keep)
-    .filter((e) => !isNotice(e.title)).map((e) => ({ ...e, title: calmTitle(e.title) })); // the same title hygiene as fresh events, so the merge keys agree
+    .filter((e) => !isNotice(e.title)).map((e) => ({ ...e, title: calmTitle(e.title) }))); // the same title hygiene as fresh events, so the merge keys agree
   async function fetchArchive(url, what) {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {

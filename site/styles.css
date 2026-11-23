@@ -1007,6 +1007,9 @@ body:has(#mapView:not([hidden])) .updated { display: none; }
 .vp-list small { display: block; font-size: .85rem; color: var(--ink-soft); }
 .vp-index li { grid-template-columns: minmax(0, 1fr) auto; }
 .vp-links { line-height: 1.9; }
+.vp-foot { margin: 2.5rem 0 0; padding-top: 1rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; line-height: 2; }
+.vp-foot + .vp-foot { margin-top: .2rem; padding-top: 0; border-top: 0; }
+.vp-foot a { color: var(--ink); }
 .vp-links a { color: var(--ink); }
 @media (max-width: 640px) { .vp-list li { grid-template-columns: minmax(0, 1fr); gap: .1rem; } .vp-index li { grid-template-columns: minmax(0, 1fr) auto; gap: .9rem; } }
 .ad-page .ad-revised { margin-top: 2rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }

@@ -6,6 +6,15 @@
 export const NOTICE_RE = /\b(closure|closed|notice|advisory|road work|construction)\b/i;
 export const isNotice = (title) => NOTICE_RE.test(String(title || ''));
 
+// A seller lists a show's extras as events of their own: a replica ball, a court pass, a two-day package, parking.
+// They are dropped only when the same venue has a real event that day, so a night that is nothing but a "VIP
+// Experience" keeps its one row.
+export const ADD_ON_RE = /^parking\b|\b(fan pass|court pass|replica (game )?ball|vip (package|upgrade)|parking pass|(two|2|three|3|multi)[- ]?day package|meet (&|and) greet (upgrade|package)|ticket includes access)\b/i;
+export function dropAddOns(rows) {
+  const real = new Set(rows.filter((e) => !ADD_ON_RE.test(e.title || '')).map((e) => `${e.venue}|${e.date}`));
+  return rows.filter((e) => !(ADD_ON_RE.test(e.title || '') && real.has(`${e.venue}|${e.date}`)));
+}
+
 // Ticketmaster shouts: "ANDREA BOCELLI", "THE B-52s * DANCE THIS MESS AROUND
 // TOUR". When a title has two or more all-caps words, they come down to Title
 // Case — a single shouted word ("WEEZER: The Voyage", "JOURNEY - Final

@@ -164,7 +164,7 @@ const ROWS = [
   { venue: 'The Roadhouse', title: 'Julee Cruise Night', date: '2026-11-28', time: '21:00', url: 'https://example.com/b', soldOut: true },
   { venue: 'The Roadhouse', title: 'Gone already', date: '2026-11-01', time: '21:00', url: 'https://example.com/c' },
 ];
-const TP = { name: 'Twin Peaks', venues: { 'Timber Arena': { capacity: 5200, url: 'https://example.com/arena' }, 'The Roadhouse': {}, 'Empty Hall': {} }, teams: [{ slug: 'steelheads', label: 'Steelheads', re: /steelheads/i, venue: 'Timber Arena' }, { slug: 'kraken', label: 'Kraken', re: /kraken/i, venue: 'Climate Pledge Arena' }] };
+const TP = { name: 'Twin Peaks', venues: { 'Timber Arena': { capacity: 5200, url: 'https://example.com/arena' }, 'The Roadhouse': {}, 'Empty Hall': {}, 'Elsewhere in Twin Peaks': {} }, teams: [{ slug: 'steelheads', label: 'Steelheads', re: /steelheads/i, venue: 'Timber Arena' }, { slug: 'kraken', label: 'Kraken', re: /kraken/i, venue: 'Climate Pledge Arena' }] };
 
 test('clock: 24-hour feed times read as a clock face; no time is All day', () => {
   assert.equal(clock('19:05:00'), '7:05 PM');
@@ -227,5 +227,12 @@ test('buildPages: an index, a page per venue (the empty one too) and per team, e
   const team = pages[4].html;
   assert.ok(team.includes('<title>Steelheads Home Schedule — Timber Arena</title>') && team.includes('1 home game on') && team.includes('href="../../?team=steelheads"') && team.includes('<small>Timber Arena</small>'));
   assert.equal(buildPages(ROWS, { city: 'Twin Peaks', state: 'WA' }, { today: '2026-11-20', city: TP, site: 'https://twinpeaks.here.events/', guides: { skip: ['Empty Hall'] } }).length, 4);
+  assert.ok(empty.includes('<meta name="robots" content="noindex">') && !arena.includes('noindex'));
+  assert.ok(arena.includes('href="https://here.events/privacy/"') && arena.includes('mailto:hello@here.events') && !arena.includes('about.html'));
+  const many = [...ROWS, { venue: 'The Roadhouse', title: 'Steelheads vs. Owls', date: '2026-12-05', time: '19:00' }];
+  const solo = buildPages(many.filter((e) => /steelheads/i.test(e.title) || e.venue !== 'Timber Arena').map((e) => ({ ...e, venue: 'Timber Arena' })).filter((e) => /steelheads/i.test(e.title)), { city: 'Twin Peaks', state: 'WA' }, { today: '2026-11-20', city: TP, site: 'https://twinpeaks.here.events/', has: (f) => f === 'about.html' });
+  const soloTeam = solo.find((p) => p.path === 'teams/steelheads/');
+  assert.equal(soloTeam.count, 0);
+  assert.ok(soloTeam.html.includes('<link rel="canonical" href="https://twinpeaks.here.events/venues/timber-arena/">') && soloTeam.html.includes('Visiting: &lt;Owls&gt;, Owls.') && soloTeam.html.includes('href="../../about.html"'));
   assert.ok(pages[0].html.includes('href="../venues/timber-arena/"') && pages[0].html.includes('nothing listed now') && pages[0].html.includes('href="../teams/steelheads/"'));
 });

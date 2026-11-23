@@ -251,7 +251,7 @@ export function injectVenuesLink(html, on) {
 
 export const PAGE_ROWS = 150;
 
-function shell({ title, desc, canonical, eyebrow, h1, body, ld, up, v }) {
+function shell({ title, desc, canonical, eyebrow, h1, body, ld, up, v, foot = '', noindex = false }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -269,7 +269,7 @@ function shell({ title, desc, canonical, eyebrow, h1, body, ld, up, v }) {
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${esc(canonical)}">
-<meta property="og:type" content="website">
+${noindex ? '<meta name="robots" content="noindex">\n' : ''}<meta property="og:type" content="website">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${esc(canonical)}">
@@ -288,7 +288,7 @@ function shell({ title, desc, canonical, eyebrow, h1, body, ld, up, v }) {
 </header>
 <main class="ad-page vp-page">
 ${body}
-</main>
+${foot}</main>
 ${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/<\//g, '<\\/')}</script>\n` : ''}</body>
 </html>
 `;
@@ -326,11 +326,15 @@ export function buildPages(events, place, { today, guides = {}, built = '', has 
   const v = (built || today).replace(/\D/g, '').slice(0, 12);
   const all = upcoming(events, today);
   const names = [...new Set([...Object.keys(city.venues || {}), ...all.map((e) => e.venue)])];
-  const venues = names.map((name) => ({ name, slug: slugify(name), path: `venues/${slugify(name)}/`, rows: all.filter((e) => e.venue === name), info: (city.venues || {})[name] || {} })).filter((x) => x.slug && !(guides.skip || []).includes(x.name));
+  const venues = names.map((name) => ({ name, slug: slugify(name), path: `venues/${slugify(name)}/`, rows: all.filter((e) => e.venue === name), info: (city.venues || {})[name] || {} })).filter((x) => x.slug && !(guides.skip || []).includes(x.name) && !/^(elsewhere in|around) /i.test(x.name)); // a catch-all row ("Elsewhere in Everett") is not a place
   const teams = (city.teams || []).filter((t) => t.venue && names.includes(t.venue)).map((t) => ({ ...t, name: t.name || t.label, path: `teams/${t.slug}/`, rows: all.filter((e) => e.venue === t.venue && t.re.test(e.title || '')) })); // a club that plays in another city (the Kraken on Everett's list) gets no page here
   const updated = built ? `  <p class="ad-revised">Updated <time datetime="${built}">${longDate(built)}</time></p>\n` : '';
   const more = (self, up) => `${venues.length > 1 ? `  <h2>Venues in ${esc(city.name)}</h2>\n  <p class="vp-links">${links(venues.filter((x) => x !== self), up)}</p>\n` : ''}${teams.length ? `  <h2>Home teams</h2>\n  <p class="vp-links">${links(teams.filter((x) => x !== self), up)}</p>\n` : ''}`;
   const count = (n, one, many) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
+  // every page reaches who runs the site, how it is made and the privacy page (an ad reviewer looks for these)
+  const foot = (up) => `  <p class="vp-foot">${[['about.html', 'About'], ['faq.html', 'FAQ'], ['how.html', 'How It’s Made'], ['sources.html', 'Sources']].filter(([f]) => has(f)).map(([f, n]) => `<a href="${up}${f}">${n}</a>`).concat(['<a href="https://here.events/privacy/">Privacy</a>', '<a href="mailto:hello@here.events">Contact</a>', '<a href="https://here.events/">More Cities</a>']).join(' · ')}</p>\n  <p class="vp-foot">A <a href="https://ghostwoodlabs.com/" target="_blank" rel="noopener">Ghostwood Sites</a> calendar.</p>\n`;
+  // "Home vs. Away" titles, counted by visitor: the one thing a team's page says that its venue's page does not
+  const opponents = (rows) => { const n = {}; for (const e of rows) { const m = /\bvs?\.? (.+)$/i.exec(e.title || ''); if (m) n[m[1].trim()] = (n[m[1].trim()] || 0) + 1; } return Object.entries(n).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])); };
   const pages = [];
 
   for (const x of venues) {
@@ -346,11 +350,13 @@ export function buildPages(events, place, { today, guides = {}, built = '', has 
     const body = `  <p class="ad-lead">${lead}</p>\n${paras((guides.venues || {})[x.name])}${x.info.capacity ? `  <p>It holds about ${Number(x.info.capacity).toLocaleString('en-US')} people.</p>\n` : ''}  <p class="vp-links">${tools}</p>\n${rowsHtml(shown)}${x.rows.length > shown.length ? `  <p>And ${count(x.rows.length - shown.length, 'more', 'more')} on <a href="${up2}">the full calendar</a>.</p>\n` : ''}${more(x, up2)}${updated}  <a class="ad-back" href="${up2}">← The full ${esc(city.name)} calendar</a>`;
     const title = `${x.name} Events and Schedule — ${where}`;
     const desc = x.rows.length ? `Upcoming events at ${x.name} in ${where}, updated daily. Next: ${x.rows.slice(0, 2).map((e) => `${e.title} (${fmtDay(e.date, { month: 'short', day: 'numeric' })})`).join('; ')}.` : `Events at ${x.name} in ${where}, updated daily.`;
-    pages.push({ path: x.path, count: x.rows.length, html: shell({ title, desc, canonical: base + x.path, eyebrow: `${city.name} Events`, h1: x.name, body, ld: x.rows.length ? pageLd(title, base + x.path, x.rows, place, built) : null, up: up2, v }) });
+    pages.push({ path: x.path, count: x.rows.length, html: shell({ title, desc, canonical: base + x.path, eyebrow: `${city.name} Events`, h1: x.name, body, ld: x.rows.length ? pageLd(title, base + x.path, x.rows, place, built) : null, up: up2, v, foot: foot(up2), noindex: !x.rows.length }) });
   }
 
   for (const t of teams) {
     const shown = t.rows.slice(0, PAGE_ROWS), home = venues.find((x) => x.name === t.venue);
+    const same = Boolean(home && t.rows.length && home.rows.length === t.rows.length); // the venue's page is this list and nothing else: that page is the one copy
+    const opp = opponents(t.rows);
     const lead = t.rows.length
       ? `The ${esc(t.name)} at home${t.venue ? ` at ${esc(t.venue)}` : ''} in ${esc(where)}: ${count(t.rows.length, 'home game', 'home games')} on the calendar, read from the league’s schedule once a day.`
       : `No ${esc(t.name)} home games are on the calendar right now. They appear here when the league publishes the schedule.`;
@@ -359,15 +365,15 @@ export function buildPages(events, place, { today, guides = {}, built = '', has 
       `<a href="${up2}?team=${esc(t.slug)}">The whole season, away games too</a>`,
       `<a href="${up2}">The full ${esc(city.name)} calendar</a>`,
     ].filter(Boolean).join(' · ');
-    const body = `  <p class="ad-lead">${lead}</p>\n${paras((guides.teams || {})[t.slug])}  <p class="vp-links">${tools}</p>\n${rowsHtml(shown, { venue: true })}${more(t, up2)}${updated}  <a class="ad-back" href="${up2}">← The full ${esc(city.name)} calendar</a>`;
+    const body = `  <p class="ad-lead">${lead}</p>\n${paras((guides.teams || {})[t.slug])}${opp.length > 1 ? `  <p>Visiting: ${opp.map(([n, c]) => `${esc(n)}${c > 1 ? ` (${c})` : ''}`).join(', ')}.</p>\n` : ''}  <p class="vp-links">${tools}</p>\n${rowsHtml(shown, { venue: true })}${more(t, up2)}${updated}  <a class="ad-back" href="${up2}">← The full ${esc(city.name)} calendar</a>`;
     const title = `${t.name} Home Schedule${t.venue ? ` — ${t.venue}` : ''}`;
     const desc = t.rows.length ? `${t.name} home games${t.venue ? ` at ${t.venue}` : ''} in ${where}, updated daily. Next: ${t.rows.slice(0, 2).map((e) => `${e.title} (${fmtDay(e.date, { month: 'short', day: 'numeric' })})`).join('; ')}.` : `${t.name} home games in ${where}, updated daily.`;
-    pages.push({ path: t.path, count: t.rows.length, html: shell({ title, desc, canonical: base + t.path, eyebrow: `${city.name} Events`, h1: t.name, body, ld: t.rows.length ? pageLd(title, base + t.path, t.rows, place, built) : null, up: up2, v }) });
+    pages.push({ path: t.path, count: same ? 0 : t.rows.length, html: shell({ title, desc, canonical: base + (same ? home.path : t.path), eyebrow: `${city.name} Events`, h1: t.name, body, ld: t.rows.length && !same ? pageLd(title, base + t.path, t.rows, place, built) : null, up: up2, v, foot: foot(up2), noindex: !t.rows.length }) });
   }
 
   const li = (x, up, word) => `    <li><a href="${up}${x.path}">${esc(x.name)}</a><span>${x.rows.length ? count(x.rows.length, word, `${word}s`) : 'nothing listed now'}</span></li>\n`;
   const body = `  <p class="ad-lead">Every venue on the ${esc(city.name)} calendar has a page of its own, with what is on there next.</p>\n  <h2>Venues</h2>\n  <ul class="vp-list vp-index">\n${[...venues].sort((a, b) => b.rows.length - a.rows.length || a.name.localeCompare(b.name)).map((x) => li(x, '../', 'event')).join('')}  </ul>\n${teams.length ? `  <h2>Home teams</h2>\n  <ul class="vp-list vp-index">\n${teams.map((t) => li(t, '../', 'home game')).join('')}  </ul>\n` : ''}${updated}  <a class="ad-back" href="../">← The full ${esc(city.name)} calendar</a>`;
-  pages.unshift({ path: 'venues/', count: all.length, html: shell({ title: `${city.name} Venues and Home Teams — ${where}`, desc: `Every venue and home team on the ${city.name} events calendar, each with its upcoming events, updated daily.`, canonical: `${base}venues/`, eyebrow: `${city.name} Events`, h1: 'Venues', body, ld: null, up: '../', v }) });
+  pages.unshift({ path: 'venues/', count: all.length, html: shell({ title: `${city.name} Venues and Home Teams — ${where}`, desc: `Every venue and home team on the ${city.name} events calendar, each with its upcoming events, updated daily.`, canonical: `${base}venues/`, eyebrow: `${city.name} Events`, h1: 'Venues', body, ld: null, up: '../', v, foot: foot('../') }) });
   return pages;
 }
 
