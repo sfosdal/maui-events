@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf, noindexOf, stampRevised, gitDate } from './seo.mjs';
+import { STATIC_PER_VENUE, clock, staticAgenda, injectAgenda, injectVenuesLink, VENUES_LINK, buildPages, STATIC_ROWS,
+  utcOffset, isoStart, isoEnd, eventLd, pickEvents, jsonLd, sitemapXml, robotsTxt, injectLd, placeFor, injectMapLink, MAP_LINK, EVENT_CAP, localIso, longDate, injectUpdated, revisedDate, canonicalOf, noindexOf, stampRevised, gitDate } from './seo.mjs';
 
 const SEA = { city: 'Seattle', state: 'WA' };
 
@@ -155,4 +156,76 @@ test('stampRevised sets the Last revised line, and leaves a page without one alo
 
 test('gitDate is empty where git has nothing to say', () => {
   assert.equal(gitDate('/', 'no-such-file.html'), '');
+});
+
+const ROWS = [
+  { venue: 'Timber Arena', title: 'Steelheads vs. <Owls>', date: '2026-11-28', time: '19:05:00', url: 'https://example.com/a?x=1&y=2' },
+  { venue: 'Timber Arena', title: 'Ice Show', date: '2026-12-02', time: '', url: '' },
+  { venue: 'The Roadhouse', title: 'Julee Cruise Night', date: '2026-11-28', time: '21:00', url: 'https://example.com/b', soldOut: true },
+  { venue: 'The Roadhouse', title: 'Gone already', date: '2026-11-01', time: '21:00', url: 'https://example.com/c' },
+];
+const TP = { name: 'Twin Peaks', venues: { 'Timber Arena': { capacity: 5200, url: 'https://example.com/arena' }, 'The Roadhouse': {}, 'Empty Hall': {} }, teams: [{ slug: 'steelheads', label: 'Steelheads', re: /steelheads/i, venue: 'Timber Arena' }, { slug: 'kraken', label: 'Kraken', re: /kraken/i, venue: 'Climate Pledge Arena' }] };
+
+test('clock: 24-hour feed times read as a clock face; no time is All day', () => {
+  assert.equal(clock('19:05:00'), '7:05 PM');
+  assert.equal(clock('00:30'), '12:30 AM');
+  assert.equal(clock('12:00'), '12:00 PM');
+  assert.equal(clock(''), 'All day');
+});
+
+test('staticAgenda: upcoming rows only, soonest first, grouped by month and day, escaped, capped, hidden venues left out', () => {
+  const html = staticAgenda(ROWS, '2026-11-20');
+  assert.equal((html.match(/class="ev[ "]/g) || []).length, 3);
+  assert.equal((html.match(/class="month-group"/g) || []).length, 2);
+  assert.equal((html.match(/class="day-row"/g) || []).length, 2);
+  assert.ok(html.indexOf('Steelheads') < html.indexOf('Julee') && html.indexOf('Julee') < html.indexOf('Ice Show'));
+  assert.ok(html.includes('Steelheads vs. &lt;Owls&gt;') && html.includes('href="https://example.com/a?x=1&amp;y=2"'));
+  assert.ok(!html.includes('Gone already'));
+  assert.ok(html.includes('<div class="ev is-allday"><span class="time">All day</span>'));
+  assert.ok(!staticAgenda(ROWS, '2026-11-20', ['The Roadhouse']).includes('Julee'));
+  assert.equal(staticAgenda(ROWS, '2027-01-01'), '');
+  const many = Array.from({ length: 90 }, (_, i) => ({ venue: `V${i % 9}`, title: `t${i}`, date: '2026-12-01', time: '10:00' }));
+  assert.equal((staticAgenda(many, '2026-11-20').match(/class="ev"/g) || []).length, STATIC_ROWS);
+  const one = many.map((e) => ({ ...e, venue: 'V' }));
+  assert.equal((staticAgenda(one, '2026-11-20').match(/class="ev"/g) || []).length, STATIC_PER_VENUE);
+});
+
+test('injectAgenda: fills the list, again on a second run; no rows or no list leaves the page alone', () => {
+  const page = '<section class="agenda"><ol id="agenda"><li class="empty">Loading events…</li></ol></section>';
+  const once = injectAgenda(page, '<li class="month-group">A $1</li>');
+  assert.equal(once, '<section class="agenda"><ol id="agenda"><li class="month-group">A $1</li></ol></section>');
+  assert.equal(injectAgenda(once, '<li class="month-group">B</li>'), '<section class="agenda"><ol id="agenda"><li class="month-group">B</li></ol></section>');
+  assert.equal(injectAgenda(page, ''), page);
+  assert.equal(injectAgenda('<p>no list</p>', '<li>x</li>'), '<p>no list</p>');
+});
+
+test('injectVenuesLink: after More Cities, once, and gone again when the city has no pages', () => {
+  const page = `<div class="foot-links">\n  ${MAP_LINK}\n</div>`;
+  const on = injectVenuesLink(page, true);
+  assert.ok(on.indexOf(MAP_LINK) < on.indexOf(VENUES_LINK));
+  assert.equal(injectVenuesLink(on, true), on);
+  assert.equal(injectVenuesLink(on, false), page);
+  assert.equal(injectVenuesLink(page, false), page);
+});
+
+test('buildPages: an index, a page per venue (the empty one too) and per team, each with its own rows, links and data', () => {
+  const pages = buildPages(ROWS, { city: 'Twin Peaks', state: 'WA' }, { today: '2026-11-20', built: '2026-11-20T12:00:00-08:00', city: TP, site: 'https://twinpeaks.here.events/', guides: { venues: { 'Timber Arena': 'A cold barn.\n\nPark on Sparkwood.' } }, has: (f) => f === 'events-venue-timber-arena.ics' });
+  assert.deepEqual(pages.map((p) => [p.path, p.count]), [['venues/', 3], ['venues/timber-arena/', 2], ['venues/the-roadhouse/', 1], ['venues/empty-hall/', 0], ['teams/steelheads/', 1]]);
+  const arena = pages[1].html;
+  assert.ok(arena.includes('<title>Timber Arena Events and Schedule — Twin Peaks, WA</title>'));
+  assert.ok(arena.includes('<link rel="canonical" href="https://twinpeaks.here.events/venues/timber-arena/">'));
+  assert.ok(arena.includes('2 upcoming events') && arena.includes('<p>A cold barn.</p>') && arena.includes('<p>Park on Sparkwood.</p>') && arena.includes('about 5,200 people'));
+  assert.ok(arena.includes('Steelheads vs. &lt;Owls&gt;') && arena.includes('Ice Show') && !arena.includes('Julee'));
+  assert.ok(arena.includes('href="../../events-venue-timber-arena.ics"') && arena.includes('href="../../venues/the-roadhouse/"') && arena.includes('href="../../teams/steelheads/"'));
+  assert.ok(arena.includes('<h2>November 2026</h2>') && arena.includes('<h2>December 2026</h2>') && arena.includes('Sat, Nov 28 · 7:05 PM'));
+  assert.equal(JSON.parse(arena.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1])['@graph'].filter((x) => x['@type'] === 'Event').length, 2);
+  assert.ok(!arena.includes('<!--'));
+  const road = pages[2].html;
+  assert.ok(road.includes('<em>Sold out</em>') && !road.includes('events-venue-') && road.includes('1 upcoming event,'));
+  const empty = pages[3].html;
+  assert.ok(empty.includes('Nothing is on the calendar at Empty Hall') && !empty.includes('ld+json'));
+  const team = pages[4].html;
+  assert.ok(team.includes('<title>Steelheads Home Schedule — Timber Arena</title>') && team.includes('1 home game on') && team.includes('href="../../?team=steelheads"') && team.includes('<small>Timber Arena</small>'));
+  assert.equal(buildPages(ROWS, { city: 'Twin Peaks', state: 'WA' }, { today: '2026-11-20', city: TP, site: 'https://twinpeaks.here.events/', guides: { skip: ['Empty Hall'] } }).length, 4);
+  assert.ok(pages[0].html.includes('href="../venues/timber-arena/"') && pages[0].html.includes('nothing listed now') && pages[0].html.includes('href="../teams/steelheads/"'));
 });

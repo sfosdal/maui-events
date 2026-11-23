@@ -994,6 +994,21 @@ footer .share summary .chev { color: var(--ink-bright); }
 .updated { margin: 1rem 0 -.6rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
 .updated a { color: var(--ink); }
 body:has(#mapView:not([hidden])) .updated { display: none; }
+.site-intro { max-width: 46rem; margin: 3rem auto 2rem; padding: 1.5rem 1.25rem 0; border-top: 1px solid var(--line); }
+.site-intro h2 { font: 700 1.2rem/1.2 var(--body); margin: 0 0 .6rem; }
+.site-intro p { color: var(--ink-soft); line-height: 1.6; margin: 0 0 .8rem; }
+@media print { .site-intro { display: none; } }
+.vp-page .eyebrow a, .masthead .eyebrow a { text-decoration: none; }
+.vp-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+.vp-list li { display: grid; grid-template-columns: 11.5rem minmax(0, 1fr); gap: .9rem; padding: .5rem 0; border-top: 1px solid var(--line); }
+.vp-list time, .vp-index span { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); padding-top: .2em; }
+.vp-list a { color: var(--ink); font-weight: 600; text-decoration-color: var(--line); }
+.vp-list em { font-style: normal; font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--gold); margin-left: .4rem; }
+.vp-list small { display: block; font-size: .85rem; color: var(--ink-soft); }
+.vp-index li { grid-template-columns: minmax(0, 1fr) auto; }
+.vp-links { line-height: 1.9; }
+.vp-links a { color: var(--ink); }
+@media (max-width: 640px) { .vp-list li { grid-template-columns: minmax(0, 1fr); gap: .1rem; } .vp-index li { grid-template-columns: minmax(0, 1fr) auto; gap: .9rem; } }
 .ad-page .ad-revised { margin-top: 2rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
 .ad-page .ad-revised + .ad-back { margin-top: .6rem; }
 .ad-page .ad-back { display: inline-block; margin-top: 2rem; font-family: var(--mono); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
