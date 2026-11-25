@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents, mapDicePage, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
+import { mapTribeEvents, tribeType, feedSources, emptyListGate, spanishDates, parseTusboletosList, tusboletosTimes, decodeBody, parseJsonLdEvents, parseIcs, icsToTribeRows, ticketeraDates, parseTicketeraList, parseTicketeraDetail, pageRoom, icsStart, mapIcsFile, eventLinks, mapSquarespaceEvents, cardDates, parseCards, mapNpsEvents, cardClock, mapLocalistEvents, parseLudus, parseBoldtypeList, mapSpektrix, parseMecInit, parseMecCards, parseRssEvents, mapDicePage, popmenuSections, mapPopmenuEvents, feedFailedVenues, feedQuietVenues, feedQuietSites } from './feeds.mjs';
 
 const room = 'Field Arts &#038; Events Hall &#8211; Donna M. Morris Theater';
 const row = (title, start, extra = {}) => ({ title, start_date: start, status: 'publish', all_day: false, venue: { venue: room }, categories: [], ...extra });
@@ -507,4 +507,71 @@ test('mapDicePage: the upcoming section at local clocks, sold out, same-night en
   ]);
   assert.throws(() => mapDicePage('<html>Just a moment...</html>', { label: 'Sunset Tavern' }), /no event data/);
   assert.deepEqual(mapDicePage(page([{ key: 'upcoming', events: [] }]), { venue: 'X' }), []);
+});
+
+// Popmenu: The Muse Whiskey & Coffee's reply of 2026-11-24 (descriptions left out), plus made-up rows for what it lacks.
+const MUSE_LOC = [{ isEnabled: true, location: { name: 'The Muse Whiskey & Coffee', city: 'Everett' } }];
+const pm = (o) => ({ startAt: '2026-11-24', endAt: null, startTime: null, endTime: null, isAllDay: false, isRecurring: false, recurringType: 'custom', isMonday: false, isTuesday: false, isWednesday: false, isThursday: false, isFriday: false, isSaturday: false, isSunday: false, status: 'active', isSecret: false, eventTimeDescription: '', calendarEventPageUrl: '/events#section-3143082', externalLinkUrl: null, calendarEventRecurringExceptions: [], calendarEventSelectedLocations: MUSE_LOC, ...o });
+const MUSE = [
+  pm({ id: 408915, name: 'Prohibition Night', startAt: '2024-07-15', startTime: 61200, endTime: 79200, isRecurring: true, isMonday: true, eventTimeDescription: 'Weekly Mon 07/15/2024 17:00:00 - 22:00:00' }),
+  pm({ id: 454938, name: 'Waikiki Wednesday', startAt: '2024-10-09', startTime: 61200, endTime: 79200, isRecurring: true, isWednesday: true, eventTimeDescription: 'Weekly Wed 10/09/2024 17:00:00 - 22:00:00' }),
+  pm({ id: 521508, name: 'Shut Up and Write!', startAt: '2025-01-27', startTime: 36000, endTime: 41400, isRecurring: true, isMonday: true, isFriday: true, eventTimeDescription: 'Weekly Mon/Fri 01/27/2025 10:00:00 - 11:30:00', externalLinkUrl: 'https://www.meetup.com/shutupandwritesnohomishcounty/events/305349093/' }),
+  pm({ id: 769413, name: 'Thursday Movie Nights', startAt: '2026-06-11', isAllDay: true, isRecurring: true, isThursday: true, eventTimeDescription: 'Weekly Thu 06/11/2026', externalLinkUrl: 'https://www.exploretock.com/the-muse-whiskey-coffee-everett' }),
+  pm({ id: 875837, name: 'Thanksgiving Centerpiece Workshop', startAt: '2026-11-24', endAt: '2026-11-24', startTime: 61200, endTime: 68400, eventTimeDescription: '11/24/2026 17:00:00 - 19:00:00', externalLinkUrl: 'https://www.exploretock.com/the-muse-whiskey-coffee-everett/event/628614/thanksgiving-centerpiece-workshop' }),
+  pm({ id: 872211, name: 'Cocktail Class', startAt: '2026-11-29', endAt: '2026-11-29', startTime: 54000, endTime: 64800, eventTimeDescription: '11/29/2026 15:00:00 - 18:00:00', externalLinkUrl: 'https://www.exploretock.com/the-muse-whiskey-coffee-everett/event/628635/cocktail-class-102' }),
+];
+const MUSE_OPTS = { venue: 'The Muse', base: 'https://www.thewhiskeymuse.com/events', today: '2026-11-24', until: '2027-01-05', type: 'bar' };
+
+test('popmenuSections finds the calendar section in the page data, not the other sections', () => {
+  const html = '{"CustomPageSection:5052456":{"__typename":"CustomPageSection","id":5052456,"sectionType":"text_box_section"},"CustomPageSection:3143082":{"__typename":"CustomPageSection","calendarEventView":"timeline","id":3143082,"sectionType":"calendar_event_section"},"CustomPageSection:3143083":{"__typename":"CustomPageSection","sectionType":"gallery_section"}}';
+  assert.deepEqual(popmenuSections(html), ['3143082']);
+  assert.deepEqual(popmenuSections('<html>Just a moment...</html>'), []);
+});
+
+test('mapPopmenuEvents: one-offs on their day and clock, weekly events from today on, never from their first date', () => {
+  const { events, skipped } = mapPopmenuEvents(MUSE, MUSE_OPTS);
+  assert.deepEqual(skipped, []);
+  const by = (t) => events.filter((e) => e.title === t);
+  assert.deepEqual(by('Thanksgiving Centerpiece Workshop'), [{ venue: 'The Muse', title: 'Thanksgiving Centerpiece Workshop', date: '2026-11-24', time: '17:00', url: 'https://www.exploretock.com/the-muse-whiskey-coffee-everett/event/628614/thanksgiving-centerpiece-workshop', end: '19:00', type: 'bar' }]);
+  assert.deepEqual(by('Cocktail Class').map((e) => [e.date, e.time, e.end]), [['2026-11-29', '15:00', '18:00']]);
+  assert.deepEqual(by('Shut Up and Write!').map((e) => e.date), ['2026-11-27', '2026-11-30', '2026-12-04', '2026-12-07', '2026-12-11', '2026-12-14', '2026-12-18', '2026-12-21', '2026-12-25', '2026-12-28', '2027-01-01', '2027-01-04']);
+  assert.ok(by('Shut Up and Write!').every((e) => e.time === '10:00' && e.end === '11:30' && e.url.startsWith('https://www.meetup.com/')));
+  assert.deepEqual(by('Thursday Movie Nights').map((e) => [e.date, e.time, e.end]), [['2026-11-26', '', undefined], ['2026-12-03', '', undefined], ['2026-12-10', '', undefined], ['2026-12-17', '', undefined], ['2026-12-24', '', undefined], ['2026-12-31', '', undefined]]);
+  assert.deepEqual(by('Prohibition Night').map((e) => e.date), ['2026-11-30', '2026-12-07', '2026-12-14', '2026-12-21', '2026-12-28', '2027-01-04']);
+  assert.equal(by('Prohibition Night')[0].url, 'https://www.thewhiskeymuse.com/events#section-3143082'); // no link of its own: the events page
+  assert.ok(events.every((e) => e.date >= '2026-11-24' && e.date <= '2027-01-05'));
+});
+
+test('mapPopmenuEvents: drop, skipped dates, an ended series, other locations, inactive and secret events, a run, a show past midnight, a monthly repeat', () => {
+  const extra = [
+    pm({ id: 1, name: 'Trivia', startAt: '2026-01-06', startTime: 68400, isRecurring: true, isTuesday: true, eventTimeDescription: 'Weekly Tue', calendarEventRecurringExceptions: [{ exceptionAt: '2026-12-01' }, { exceptionAt: '2026-12-08T00:00:00-08:00' }], endAt: '2026-12-15' }),
+    pm({ id: 2, name: 'Wine Club', startAt: '2026-01-03', isRecurring: true, recurringType: 'monthly', eventTimeDescription: 'Monthly on the first Saturday' }),
+    pm({ id: 3, name: 'Closed Night', startTime: 61200, status: 'inactive' }),
+    pm({ id: 4, name: 'Staff Party', startTime: 61200, isSecret: true }),
+    pm({ id: 5, name: 'Lynnwood Jazz', startAt: '2026-12-05', startTime: 72000, calendarEventSelectedLocations: [{ isEnabled: true, location: { name: 'Blazing Onion Lynnwood', city: 'Lynnwood' } }] }),
+    pm({ id: 6, name: 'Holiday Market', startAt: '2026-12-11', endAt: '2026-12-13', startTime: 39600 }),
+    pm({ id: 7, name: 'Summer Fest', startAt: '2026-06-01', endAt: '2026-08-31', startTime: 39600 }),
+    pm({ id: 8, name: 'Untimed Weekly', startAt: '2026-11-03', isRecurring: true, eventTimeDescription: 'Weekly Tue 11/03/2026' }),
+    pm({ id: 9, name: 'Late Night Dance Party', startAt: '2026-11-28', endAt: '2026-11-29', startTime: 85500, endTime: 10800, eventTimeDescription: '11/28/2026 23:45:00 - 11/29/2026 03:00:00' }),
+  ];
+  const { events, skipped } = mapPopmenuEvents([...MUSE, ...extra], { ...MUSE_OPTS, drop: /^(waikiki wednesday|prohibition night)$/i, location: /everett/i });
+  const titles = new Set(events.map((e) => e.title));
+  assert.ok(!titles.has('Waikiki Wednesday') && !titles.has('Prohibition Night'));
+  assert.deepEqual(events.filter((e) => e.title === 'Trivia').map((e) => e.date), ['2026-11-24', '2026-12-15']); // Dec 1 + 8 skipped, ends Dec 15
+  assert.deepEqual(skipped, ['Wine Club']);
+  for (const t of ['Closed Night', 'Staff Party', 'Lynnwood Jazz', 'Summer Fest']) assert.ok(!titles.has(t), t);
+  assert.deepEqual(events.filter((e) => e.title === 'Holiday Market').map((e) => e.date), ['2026-12-11', '2026-12-12', '2026-12-13']);
+  assert.deepEqual(events.filter((e) => e.title === 'Late Night Dance Party').map((e) => [e.date, e.time, e.end]), [['2026-11-28', '23:45', undefined]]); // past midnight: one night (Smith's Olde Bar, 2026-11-24)
+  assert.deepEqual(events.filter((e) => e.title === 'Untimed Weekly').map((e) => e.date).slice(0, 2), ['2026-11-24', '2026-12-01']); // no weekday flags: its first date's weekday
+});
+
+test('mapPopmenuEvents: `rename` takes a promoter\'s "X Presents" off the title, drop then sees the cleaned title', () => {
+  const list = [
+    pm({ id: 1, name: 'SOBATL Presents Global Ringo with Pepper Davis', startAt: '2026-11-27', endAt: '2026-11-27', startTime: 68400 }),
+    pm({ id: 2, name: 'EAR Productions, DJ EU & JB Entertainment Present Noreh', startAt: '2026-12-18', endAt: '2026-12-18', startTime: 68400 }),
+    pm({ id: 3, name: 'Caleb Lee Hutchinson: Long Line of Losers Tour', startAt: '2026-12-11', endAt: '2026-12-11', startTime: 68400 }),
+    pm({ id: 4, name: 'SOBATL Presents Private Event', startAt: '2026-12-12', endAt: '2026-12-12', startTime: 68400 }),
+  ];
+  const { events } = mapPopmenuEvents(list, { ...MUSE_OPTS, rename: [[/^[^:]*?\bpresents?\s+/i, '']], drop: /^private event$/i });
+  assert.deepEqual(events.map((e) => e.title), ['Global Ringo with Pepper Davis', 'Noreh', 'Caleb Lee Hutchinson: Long Line of Losers Tour']);
 });

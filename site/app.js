@@ -276,7 +276,49 @@
       venuesOff: function () { return DEFAULT_VENUES_OFF.concat(state.venues.filter(function (v) { return venueArea(v) === 'town' && DEFAULT_VENUES_OFF.indexOf(v) < 0; })); }, typesOff: ['movie'] },
     { key: 'big', label: 'Capacity > 2K', title: CITY.words.presetBig,
       venuesOff: function () { return state.venues.filter(function (v) { return (VENUE_CAPACITY[v] || 0) < BIG_NIGHT_SEATS; }); }, typesOff: ['bar'] },
+    { key: 'near', label: 'Big Nights Near Me', title: CITY.words.presetNear || 'The big venues closest to you — your browser asks where you are',
+      needs: function () { return !!nearVenues; },
+      venuesOff: function () { return state.venues.filter(function (v) { return !nearVenues || nearVenues.indexOf(v) < 0; }); }, typesOff: cityTypes(['bar']) },
+    { key: 'local', label: 'Local Scene', title: CITY.words.presetLocal || 'The bars, clubs, small stages and community calendars — no arenas or stadiums',
+      venuesOff: function () { return state.venues.filter(function (v) { return (VENUE_CAPACITY[v] || 0) >= BIG_NIGHT_SEATS; }); }, typesOff: cityTypes(['movie']) },
   ];
+  var nearVenues = null, nearFix = null, PRESET_NEAR = PRESETS.filter(function (p) { return p.key === 'near'; })[0];
+  function cityTypes(keys) { return keys.filter(function (k) { return TYPE_LIST.some(function (t) { return t.key === k; }); }); }
+  var BIG_VENUES = Object.keys(CITY.venues).filter(function (v) { return (VENUE_CAPACITY[v] || 0) >= BIG_NIGHT_SEATS; });
+  var BIG_PLACED = BIG_VENUES.filter(function (v) { return CITY.venues[v].geo; });
+  var SMALL_COUNT = Object.keys(CITY.venues).length - BIG_VENUES.length;
+  function kmBetween(a, b) {
+    var r = Math.PI / 180, dl = (b[0] - a[0]) * r, dg = (b[1] - a[1]) * r;
+    var h = Math.pow(Math.sin(dl / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dg / 2), 2);
+    return 12742 * Math.asin(Math.sqrt(h));
+  }
+  function nearestBig(lat, lon) {
+    var d = BIG_PLACED.map(function (v) { return [kmBetween([lat, lon], CITY.venues[v].geo), v]; }).sort(function (a, b) { return a[0] - b[0]; });
+    if (!d.length || d[0][0] > 25) return null;
+    var close = d.filter(function (x) { return x[0] <= 5; });
+    if (close.length < 3) close = d.slice(0, 3).filter(function (x) { return x[0] <= 25; });
+    return close.map(function (x) { return x[1]; });
+  }
+  function useNear(b, p) {
+    function go(fix) {
+      b.classList.remove('is-busy'); b.removeAttribute('aria-busy');
+      var list = nearestBig(fix[0], fix[1]);
+      if (!list) { showToast('You are not near ' + CITY.name + ' — nothing changed'); return; }
+      nearVenues = list; applyPreset(p); applyFilters();
+      showToast('Big venues nearest you: ' + listWords(list));
+    }
+    if (nearFix && Date.now() - nearFix[2] < 600000) { go(nearFix); return; }
+    var carried = !nearFix && /^(-?[\d.]+),(-?[\d.]+)/.exec(new URLSearchParams(location.search).get('me') || '');
+    if (carried) { nearFix = [+carried[1], +carried[2], Date.now()]; go(nearFix); return; }
+    if (!navigator.geolocation) { showToast('This browser gives no location'); return; }
+    b.classList.add('is-busy'); b.setAttribute('aria-busy', 'true');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      nearFix = [pos.coords.latitude, pos.coords.longitude, Date.now()]; go(nearFix);
+    }, function (err) {
+      b.classList.remove('is-busy'); b.removeAttribute('aria-busy');
+      showToast(err && err.code === 1 ? 'Location permission was declined' : 'Your location could not be found');
+    }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+  }
   function applyPreset(p) { // a preset is X's only — nothing checked
     state.venueMode = {}; state.badgeMode = {}; state.teamMode = {}; state.capMode = {};
     p.venuesOff().forEach(function (v) { state.venueMode[v] = 'ex'; });
@@ -289,6 +331,7 @@
   // each group against the preset's lists (only keys the panel shows count,
   // so a saved exclusion for a venue that left the feed can't spoil a match).
   function presetMatches(p) {
+    if (p.needs && !p.needs()) return false;
     if (anyIncluded() || modeKeys(state.capMode, 'ex').length) return false; // presets X things; a check or a band anywhere is a view of its own
     var off = function (g) {
       var gi = groupInfo(g);
@@ -305,18 +348,21 @@
     var box = $('fpPresets');
     box.innerHTML = '';
     var hasTown = Object.keys(CITY.venues).some(function (v) { return CITY.venues[v].area === 'town'; }); // a city with nothing a bus ride away has no Neighborhood preset (it would equal Default)
-    PRESETS.filter(function (p) { return p.key !== 'neighborhood' || hasTown; }).forEach(function (p) {
+    var shows = { neighborhood: hasTown, near: BIG_PLACED.length >= 2 && !!navigator.geolocation, local: BIG_VENUES.length >= 1 && SMALL_COUNT >= 3 };
+    PRESETS.filter(function (p) { return shows[p.key] !== false; }).forEach(function (p) {
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'chip fp-preset'; b.textContent = p.label; b.title = p.title; b.dataset.preset = p.key;
-      b.addEventListener('click', function () { applyPreset(p); applyFilters(); });
+      b.addEventListener('click', function () { if (p.key === 'near') useNear(b, p); else { applyPreset(p); applyFilters(); } });
       box.appendChild(b);
     });
   }
   function syncPresets() {
+    var nearOn = presetMatches(PRESET_NEAR);
     document.querySelectorAll('.fp-preset').forEach(function (b) {
       var p = PRESETS.filter(function (x) { return x.key === b.dataset.preset; })[0];
-      b.classList.toggle('is-on', !!p && presetMatches(p));
-      b.setAttribute('aria-pressed', String(!!p && presetMatches(p)));
+      var on = !!p && presetMatches(p) && !(nearOn && p.key === 'big');
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
     });
   }
   function applyDefaultFilters() {
@@ -630,14 +676,14 @@
   // with the usual view ("Also hiding Kraken games and McCaw Hall · Also
   // showing MoPOP"), the search and the sold-out switch named too. A button
   // takes the view back. Nothing shows in the usual view.
-  var PRESET_PHRASE = CITY.words.phrases;
+  var PRESET_PHRASE = Object.assign({ near: 'Showing the big venues nearest you.', local: 'Showing the local scene — the bars, clubs, small stages and community calendars.' }, CITY.words.phrases);
   function listWords(items) { // "a", "a and b", "a, b and c", "a, b and 3 more"
     if (items.length <= 3) return items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
     return items.slice(0, 2).join(', ') + ' and ' + (items.length - 2) + ' more';
   }
   function describeView() {
     var parts = [];
-    var preset = PRESETS.filter(function (p) { return p.key !== 'default' && presetMatches(p); })[0];
+    var preset = presetMatches(PRESET_NEAR) ? PRESET_NEAR : PRESETS.filter(function (p) { return p.key !== 'default' && presetMatches(p); })[0];
     if (preset) parts.push(PRESET_PHRASE[preset.key] || 'Showing ' + preset.label + '.');
     else {
       // the checks: what the view is narrowed to

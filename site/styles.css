@@ -391,6 +391,7 @@ html.is-scrolled { --titleh: 2.2rem; --barh: calc(var(--barh-base) + var(--title
    more chips sit beyond the edge and lifts once scrolled to the end */
 .fp-presets { display: flex; flex-wrap: nowrap; align-items: center; gap: .4rem; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 2px 0; scroll-padding: 0 1rem; }
 .fp-presets::-webkit-scrollbar { display: none; }
+.fp-preset.is-busy { opacity: .6; cursor: progress; }
 .fp-presets.is-more-right { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.6rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 2.6rem), transparent); }
 .fp-preset { flex: none; }
 .fp-soldout { margin-left: auto; white-space: nowrap; flex: none; }

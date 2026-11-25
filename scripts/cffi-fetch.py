@@ -14,7 +14,9 @@ stays in feeds.mjs. Run by feeds.mjs through uv (one process per batch):
     uv run scripts/cffi-fetch.py <url> ...
 
 An argument that starts with "{" is a JSON request, {"url": ..., "data": {...}}:
-a form POST (the Kings' Shops' EyeOn events call, 2026-10-30). One session
+a form POST (the Kings' Shops' EyeOn events call, 2026-10-30); {"url": ...,
+"json": {...}} is a JSON POST (Popmenu's /graphql, 2026-11-24), and any of them
+may carry "headers": {...} (Popmenu wants the site's own Origin). One session
 serves every argument, so a cookie a page sets reaches the calls after it.
 
 Reads nothing else, writes one JSON object to stdout — argument → page text,
@@ -34,10 +36,13 @@ for i, arg in enumerate(sys.argv[1:]):
         time.sleep(0.5)
     try:
         spec = json.loads(arg) if arg.startswith("{") else {"url": arg}
-        if "data" in spec:
-            r = session.post(spec["url"], data=spec["data"], timeout=30)
+        headers = spec.get("headers")
+        if "json" in spec:
+            r = session.post(spec["url"], json=spec["json"], headers=headers, timeout=30)
+        elif "data" in spec:
+            r = session.post(spec["url"], data=spec["data"], headers=headers, timeout=30)
         else:
-            r = session.get(spec["url"], timeout=30)
+            r = session.get(spec["url"], headers=headers, timeout=30)
         out[arg] = r.text if r.status_code == 200 else {"error": f"HTTP {r.status_code}", "body": r.text[:500]}
     except Exception as e:  # noqa: BLE001 — every failure is reported the same way
         out[arg] = {"error": str(e)}
