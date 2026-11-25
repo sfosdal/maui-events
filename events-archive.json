@@ -959,6 +959,14 @@
    "time": "",
    "url": "https://mauiinvitational.webflow.io/travel-packages",
    "type": "sports"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Forest Bird Hike",
+   "date": "2026-11-24",
+   "time": "09:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=138294",
+   "type": "community"
   }
  ]
 }
