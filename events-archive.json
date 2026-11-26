@@ -967,6 +967,38 @@
    "time": "09:00",
    "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=138294",
    "type": "community"
+  },
+  {
+   "venue": "Haleakalā National Park",
+   "title": "Forest Bird Hike",
+   "date": "2026-11-25",
+   "time": "09:00",
+   "url": "https://www.nps.gov/planyourvisit/event-details.htm?id=138295",
+   "type": "community"
+  },
+  {
+   "venue": "Lahaina Cannery Mall",
+   "title": "Packers vs Rams",
+   "date": "2026-11-25",
+   "time": "15:00",
+   "url": "https://lahainacannerymall.com/event/packers-vs-rams/",
+   "type": "community"
+  },
+  {
+   "venue": "Mulligans on the Blue",
+   "title": "Aloha Wailea Luau",
+   "date": "2026-11-25",
+   "time": "17:30",
+   "url": "https://www.alohawailealuau.com",
+   "type": "concert"
+  },
+  {
+   "venue": "ProArts Playhouse",
+   "title": "Theatrical Lighting Design Masterclass with S. Benjamin Farrar of Farrar Design",
+   "date": "2026-11-25",
+   "time": "18:00",
+   "url": "https://proartsmaui.org/event/theatrical-lighting-design-masterclass-with-s-benjamin-farrar-of-farrar-design/",
+   "type": "arts"
   }
  ]
 }
